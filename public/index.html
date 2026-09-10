@@ -51,11 +51,12 @@
 
             <!-- Caja para publicar una nueva opinión -->
             <div class="publicar-box">
-                <textarea placeholder="¿Qué libro estás leyendo o qué opinas hoy?"></textarea>
-                <div class="publicar-footer">
-                    <span class="tag-libro">📖 Agregar</span>
-                    <button class="btn-publicar">Publicar</button>
+                <textarea id="post-content" placeholder="¿Qué libro estás leyendo o qué opinas hoy?"></textarea>
+                <div class="publicar-footer" style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                    <input type="text" id="post-tag" placeholder="Ej: Libro, Autor, Editorial..." style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+                    <button id="btn-publicar" class="btn-publicar" style="cursor: pointer;">Publicar</button>
                 </div>
+                <p id="mensaje-post" style="font-size: 12px; margin-top: 5px;"></p>
             </div>
 
             <!-- Feed / Lista de publicaciones -->
@@ -292,6 +293,94 @@
 
     // Ejecutar al cargar la página por si ya estaba logueado
     window.addEventListener('DOMContentLoaded', actualizarInterfazUsuario);
+
+    // ==========================================
+    // SCRIPT PARA EL MURO DE PUBLICACIONES
+    // ==========================================
+    const btnPublicar = document.getElementById('btn-publicar');
+    const postContent = document.getElementById('post-content');
+    const postTag = document.getElementById('post-tag');
+    const mensajePost = document.getElementById('mensaje-post');
+    const feedPosts = document.querySelector('.feed-posts');
+
+    // Función para cargar los posts desde el servidor
+    async function cargarPosts() {
+        try {
+            const response = await fetch('/api/posts');
+            const data = await response.json();
+
+            if (response.ok && data.posts.length > 0) {
+                feedPosts.innerHTML = ''; // Limpiamos el feed estático de prueba
+                data.posts.forEach(post => {
+                    const article = document.createElement('article');
+                    article.className = 'post-card';
+                    article.innerHTML = `
+                        <div class="post-avatar">✍️</div>
+                        <div class="post-contenido">
+                            <div class="post-header">
+                                <span class="post-autor">${post.username}</span>
+                                <span class="post-user">@${post.username}</span>
+                            </div>
+                            <p class="post-texto">${post.content}</p>
+                            <div class="post-libro-badge">📚 <em>${post.tag}</em></div>
+                        </div>
+                    `;
+                    feedPosts.appendChild(article);
+                });
+            }
+        } catch (error) {
+            console.error('Error al cargar publicaciones:', error);
+        }
+    }
+
+    // Evento al hacer clic en Publicar
+    if (btnPublicar) {
+        btnPublicar.addEventListener('click', async () => {
+            const usuarioGuardado = localStorage.getItem('usuarioLogueado');
+            
+            if (!usuarioGuardado) {
+                alert('Debes iniciar sesión para poder publicar.');
+                return;
+            }
+
+            const user = JSON.parse(usuarioGuardado);
+            const content = postContent.value.trim();
+            const tag = postTag.value.trim() || 'General';
+
+            if (!content) {
+                mensajePost.style.color = 'red';
+                mensajePost.textContent = 'La publicación no puede estar vacía.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/posts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user.username, content, tag })
+                });
+
+                if (response.ok) {
+                    postContent.value = '';
+                    postTag.value = '';
+                    mensajePost.style.color = 'green';
+                    mensajePost.textContent = '¡Publicado con éxito!';
+                    cargarPosts(); // Recarga el muro para mostrar el nuevo post
+                } else {
+                    mensajePost.style.color = 'red';
+                    mensajePost.textContent = 'Error al publicar.';
+                }
+            } catch (error) {
+                mensajePost.style.color = 'red';
+                mensajePost.textContent = 'No se pudo conectar con el servidor.';
+            }
+        });
+    }
+
+    // Cargar los posts al abrir la página
+    window.addEventListener('DOMContentLoaded', () => {
+        cargarPosts();
+    });
 
     </script>
 

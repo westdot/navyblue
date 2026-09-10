@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware para parsear JSON y servir archivos estáticos
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // Asume que tus archivos HTML/CSS están en una carpeta 'public'
+app.use(express.static(path.join(__dirname, 'public'))); // Asume que los archivos HTML/CSS están en una carpeta 'public'
 
 // Conexión y configuración de la base de datos SQLite
 const db = new sqlite3.Database('./database.db', (err) => {
@@ -19,9 +19,9 @@ const db = new sqlite3.Database('./database.db', (err) => {
     }
 });
 
-// Crear tablas si no existen
+// Crear tablas, si no existen
 db.serialize(() => {
-    // Tabla de usuarios actualizada con nombre y username único
+    // Tabla de usuarios actualizada con nombre y usuario
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
