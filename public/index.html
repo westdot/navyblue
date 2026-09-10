@@ -246,10 +246,17 @@
             if (response.ok) {
                 mensajeLogin.style.color = 'green';
                 mensajeLogin.textContent = '¡Inicio de sesión exitoso!';
+                
+                // Guardamos los datos del usuario en el navegador
+                localStorage.setItem('usuarioLogueado', JSON.stringify({
+                    name: data.name,
+                    username: data.username
+                }));
+
                 setTimeout(() => {
                     modalLogin.classList.remove('activo');
-                    // Aquí podrías recargar o cambiar el estado de la página si gustas
-                }, 1500);
+                    actualizarInterfazUsuario(); // Actualiza la barra superior
+                }, 1000);
             } else {
                 mensajeLogin.style.color = 'red';
                 mensajeLogin.textContent = data.error || 'Credenciales inválidas.';
@@ -259,6 +266,32 @@
             mensajeLogin.textContent = 'No se pudo conectar con el servidor.';
         }
     });
+
+    // Función para cambiar la barra superior si hay una sesión activa
+    function actualizarInterfazUsuario() {
+        const usuarioGuardado = localStorage.getItem('usuarioLogueado');
+        if (usuarioGuardado) {
+            const user = JSON.parse(usuarioGuardado);
+            const headerAcciones = document.querySelector('.header-acciones');
+            
+            if (headerAcciones) {
+                headerAcciones.innerHTML = `
+                    <span style="color: white; margin-right: 15px; font-weight: bold;">${user.username}</span>
+                    <a href="#" id="btn-cerrar-sesion" class="btn-pill" style="background-color: #d9534f; color: white;">Cerrar Sesión</a>
+                `;
+
+                // Evento para cerrar sesión
+                document.getElementById('btn-cerrar-sesion').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('usuarioLogueado');
+                    location.reload(); // Recarga la página para volver al estado original
+                });
+            }
+        }
+    }
+
+    // Ejecutar al cargar la página por si ya estaba logueado
+    window.addEventListener('DOMContentLoaded', actualizarInterfazUsuario);
 
     </script>
 

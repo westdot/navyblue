@@ -32,13 +32,23 @@
             <div class="publicar-box" style="padding: 25px;">
                 <form id="registerForm">
                     <div class="form-grupo" style="margin-bottom: 15px;">
+                        <label for="name" style="display: block; margin-bottom: 5px;">Nombre</label>
+                        <input type="text" id="name" class="form-control" placeholder="Tu nombre" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <div class="form-grupo" style="margin-bottom: 15px;">
+                        <label for="username" style="display: block; margin-bottom: 5px;">Usuario</label>
+                        <input type="text" id="username" class="form-control" placeholder="@ejemplo" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <div class="form-grupo" style="margin-bottom: 15px;">
                         <label for="email" style="display: block; margin-bottom: 5px;">Correo electrónico</label>
-                        <input type="email" id="email" class="form-control" placeholder="Ingresa tu correo" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                        <input type="email" id="email" class="form-control" placeholder="tucorreo@ejemplo.com" required style="width: 100%; padding: 10px; box-sizing: border-box;">
                     </div>
 
                     <div class="form-grupo" style="margin-bottom: 20px;">
                         <label for="password" style="display: block; margin-bottom: 5px;">Contraseña</label>
-                        <input type="password" id="password" class="form-control" placeholder="Crea una contraseña" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                        <input type="password" id="password" class="form-control" placeholder="********" required style="width: 100%; padding: 10px; box-sizing: border-box;">
                     </div>
 
                     <button type="submit" class="btn-entrar" style="width: 100%; padding: 12px; cursor: pointer;">Registrarse</button>
@@ -60,42 +70,44 @@
 
     <!-- SCRIPT DE CONEXIÓN CON EL BACKEND (/api/register) -->
     <script>
-        const registerForm = document.getElementById('registerForm');
-        const mensaje = document.getElementById('mensaje');
+    const registerForm = document.getElementById('registerForm');
+    const mensaje = document.getElementById('mensaje');
 
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+        const name = document.getElementById('name').value;
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-            try {
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, username, email, password })
+            });
 
-                const data = await response.json();
+            const data = await response.json();
 
-                if (response.ok) {
-                    mensaje.style.color = 'green';
-                    mensaje.textContent = '¡Registro exitoso! Redirigiendo al inicio...';
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 2000);
-                } else {
-                    mensaje.style.color = 'red';
-                    mensaje.textContent = data.error || 'Ocurrió un error al registrarse.';
-                }
-            } catch (error) {
+            if (response.ok) {
+                mensaje.style.color = 'green';
+                mensaje.textContent = '¡Registro exitoso! Redirigiendo al inicio...';
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+            } else {
                 mensaje.style.color = 'red';
-                mensaje.textContent = 'No se pudo conectar con el servidor.';
+                mensaje.textContent = data.error || 'Ocurrió un error al registrarse.';
             }
-        });
-    </script>
+        } catch (error) {
+            mensaje.style.color = 'red';
+            mensaje.textContent = 'No se pudo conectar con el servidor.';
+        }
+    });
+</script>
 
 </body>
 </html>

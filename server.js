@@ -21,9 +21,11 @@ const db = new sqlite3.Database('./database.db', (err) => {
 
 // Crear tablas si no existen
 db.serialize(() => {
-    // Tabla de usuarios
+    // Tabla de usuarios actualizada con nombre y username único
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        username TEXT UNIQUE NOT NULL,
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL
     )`);
@@ -42,18 +44,20 @@ db.serialize(() => {
 
 // Registro de usuario
 app.post('/api/register', async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
+    const { name, username, email, password } = req.body;
+    
+    if (!name || !username || !email || !password) {
         return res.status(400).json({ error: 'Faltan datos obligatorios' });
     }
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = `INSERT INTO users (email, password) VALUES (?, ?)`;
+        const query = `INSERT INTO users (name, username, email, password) VALUES (?, ?, ?, ?)`;
         
-        db.run(query, [email, hashedPassword], function(err) {
+        db.run(query, [name, username, email, hashedPassword], function(err) {
             if (err) {
-                return res.status(400).json({ error: 'El correo ya está registrado' });
+                // Si hay error, puede ser que el email o el username ya existan
+                return res.status(400).json({ error: 'El correo o el nombre de usuario ya están en uso' });
             }
             res.status(201).json({ message: 'Usuario registrado con éxito', userId: this.lastID });
         });
@@ -62,7 +66,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Inicio de sesión
+// Inicio de sesión actualizado
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
     
@@ -73,7 +77,13 @@ app.post('/api/login', (req, res) => {
         const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(400).json({ error: 'Credenciales inválidas' });
 
-        res.json({ message: 'Inicio de sesión exitoso', email: user.email });
+        // Devolvemos también el nombre y el username (sin la contraseña)
+        res.json({ 
+            message: 'Inicio de sesión exitoso', 
+            name: user.name,
+            username: user.username,
+            email: user.email 
+        });
     });
 });
 
