@@ -2,6 +2,7 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const path = require('path');
+const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,6 +10,18 @@ const PORT = process.env.PORT || 3000;
 // Middleware para parsear JSON y servir archivos estáticos
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); // Asume que los archivos HTML/CSS están en una carpeta 'public'
+
+// Middleware de sesión: el servidor recuerda quién inició sesión mediante una cookie firmada
+app.use(session({
+    secret: 'cambia-esto-por-una-frase-larga-y-secreta', // TODO: mover a una variable de entorno
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24, // la sesión dura 24 horas
+        httpOnly: true
+        // secure: true  // descomenta esto cuando sirvas el sitio con HTTPS
+    }
+}));
 
 // Conexión y configuración de la base de datos SQLite
 const db = new sqlite3.Database('./database.db', (err) => {
@@ -97,9 +110,15 @@ app.get('/api/posts', (req, res) => {
 
 // Crear una nueva publicación
 app.post('/api/posts', (req, res) => {
-    const { username, content, tag } = req.body;
+    // Ya NO confiamos en req.body.username: usamos quién está realmente logueado
+    if (!req.session.user) {
+        return res.status(401).json({ error: 'Debes iniciar sesión para publicar' });
+    }
 
-    if (!username || !content) {
+    const username = req.session.user.username;
+    const { content, tag } = req.body;
+
+    if (!content) {
         return res.status(400).json({ error: 'Faltan datos obligatorios para publicar' });
     }
 
@@ -126,6 +145,13 @@ app.post('/api/login', (req, res) => {
         const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(400).json({ error: 'Credenciales inválidas' });
 
+        // Guardamos al usuario en la SESIÓN del servidor (no en algo que controle el cliente)
+        req.session.user = {
+            name: user.name,
+            username: user.username,
+            email: user.email
+        };
+
         // Devolvemos también el nombre y el username (sin la contraseña)
         res.json({ 
             message: 'Inicio de sesión exitoso', 
@@ -133,6 +159,22 @@ app.post('/api/login', (req, res) => {
             username: user.username,
             email: user.email 
         });
+    });
+});
+
+// Saber si hay una sesión activa (para que el frontend pregunte al servidor, no a localStorage)
+app.get('/api/session', (req, res) => {
+    if (req.session.user) {
+        res.json({ loggedIn: true, user: req.session.user });
+    } else {
+        res.json({ loggedIn: false });
+    }
+});
+
+// Cerrar sesión
+app.post('/api/logout', (req, res) => {
+    req.session.destroy(() => {
+        res.json({ message: 'Sesión cerrada' });
     });
 });
 

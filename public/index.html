@@ -282,8 +282,9 @@
                 `;
 
                 // Evento para cerrar sesión
-                document.getElementById('btn-cerrar-sesion').addEventListener('click', (e) => {
+                document.getElementById('btn-cerrar-sesion').addEventListener('click', async (e) => {
                     e.preventDefault();
+                    await fetch('/api/logout', { method: 'POST' });
                     localStorage.removeItem('usuarioLogueado');
                     location.reload(); // Recarga la página para volver al estado original
                 });
@@ -357,7 +358,7 @@
                 const response = await fetch('/api/posts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user.username, content, tag })
+                    body: JSON.stringify({ content, tag })
                 });
 
                 const textResponse = await response.text();
