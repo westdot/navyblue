@@ -360,19 +360,28 @@
                     body: JSON.stringify({ username: user.username, content, tag })
                 });
 
+                const textResponse = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(textResponse);
+                } catch (e) {
+                    throw new Error("El servidor respondió con HTML en vez de JSON: " + textResponse.substring(0, 100));
+                }
+
                 if (response.ok) {
                     postContent.value = '';
                     postTag.value = '';
                     mensajePost.style.color = 'green';
                     mensajePost.textContent = '¡Publicado con éxito!';
-                    cargarPosts(); // Recarga el muro para mostrar el nuevo post
+                    cargarPosts(); 
                 } else {
                     mensajePost.style.color = 'red';
-                    mensajePost.textContent = 'Error al publicar.';
+                    mensajePost.textContent = data.error || 'Error al publicar.';
                 }
             } catch (error) {
                 mensajePost.style.color = 'red';
-                mensajePost.textContent = 'No se pudo conectar con el servidor.';
+                mensajePost.textContent = error.message;
+                console.error('Detalle:', error);
             }
         });
     }

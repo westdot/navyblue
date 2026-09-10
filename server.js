@@ -21,7 +21,6 @@ const db = new sqlite3.Database('./database.db', (err) => {
 
 // Crear tablas, si no existen
 db.serialize(() => {
-    // Tabla de usuarios actualizada con nombre y usuario
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -30,7 +29,14 @@ db.serialize(() => {
         password TEXT NOT NULL
     )`);
 
-    // Tabla de libros
+    db.run(`CREATE TABLE IF NOT EXISTS posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        content TEXT NOT NULL,
+        tag TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS books (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
@@ -64,6 +70,49 @@ app.post('/api/register', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Error interno del servidor' });
     }
+});
+
+// --- RUTAS DE PUBLICACIONES (POSTS) ---
+
+// Obtener todas las publicaciones
+app.get('/api/posts', (req, res) => {
+    db.all(`SELECT * FROM posts ORDER BY id DESC`, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ posts: rows });
+    });
+});
+
+// Crear una nueva publicación
+// Obtener todas las publicaciones
+app.get('/api/posts', (req, res) => {
+    db.all(`SELECT * FROM posts ORDER BY id DESC`, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ posts: rows });
+    });
+});
+
+// Crear una nueva publicación
+app.post('/api/posts', (req, res) => {
+    const { username, content, tag } = req.body;
+
+    if (!username || !content) {
+        return res.status(400).json({ error: 'Faltan datos obligatorios para publicar' });
+    }
+
+    const query = `INSERT INTO posts (username, content, tag) VALUES (?, ?, ?)`;
+    db.run(query, [username, content, tag || 'General'], function(err) {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json({ 
+            message: 'Publicación creada con éxito', 
+            postId: this.lastID 
+        });
+    });
 });
 
 // Inicio de sesión actualizado
