@@ -2,8 +2,9 @@ boton de perfil
 boton a la biblioteca
 boton buscador
 seguidores amigos configuracion
-
-
+verificacion de correo o correo de aviso de registro
+link de cambio de contraseña
+que los comentarios se abran en la pestaña de la derecha, cosa que si voy bajando se mantenga el post con los comentarios
 
 
 
