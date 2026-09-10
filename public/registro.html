@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - NAVYBLUE</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- TÍTULO PRINCIPAL Y OPCIONES (Mismo header del index) -->
+    <header id="inicio-header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>NAVYBLUE</h1>
+                <p>victimas de la pobreza</p>
+            </div>
+
+            <div class="header-acciones">
+                <a href="index.html" class="btn-pill">Volver al Inicio</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ESTRUCTURA PRINCIPAL PARA EL FORMULARIO DE REGISTRO -->
+    <main class="contenedor-principal" style="justify-content: center; display: flex;">
+
+        <section class="columna-centro" style="max-width: 500px; width: 100%; margin-top: 20px;">
+            <h2>Crear Cuenta Nueva</h2>
+
+            <!-- Caja con el estilo del muro para albergar el formulario -->
+            <div class="publicar-box" style="padding: 25px;">
+                <form id="registerForm">
+                    <div class="form-grupo" style="margin-bottom: 15px;">
+                        <label for="email" style="display: block; margin-bottom: 5px;">Correo electrónico</label>
+                        <input type="email" id="email" class="form-control" placeholder="Ingresa tu correo" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <div class="form-grupo" style="margin-bottom: 20px;">
+                        <label for="password" style="display: block; margin-bottom: 5px;">Contraseña</label>
+                        <input type="password" id="password" class="form-control" placeholder="Crea una contraseña" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <button type="submit" class="btn-entrar" style="width: 100%; padding: 12px; cursor: pointer;">Registrarse</button>
+                </form>
+
+                <p id="mensaje" style="margin-top: 15px; text-align: center; font-weight: bold;"></p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer>
+        <p>Desarrollado por: mis dos cojones</p>
+        <p>Fecha de desarrollo: Septiembre 2026</p>
+        <p>Contacto: <a href="mailto:gemujm@gmail.com">contacto@rinconliterario.com</a></p>
+        <p><a href="#inicio-header">Volver al inicio de la página</a></p>
+    </footer>
+
+    <!-- SCRIPT DE CONEXIÓN CON EL BACKEND (/api/register) -->
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        const mensaje = document.getElementById('mensaje');
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    mensaje.style.color = 'green';
+                    mensaje.textContent = '¡Registro exitoso! Redirigiendo al inicio...';
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                } else {
+                    mensaje.style.color = 'red';
+                    mensaje.textContent = data.error || 'Ocurrió un error al registrarse.';
+                }
+            } catch (error) {
+                mensaje.style.color = 'red';
+                mensaje.textContent = 'No se pudo conectar con el servidor.';
+            }
+        });
+    </script>
+
+</body>
+</html>
