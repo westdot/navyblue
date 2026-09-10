@@ -18,9 +18,9 @@
 
             <!-- LOS 3 BOTONES AGRUPADOS A LA DERECHA --> 
             <div class="header-acciones">
+                <a href="#" id="btn-abrir-login" class="btn-pill btn-destacado">Iniciar Sesión</a>
+                <a href="registro.html" class="btn-pill">Registrarse</a>
                 <a href="#opciones" class="btn-pill">Opciones</a>
-                <a href="#registrarse" class="btn-pill">Registrarse</a>
-                <a href="#iniciar-sesion" class="btn-pill btn-destacado">Iniciar Sesión</a>
             </div>
         </div>
     </header>
@@ -149,6 +149,26 @@
 
     </main>
 
+    <!-- CAJA FLOTANTE (MODAL) DE INICIO DE SESIÓN -->
+    <div id="modal-login" class="modal-overlay">
+        <div class="modal-content">
+            <span class="cerrar-modal" id="btn-cerrar-login">&times;</span>
+            <h2>Iniciar Sesión</h2>
+            <form>
+                <div class="form-grupo">
+                    <label for="usuario">Nombre de usuario</label>
+                    <input type="text" id="usuario" placeholder="Ingresa tu usuario" required>
+                </div>
+                <div class="form-grupo">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
+                </div>
+                <a href="#" class="link-olvido">Olvidé mi contraseña</a>
+                <button type="submit" class="btn-entrar">Entrar</button>
+            </form>
+        </div>
+    </div>
+
     <!-- PIE DE PÁGINA -->
     <footer>
         <p>Desarrollado por: mis dos cojones</p>
@@ -170,6 +190,32 @@
                 header.classList.remove('shrink');
             }
         });
+    
+    // ==========================================
+        // NUEVO SCRIPT PARA LA CAJA DE INICIO DE SESIÓN
+        // ==========================================
+        const btnAbrirLogin = document.getElementById('btn-abrir-login');
+        const modalLogin = document.getElementById('modal-login');
+        const btnCerrarLogin = document.getElementById('btn-cerrar-login');
+
+        // Al hacer clic en Iniciar Sesión, abre la caja
+        btnAbrirLogin.addEventListener('click', function(e) {
+            e.preventDefault(); // Evita que la página salte hacia arriba
+            modalLogin.classList.add('activo');
+        });
+
+        // Al hacer clic en la X, la cierra
+        btnCerrarLogin.addEventListener('click', function() {
+            modalLogin.classList.remove('activo');
+        });
+
+        // Al hacer clic en cualquier parte oscura fuera de la caja, también la cierra
+        window.addEventListener('click', function(e) {
+            if (e.target === modalLogin) {
+                modalLogin.classList.remove('activo');
+            }
+        });
+
     </script>
 
 </body>
