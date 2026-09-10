@@ -1,0 +1,367 @@
+/* RESET BÁSICO */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f8;
+    color: #333;
+    line-height: 1.5;
+    padding-top: 110px; /* ¡NUEVO! Compensa el espacio del header fijo para que no tape el contenido */
+}
+
+/* HEADER FIJO CON TRANSICIÓN SUAVE */
+header {
+    position: fixed; /* CAMBIO: De sticky a fixed. Esto evita que modifique la altura de la página al achicarse */
+    top: 0;
+    left: 0;
+    width: 100%; /* Al ser fixed, necesita que le digamos que ocupe todo el ancho */
+    z-index: 1000;
+    background-color: #111e38;
+    color: white;
+    padding: 20px;
+    transition: padding 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
+                box-shadow 0.3s ease, 
+                background-color 0.3s ease;
+    will-change: padding;
+}
+/* CONTENEDOR DE BOTONES (A LA DERECHA Y EN LÍNEA) */
+.header-acciones {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Espacio entre cada botón */
+}
+
+/* ESTILO PÍLDORA (INSPIRADO EN LA IMAGEN) */
+.btn-pill {
+    background-color: rgba(255, 255, 255, 0.12); /* Fondo sutil adaptado al header */
+    color: #ffffff;
+    padding: 8px 18px;
+    border-radius: 50px; /* Redondeado completo */
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* EFECTO HOVER AL PASAR EL MOUSE */
+.btn-pill:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+/* BOTÓN DESTACADO (INICIAR SESIÓN) */
+.btn-pill.btn-destacado {
+    background-color: #007bff; /* Azul primario de tu paleta */
+    border-color: #007bff;
+}
+
+.btn-pill.btn-destacado:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+/* EFECTO CUANDO EL HEADER SE ACHICA */
+header.shrink {
+    padding: 10px 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+header.shrink .header-title h1 {
+    font-size: 1.3rem;
+    transition: font-size 0.3s ease;
+}
+
+header.shrink .header-title p {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    margin: 0;
+    transition: all 0.25s ease-out; /* Desaparición progresiva del subtítulo */
+}
+
+header .header-title p {
+    opacity: 1;
+    max-height: 50px;
+    transition: all 0.3s ease-in;
+}
+
+
+
+/* COLUMNAS LATERALES FIJAS (STICKY) */
+.columna-izquierda, 
+.columna-derecha {
+    position: sticky;
+    top: 90px; /* Distancia respecto al techo para no solaparse con el header */
+    align-self: start; /* Permite que la columna mantenga su altura y pueda fijarse */
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    max-height: calc(100vh - 110px); /* Evita que la barra lateral sobrepase la pantalla */
+    overflow-y: auto; /* Permite scroll interno en la columna si es muy larga */
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header-title h1 {
+    font-size: 2em;
+    letter-spacing: 2px;
+}
+
+/* CONTENEDOR TRES COLUMNAS (GRILLA) */
+.contenedor-principal {
+    display: grid;
+    grid-template-columns: 240px 1fr 280px;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+/* ESTILOS DE COLUMNAS (TARJETAS) */
+.columna-izquierda, .columna-centro, .columna-derecha {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+}
+
+h2 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+}
+
+/* COLUMNA IZQUIERDA: MENÚ INTERACTIVO */
+.lista-categorias {
+    list-style: none;
+}
+.columna-izquierda h2 {
+    text-align: right;
+}
+.lista-categorias li {
+    margin-bottom: 10px;
+}
+
+.lista-categorias a {
+    text-decoration: none;
+    color: #444; /* Color gris oscuro más elegante por defecto */
+    font-weight: 500;
+    display: block;
+    padding: 8px 12px;
+    border-radius: 8px; /* Bordes más redondeados tipo app */
+    margin-bottom: 2px;
+    transition: all 0.2s ease-in-out; /* Transición suave */
+}
+
+.lista-categorias a:hover {
+    background-color: #eef5ff; /* Fondo azul clarito */
+    color: #007bff; /* El texto se vuelve azul brillante */
+    padding-left: 18px; /* ¡Efecto dinámico! El texto se desplaza a la derecha */
+}
+
+/* COLUMNA CENTRO: FEED ESTILO TWITTER */
+.publicar-box {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 20px;
+}
+.columna-centro h2 {
+    text-align: center;
+}
+.publicar-box textarea {
+    width: 100%;
+    height: 70px;
+    border: none;
+    resize: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.publicar-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    border-top: 1px solid #eee;
+    padding-top: 8px;
+}
+
+.tag-libro {
+    font-size: 0.85rem;
+    color: #666;
+    cursor: pointer;
+}
+
+.btn-publicar {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 18px; /* Ligeramente más grande para mejor área de clic */
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2); /* Sombra sutil base */
+    transition: all 0.2s ease-in-out; /* Transición suave */
+}
+
+.btn-publicar:hover {
+    background-color: #0056b3; /* Azul más oscuro */
+    transform: translateY(-2px); /* Se levanta ligeramente hacia arriba */
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4); /* La sombra crece */
+}
+
+.post-card {
+    display: flex;
+    gap: 12px;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.post-avatar {
+    font-size: 24px;
+    background: #eef2f7;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.post-contenido {
+    flex: 1;
+}
+
+.post-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.post-autor {
+    font-weight: bold;
+}
+
+.post-user {
+    color: #777;
+    font-size: 0.85rem;
+}
+
+.post-texto {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+}
+
+.post-libro-badge {
+    display: inline-block;
+    background-color: #eaf2ff;
+    color: #0056b3;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+}
+
+.post-acciones {
+    display: flex;
+    gap: 15px;
+}
+
+.post-acciones button {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 6px 12px; /* Añade espacio para que el hover se vea como una píldora */
+    border-radius: 20px; /* Bordes redondeados */
+    transition: all 0.2s ease-in-out; /* Hace que el cambio de color sea suave */
+    display: flex;
+    align-items: center;
+}
+/* EFECTO HOVER: BOTÓN COMENTAR (1er botón - Azul) */
+.post-acciones button:nth-child(1):hover {
+    background-color: #eef5ff;
+    color: #007bff;
+}
+
+/* EFECTO HOVER: BOTÓN REPOSTEAR (2do botón - Verde) */
+.post-acciones button:nth-child(2):hover {
+    background-color: #eafcf0;
+    color: #198754;
+}
+
+/* EFECTO HOVER: BOTÓN LIKE (3er botón - Rojo) */
+.post-acciones button:nth-child(3):hover {
+    background-color: #ffeef2;
+    color: #e63946;
+}
+/* COLUMNA DERECHA: RESEÑAS RECIENTES */
+.resena-card {
+    display: flex;
+    gap: 12px;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.resena-card img {
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.resena-info h3 {
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+}
+
+.resena-info p {
+    font-size: 0.85rem;
+}
+
+.valoracion {
+    color: #ffb400;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+/* FOOTER */
+footer {
+    background-color: #111e38;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    margin-top: 30px;
+    font-size: 0.9rem;
+}
+
+footer a {
+    color: #a0c4ff;
+}
+
+/* RESPONSIVO EN PANTALLAS PEQUEÑAS */
+@media (max-width: 850px) {
+    .contenedor-principal {
+        grid-template-columns: 1fr;
+    }
+}
