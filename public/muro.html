@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Muro - NAVYBLUE</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- BARRA SUPERIOR MÍNIMA: sin el título NAVYBLUE, para dejar espacio libre al fondo -->
+    <header id="inicio-header" style="min-height: auto;">
+        <div class="header-content" style="justify-content: flex-end;">
+            <div class="header-acciones">
+                <a href="index.html" class="btn-pill">Volver al Inicio</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ESPACIO RESERVADO PARA EL FONDO DEL MURO (sin gestor de imágenes todavía) -->
+    <div id="fondo-muro" style="height: 180px; background: linear-gradient(135deg, #1c2b45, #34517c);"></div>
+
+    <!-- ESTRUCTURA EN 3 COLUMNAS, IGUAL QUE EL RESTO DEL SITIO -->
+    <main class="contenedor-principal">
+
+        <!-- COLUMNA IZQUIERDA: INFO PERSONAL -->
+        <aside class="columna-izquierda">
+            <h2>Personal</h2>
+            <ul class="lista-categorias" id="lista-personal">
+                <li>Cargando...</li>
+            </ul>
+        </aside>
+
+        <!-- COLUMNA CENTRO: MURO -->
+        <section class="columna-centro">
+            <h2>Muro</h2>
+
+            <!-- Pestañas: Post / Comentarios / Likes -->
+            <div class="publicar-footer" style="display: flex; gap: 0; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; overflow: hidden;">
+                <button class="btn-tab-muro tab-activa" data-tab="posts" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #34517c; color: white;">Post</button>
+                <button class="btn-tab-muro" data-tab="comentarios" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #eee;">Comentarios</button>
+                <button class="btn-tab-muro" data-tab="likes" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #eee;">Likes</button>
+            </div>
+
+            <h3 id="titulo-lista">Publicaciones</h3>
+            <div class="feed-posts" id="lista-muro">
+                <p>Cargando...</p>
+            </div>
+        </section>
+
+        <!-- COLUMNA DERECHA: reservada por ahora -->
+        <aside class="columna-derecha">
+        </aside>
+
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer>
+        <p>Desarrollado por: mis dos cojones</p>
+        <p>Fecha de desarrollo: Septiembre 2026</p>
+        <p>Contacto: <a href="mailto:gemujm@gmail.com">gemujm@gmail.com</a></p>
+        <p><a href="#inicio-header">Volver al inicio de la página</a></p>
+    </footer>
+
+    <script>
+    const listaPersonal = document.getElementById('lista-personal');
+    const listaMuro = document.getElementById('lista-muro');
+    const tituloLista = document.getElementById('titulo-lista');
+    const botonesTab = document.querySelectorAll('.btn-tab-muro');
+
+    // Formatea la fecha de registro en algo legible, ej: "septiembre de 2026"
+    function formatearFecha(fechaISO) {
+        if (!fechaISO) return 'Sin registrar';
+        const fecha = new Date(fechaISO.replace(' ', 'T') + 'Z');
+        return fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' });
+    }
+
+    // Construye una tarjeta de post con textContent (no innerHTML) para evitar XSS
+    function crearPostCard(post) {
+        const article = document.createElement('article');
+        article.className = 'post-card';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'post-avatar';
+        avatar.textContent = '✍️';
+
+        const contenido = document.createElement('div');
+        contenido.className = 'post-contenido';
+
+        const header = document.createElement('div');
+        header.className = 'post-header';
+        const autor = document.createElement('span');
+        autor.className = 'post-autor';
+        autor.textContent = post.username;
+        header.appendChild(autor);
+
+        const texto = document.createElement('p');
+        texto.className = 'post-texto';
+        texto.textContent = post.content;
+
+        const badge = document.createElement('div');
+        badge.className = 'post-libro-badge';
+        const em = document.createElement('em');
+        em.textContent = post.tag;
+        badge.append('📚 ', em);
+
+        contenido.appendChild(header);
+        contenido.appendChild(texto);
+        contenido.appendChild(badge);
+        article.appendChild(avatar);
+        article.appendChild(contenido);
+        return article;
+    }
+
+    // Carga los datos de la columna "Personal"
+    async function cargarPersonal(username) {
+        try {
+            const response = await fetch('/api/profile');
+            const data = await response.json();
+            listaPersonal.innerHTML = '';
+
+            const items = [
+                ['Nombre', data.user.name],
+                ['País', data.user.pais || 'No especificado'],
+                ['Se unió', formatearFecha(data.user.created_at)]
+            ];
+            items.forEach(([label, valor]) => {
+                const li = document.createElement('li');
+                li.style.padding = '6px 0';
+                const strong = document.createElement('strong');
+                strong.textContent = label + ': ';
+                li.appendChild(strong);
+                li.append(valor);
+                listaPersonal.appendChild(li);
+            });
+
+            const liEditar = document.createElement('li');
+            liEditar.style.marginTop = '10px';
+            const linkEditar = document.createElement('a');
+            linkEditar.href = 'perfil.html';
+            linkEditar.textContent = 'Editar mi perfil →';
+            liEditar.appendChild(linkEditar);
+            listaPersonal.appendChild(liEditar);
+        } catch (error) {
+            listaPersonal.innerHTML = '<li>No se pudo cargar la información.</li>';
+        }
+    }
+
+    // Carga solo los posts del usuario actual
+    async function cargarMisPosts(username) {
+        listaMuro.innerHTML = '<p>Cargando...</p>';
+        try {
+            const response = await fetch(`/api/posts?username=${encodeURIComponent(username)}`);
+            const data = await response.json();
+            listaMuro.innerHTML = '';
+
+            if (data.posts.length === 0) {
+                listaMuro.innerHTML = '<p>Todavía no has publicado nada.</p>';
+                return;
+            }
+            data.posts.forEach(post => listaMuro.appendChild(crearPostCard(post)));
+        } catch (error) {
+            listaMuro.innerHTML = '<p>No se pudo cargar tus publicaciones.</p>';
+        }
+    }
+
+    // Cambiar entre pestañas (por ahora solo "Post" está implementado de verdad)
+    function activarTab(tab, username) {
+        botonesTab.forEach(btn => {
+            const activo = btn.dataset.tab === tab;
+            btn.style.background = activo ? '#34517c' : '#eee';
+            btn.style.color = activo ? 'white' : '#333';
+        });
+
+        if (tab === 'posts') {
+            tituloLista.textContent = 'Publicaciones';
+            cargarMisPosts(username);
+        } else if (tab === 'comentarios') {
+            tituloLista.textContent = 'Comentarios';
+            listaMuro.innerHTML = '<p>Aún no implementado.</p>';
+        } else if (tab === 'likes') {
+            tituloLista.textContent = 'Likes';
+            listaMuro.innerHTML = '<p>Aún no implementado.</p>';
+        }
+    }
+
+    // Punto de entrada: confirmamos sesión y cargamos todo
+    (async () => {
+        try {
+            const response = await fetch('/api/session');
+            const sesion = await response.json();
+            if (!sesion.loggedIn) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            cargarPersonal(sesion.user.username);
+            activarTab('posts', sesion.user.username);
+
+            botonesTab.forEach(btn => {
+                btn.addEventListener('click', () => activarTab(btn.dataset.tab, sesion.user.username));
+            });
+        } catch (error) {
+            window.location.href = 'index.html';
+        }
+    })();
+    </script>
+
+</body>
+</html>

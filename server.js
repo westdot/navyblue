@@ -39,8 +39,15 @@ db.serialize(() => {
         name TEXT NOT NULL,
         username TEXT UNIQUE NOT NULL,
         email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
+        password TEXT NOT NULL,
+        pais TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+
+    // Migracion: si la tabla ya existia de antes (sin estas columnas), las agregamos.
+    // Si ya existen, SQLite devuelve error "duplicate column" y simplemente lo ignoramos.
+    db.run(`ALTER TABLE users ADD COLUMN pais TEXT`, () => {});
+    db.run(`ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`, () => {});
 
     db.run(`CREATE TABLE IF NOT EXISTS posts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,7 +70,7 @@ db.serialize(() => {
 
 // Registro de usuario
 app.post('/api/register', async (req, res) => {
-    const { name, username, email, password } = req.body;
+    const { name, username, email, password, pais } = req.body;
     
     if (!name || !username || !email || !password) {
         return res.status(400).json({ error: 'Faltan datos obligatorios' });
@@ -71,9 +78,9 @@ app.post('/api/register', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = `INSERT INTO users (name, username, email, password) VALUES (?, ?, ?, ?)`;
+        const query = `INSERT INTO users (name, username, email, password, pais) VALUES (?, ?, ?, ?, ?)`;
         
-        db.run(query, [name, username, email, hashedPassword], function(err) {
+        db.run(query, [name, username, email, hashedPassword, pais || null], function(err) {
             if (err) {
                 // Si hay error, puede ser que el email o el username ya existan
                 return res.status(400).json({ error: 'El correo o el nombre de usuario ya están en uso' });
@@ -89,23 +96,18 @@ app.post('/api/register', async (req, res) => {
 
 // Obtener todas las publicaciones
 app.get('/api/posts', (req, res) => {
-    db.all(`SELECT * FROM posts ORDER BY id DESC`, [], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ posts: rows });
-    });
-});
-
-// Crear una nueva publicación
-// Obtener todas las publicaciones
-app.get('/api/posts', (req, res) => {
-    db.all(`SELECT * FROM posts ORDER BY id DESC`, [], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ posts: rows });
-    });
+    const { username } = req.query;
+    if (username) {
+        db.all(`SELECT * FROM posts WHERE username = ? ORDER BY id DESC`, [username], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ posts: rows });
+        });
+    } else {
+        db.all(`SELECT * FROM posts ORDER BY id DESC`, [], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ posts: rows });
+        });
+    }
 });
 
 // Crear una nueva publicación
@@ -175,6 +177,77 @@ app.get('/api/session', (req, res) => {
 app.post('/api/logout', (req, res) => {
     req.session.destroy(() => {
         res.json({ message: 'Sesión cerrada' });
+    });
+});
+
+// --- RUTAS DE PERFIL ---
+
+// Middleware simple: exige que haya sesión activa
+function requiereSesion(req, res, next) {
+    if (!req.session.user) {
+        return res.status(401).json({ error: 'Debes iniciar sesión' });
+    }
+    next();
+}
+
+// Obtener los datos del perfil propio
+app.get('/api/profile', requiereSesion, (req, res) => {
+    const { username } = req.session.user;
+    db.get(`SELECT id, name, username, email, pais, created_at FROM users WHERE username = ?`, [username], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+        res.json({ user });
+    });
+});
+
+// Actualizar nombre / usuario / correo
+app.put('/api/profile', requiereSesion, (req, res) => {
+    const currentUsername = req.session.user.username;
+    const { name, username, email, pais } = req.body;
+
+    if (!name || !username || !email) {
+        return res.status(400).json({ error: 'Faltan datos obligatorios' });
+    }
+
+    const query = `UPDATE users SET name = ?, username = ?, email = ?, pais = ? WHERE username = ?`;
+    db.run(query, [name, username, email, pais || null, currentUsername], function(err) {
+        if (err) {
+            return res.status(400).json({ error: 'El correo o el nombre de usuario ya están en uso' });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        // Actualizamos también la sesión, ya que el username pudo haber cambiado
+        req.session.user = { name, username, email };
+        res.json({ message: 'Perfil actualizado con éxito', user: req.session.user });
+    });
+});
+
+// Cambiar contraseña (pide la contraseña actual como confirmación)
+app.put('/api/profile/password', requiereSesion, async (req, res) => {
+    const { username } = req.session.user;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Faltan datos obligatorios' });
+    }
+    if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    }
+
+    db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, user) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        const match = await bcrypt.compare(currentPassword, user.password);
+        if (!match) return res.status(400).json({ error: 'La contraseña actual es incorrecta' });
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        db.run(`UPDATE users SET password = ? WHERE username = ?`, [hashedPassword, username], (err) => {
+            if (err) return res.status(500).json({ error: 'Error al actualizar la contraseña' });
+            res.json({ message: 'Contraseña actualizada con éxito' });
+        });
     });
 });
 

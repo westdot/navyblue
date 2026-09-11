@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - NAVYBLUE</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- TÍTULO PRINCIPAL Y OPCIONES (Mismo header del index) -->
+    <header id="inicio-header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>NAVYBLUE</h1>
+                <p>victimas de la pobreza</p>
+            </div>
+
+            <div class="header-acciones">
+                <a href="index.html" class="btn-pill">Volver al Inicio</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ESTRUCTURA PRINCIPAL PARA EL PERFIL -->
+    <main class="contenedor-principal" style="justify-content: center; display: flex;">
+
+        <section class="columna-centro" style="max-width: 500px; width: 100%; margin-top: 20px;">
+            <h2>Mi Perfil</h2>
+
+            <!-- Formulario de datos del perfil -->
+            <div class="publicar-box" style="padding: 25px;">
+                <form id="profileForm">
+                    <div class="form-grupo" style="margin-bottom: 15px;">
+                        <label for="name" style="display: block; margin-bottom: 5px;">Nombre</label>
+                        <input type="text" id="name" class="form-control" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <div class="form-grupo" style="margin-bottom: 15px;">
+                        <label for="username" style="display: block; margin-bottom: 5px;">Usuario</label>
+                        <input type="text" id="username" class="form-control" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <div class="form-grupo" style="margin-bottom: 20px;">
+                        <label for="email" style="display: block; margin-bottom: 5px;">Correo electrónico</label>
+                        <input type="email" id="email" class="form-control" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <div class="form-grupo" style="margin-bottom: 20px;">
+                        <label for="pais" style="display: block; margin-bottom: 5px;">País</label>
+                        <input type="text" id="pais" class="form-control" placeholder="Ej: Chile" style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <button type="submit" class="btn-entrar" style="width: 100%; padding: 12px; cursor: pointer;">Guardar cambios</button>
+                </form>
+
+                <p id="mensajePerfil" style="margin-top: 15px; text-align: center; font-weight: bold;"></p>
+            </div>
+
+            <!-- Formulario de cambio de contraseña, separado por seguridad -->
+            <div class="publicar-box" style="padding: 25px; margin-top: 20px;">
+                <h3 style="margin-top: 0;">Cambiar contraseña</h3>
+                <form id="passwordForm">
+                    <div class="form-grupo" style="margin-bottom: 15px;">
+                        <label for="currentPassword" style="display: block; margin-bottom: 5px;">Contraseña actual</label>
+                        <input type="password" id="currentPassword" class="form-control" required style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <div class="form-grupo" style="margin-bottom: 15px;">
+                        <label for="newPassword" style="display: block; margin-bottom: 5px;">Contraseña nueva</label>
+                        <input type="password" id="newPassword" class="form-control" required minlength="6" style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <div class="form-grupo" style="margin-bottom: 20px;">
+                        <label for="confirmPassword" style="display: block; margin-bottom: 5px;">Confirmar contraseña nueva</label>
+                        <input type="password" id="confirmPassword" class="form-control" required minlength="6" style="width: 100%; padding: 10px; box-sizing: border-box;">
+                    </div>
+
+                    <button type="submit" class="btn-entrar" style="width: 100%; padding: 12px; cursor: pointer;">Actualizar contraseña</button>
+                </form>
+
+                <p id="mensajePassword" style="margin-top: 15px; text-align: center; font-weight: bold;"></p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer>
+        <p>Desarrollado por: mis dos cojones</p>
+        <p>Fecha de desarrollo: Septiembre 2026</p>
+        <p>Contacto: <a href="mailto:gemujm@gmail.com">gemujm@gmail.com</a></p>
+        <p><a href="#inicio-header">Volver al inicio de la página</a></p>
+    </footer>
+
+    <script>
+    const profileForm = document.getElementById('profileForm');
+    const mensajePerfil = document.getElementById('mensajePerfil');
+    const passwordForm = document.getElementById('passwordForm');
+    const mensajePassword = document.getElementById('mensajePassword');
+
+    // Al cargar la página: pedimos los datos reales al servidor.
+    // Si no hay sesión activa, nos devuelve a la portada.
+    async function cargarPerfil() {
+        try {
+            const response = await fetch('/api/profile');
+            if (!response.ok) {
+                window.location.href = 'index.html';
+                return;
+            }
+            const data = await response.json();
+            document.getElementById('name').value = data.user.name;
+            document.getElementById('username').value = data.user.username;
+            document.getElementById('email').value = data.user.email;
+            document.getElementById('pais').value = data.user.pais || '';
+        } catch (error) {
+            window.location.href = 'index.html';
+        }
+    }
+
+    // Guardar cambios de nombre / usuario / correo
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('name').value.trim();
+        const username = document.getElementById('username').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const pais = document.getElementById('pais').value.trim();
+
+        try {
+            const response = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, username, email, pais })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                mensajePerfil.style.color = 'green';
+                mensajePerfil.textContent = '¡Perfil actualizado con éxito!';
+                // Como localStorage se usa solo como caché de la sesión, la refrescamos
+                localStorage.setItem('usuarioLogueado', JSON.stringify(data.user));
+            } else {
+                mensajePerfil.style.color = 'red';
+                mensajePerfil.textContent = data.error || 'Ocurrió un error al actualizar el perfil.';
+            }
+        } catch (error) {
+            mensajePerfil.style.color = 'red';
+            mensajePerfil.textContent = 'No se pudo conectar con el servidor.';
+        }
+    });
+
+    // Cambiar contraseña
+    passwordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            mensajePassword.style.color = 'red';
+            mensajePassword.textContent = 'Las contraseñas nuevas no coinciden.';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/profile/password', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                mensajePassword.style.color = 'green';
+                mensajePassword.textContent = '¡Contraseña actualizada con éxito!';
+                passwordForm.reset();
+            } else {
+                mensajePassword.style.color = 'red';
+                mensajePassword.textContent = data.error || 'Ocurrió un error al cambiar la contraseña.';
+            }
+        } catch (error) {
+            mensajePassword.style.color = 'red';
+            mensajePassword.textContent = 'No se pudo conectar con el servidor.';
+        }
+    });
+
+    cargarPerfil();
+    </script>
+
+</body>
+</html>

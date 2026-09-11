@@ -174,7 +174,7 @@
     <footer>
         <p>Desarrollado por: mis dos cojones</p>
         <p>Fecha de desarrollo: Septiembre 2026</p>
-        <p>Contacto: <a href="mailto:gemujm@gmail.com">contacto@rinconliterario.com</a></p>
+        <p>Contacto: <a href="mailto:gemujm@gmail.com">gemujm@gmail.com</a></p>
         <p><a href="#inicio-header">Volver al inicio de la página</a></p>
     </footer>
     <!-- SCRIPT PARA ACHICAR EL HEADER AL BAJAR -->
@@ -269,26 +269,61 @@
     });
 
     // Función para cambiar la barra superior si hay una sesión activa
-    function actualizarInterfazUsuario() {
-        const usuarioGuardado = localStorage.getItem('usuarioLogueado');
-        if (usuarioGuardado) {
-            const user = JSON.parse(usuarioGuardado);
-            const headerAcciones = document.querySelector('.header-acciones');
-            
-            if (headerAcciones) {
-                headerAcciones.innerHTML = `
-                    <span style="color: white; margin-right: 15px; font-weight: bold;">${user.username}</span>
-                    <a href="#" id="btn-cerrar-sesion" class="btn-pill" style="background-color: #d9534f; color: white;">Cerrar Sesión</a>
-                `;
+    async function actualizarInterfazUsuario() {
+        // Preguntamos al SERVIDOR si hay sesión activa (fuente de verdad real)
+        let sesion;
+        try {
+            const response = await fetch('/api/session');
+            sesion = await response.json();
+        } catch (error) {
+            sesion = { loggedIn: false };
+        }
 
-                // Evento para cerrar sesión
-                document.getElementById('btn-cerrar-sesion').addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    await fetch('/api/logout', { method: 'POST' });
-                    localStorage.removeItem('usuarioLogueado');
-                    location.reload(); // Recarga la página para volver al estado original
-                });
-            }
+        const headerAcciones = document.querySelector('.header-acciones');
+        if (!headerAcciones) return;
+
+        if (sesion.loggedIn) {
+            // Mantenemos localStorage solo como caché para no parpadear la UI, no como autoridad
+            localStorage.setItem('usuarioLogueado', JSON.stringify(sesion.user));
+
+            headerAcciones.innerHTML = `
+                <div class="menu-usuario" style="position: relative; display: flex; align-items: center; gap: 6px;">
+                    <a href="muro.html" id="link-usuario" style="color: white; font-weight: bold; font-size: 15px; text-decoration: none;">
+                        ${sesion.user.username}
+                    </a>
+                    <button id="btn-flecha" style="background: none; border: none; color: white; font-size: 12px; cursor: pointer; padding: 4px;">▾</button>
+                    <div id="dropdown-usuario" style="display: none; position: absolute; right: 0; top: 130%; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); overflow: hidden; min-width: 160px; z-index: 100;">
+                        <a href="perfil.html" style="display: block; padding: 10px 15px; color: #333; text-decoration: none;">Configuración</a>
+                        <a href="#" id="btn-cerrar-sesion" style="display: block; padding: 10px 15px; color: #d9534f; text-decoration: none;">Cerrar Sesión</a>
+                    </div>
+                </div>
+            `;
+
+            const btnFlecha = document.getElementById('btn-flecha');
+            const dropdownUsuario = document.getElementById('dropdown-usuario');
+
+            // Abrir/cerrar el menú al pinchar SOLO la flechita (el nombre ahora lleva al muro)
+            btnFlecha.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const abierto = dropdownUsuario.style.display === 'block';
+                dropdownUsuario.style.display = abierto ? 'none' : 'block';
+            });
+
+            // Cerrar el menú si se hace clic fuera de él
+            document.addEventListener('click', () => {
+                dropdownUsuario.style.display = 'none';
+            });
+
+            // Evento para cerrar sesión
+            document.getElementById('btn-cerrar-sesion').addEventListener('click', async (e) => {
+                e.preventDefault();
+                await fetch('/api/logout', { method: 'POST' });
+                localStorage.removeItem('usuarioLogueado');
+                location.reload(); // Recarga la página para volver al estado original
+            });
+        } else {
+            // Sin sesión: nos aseguramos de limpiar cualquier resto viejo en localStorage
+            localStorage.removeItem('usuarioLogueado');
         }
     }
 
@@ -313,20 +348,7 @@
             if (response.ok && data.posts.length > 0) {
                 feedPosts.innerHTML = ''; // Limpiamos el feed estático de prueba
                 data.posts.forEach(post => {
-                    const article = document.createElement('article');
-                    article.className = 'post-card';
-                    article.innerHTML = `
-                        <div class="post-avatar">✍️</div>
-                        <div class="post-contenido">
-                            <div class="post-header">
-                                <span class="post-autor">${post.username}</span>
-                                <span class="post-user">@${post.username}</span>
-                            </div>
-                            <p class="post-texto">${post.content}</p>
-                            <div class="post-libro-badge">📚 <em>${post.tag}</em></div>
-                        </div>
-                    `;
-                    feedPosts.appendChild(article);
+                    feedPosts.appendChild(crearPostCard(post));
                 });
             }
         } catch (error) {
@@ -334,17 +356,57 @@
         }
     }
 
+    // Construye la tarjeta de un post usando textContent (no innerHTML) para el
+    // contenido que viene de otros usuarios, así nadie puede publicar HTML/JS
+    // que se ejecute en la pantalla de los demás (XSS).
+    function crearPostCard(post) {
+        const article = document.createElement('article');
+        article.className = 'post-card';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'post-avatar';
+        avatar.textContent = '✍️';
+
+        const contenido = document.createElement('div');
+        contenido.className = 'post-contenido';
+
+        const header = document.createElement('div');
+        header.className = 'post-header';
+
+        const autor = document.createElement('span');
+        autor.className = 'post-autor';
+        autor.textContent = post.username; // texto plano, no HTML
+
+        const userTag = document.createElement('span');
+        userTag.className = 'post-user';
+        userTag.textContent = `@${post.username}`;
+
+        header.appendChild(autor);
+        header.appendChild(userTag);
+
+        const texto = document.createElement('p');
+        texto.className = 'post-texto';
+        texto.textContent = post.content; // texto plano, no HTML
+
+        const badge = document.createElement('div');
+        badge.className = 'post-libro-badge';
+        const em = document.createElement('em');
+        em.textContent = post.tag;
+        badge.append('📚 ', em);
+
+        contenido.appendChild(header);
+        contenido.appendChild(texto);
+        contenido.appendChild(badge);
+
+        article.appendChild(avatar);
+        article.appendChild(contenido);
+
+        return article;
+    }
+
     // Evento al hacer clic en Publicar
     if (btnPublicar) {
         btnPublicar.addEventListener('click', async () => {
-            const usuarioGuardado = localStorage.getItem('usuarioLogueado');
-            
-            if (!usuarioGuardado) {
-                alert('Debes iniciar sesión para poder publicar.');
-                return;
-            }
-
-            const user = JSON.parse(usuarioGuardado);
             const content = postContent.value.trim();
             const tag = postTag.value.trim() || 'General';
 
