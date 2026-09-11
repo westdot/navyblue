@@ -59,75 +59,6 @@
 
             <!-- Feed / Lista de publicaciones -->
             <div class="feed-posts">
-                <!-- OPINIÓN SOBRE UN AUTOR -->
-            <article class="post-card">
-                <div class="post-avatar">✍️</div>
-                <div class="post-contenido">
-                    <div class="post-header">
-                        <span class="post-autor">1fan</span>
-                        <span class="post-user">@1fan · 2h</span>
-                    </div>
-                    <p class="post-texto">Lamentablemente aiduj.</p>
-                    <div class="post-libro-badge">👤 <em>Autor: Leigh Bardugo</em></div>
-                    <div class="post-acciones">
-                        <button>💬 15</button>
-                        <button>🔄 6</button>
-                        <button>❤️ 58</button>
-                    </div>
-                </div>
-            </article>
-
-            <!-- OPINIÓN SOBRE UNA EDITORIAL -->
-            <article class="post-card">
-                <div class="post-avatar">🏢</div>
-                <div class="post-contenido">
-                    <div class="post-header">
-                        <span class="post-autor">ggez</span>
-                        <span class="post-user">@ggez · 4h</span>
-                    </div>
-                    <p class="post-texto">editoriales culias cobran un ojo de la cara locooo.</p>
-                    <div class="post-libro-badge">🏛️ <em>Editorial: PRH</em></div>
-                    <div class="post-acciones">
-                        <button>💬 9</button>
-                        <button>🔄 4</button>
-                        <button>❤️ 31</button>
-                    </div>
-                </div>
-            </article>
-
-                <article class="post-card">
-                    <div class="post-avatar">📖</div>
-                    <div class="post-contenido">
-                        <div class="post-header">
-                            <span class="post-autor">noctulo</span>
-                            <span class="post-user">@noctulo · 15m</span>
-                        </div>
-                        <p class="post-texto">Terminé de leer el capítulo final y sigo sin procesar esta puta mierda.</p>
-                        <div class="post-libro-badge">📚 <em>Alas de Sangre</em></div>
-                        <div class="post-acciones">
-                            <button>💬 12</button>
-                            <button>🔄 5</button>
-                            <button>❤️ 34</button>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="post-card">
-                    <div class="post-avatar">✍️</div>
-                    <div class="post-contenido">
-                        <div class="post-header">
-                            <span class="post-autor">otaku</span>
-                            <span class="post-user">@otaku · 1h</span>
-                        </div>
-                        <p class="post-texto">quien chucha penso que boruto seria buena idea la ctm</p>
-                        <div class="post-libro-badge">📚 <em>Boruto</em></div>
-                        <div class="post-acciones">
-                            <button>💬 8</button>
-                            <button>🔄 3</button>
-                            <button>❤️ 19</button>
-                        </div>
-                    </div>
-                </article>
 
             </div>
         </section>
@@ -296,6 +227,44 @@
         }
     }
 
+    //funcion para el tiempo de los post supongo
+    // Función para calcular hace cuánto se publicó (Estilo Twitter)
+    function obtenerTiempoRelativo(fechaServidor) {
+        if (!fechaServidor) return 'Ahora';
+
+        // Si la fecha del servidor viene como texto plano sin zona horaria, 
+        // la convertimos a formato ISO UTC para que el navegador no se equivoque.
+        let fechaLimpia = fechaServidor;
+        if (typeof fechaServidor === 'string' && !fechaServidor.endsWith('Z') && !fechaServidor.includes('+')) {
+            fechaLimpia = fechaServidor.replace(' ', 'T') + 'Z';
+        }
+
+        const fechaPost = new Date(fechaLimpia);
+        const ahora = new Date();
+        const diferenciaSegundos = Math.floor((ahora - fechaPost) / 1000);
+
+        // Si es menor a un minuto
+        if (diferenciaSegundos < 60) {
+            return 'Ahora';
+        }
+        
+        // Minutos (de 1m hasta 60m)
+        const diferenciaMinutos = Math.floor(diferenciaSegundos / 60);
+        if (diferenciaMinutos <= 60) {
+            return `${diferenciaMinutos}m`;
+        }
+        
+        // Horas (de 1h hasta 24h)
+        const diferenciaHoras = Math.floor(diferenciaMinutos / 60);
+        if (diferenciaHoras < 24) {
+            return `${diferenciaHoras}h`;
+        }
+        
+        // Días
+        const diferenciaDias = Math.floor(diferenciaHoras / 24);
+        return `${diferenciaDias}d`;
+    }
+
     // Construye la tarjeta de un post usando textContent (no innerHTML) para el
     // contenido que viene de otros usuarios, así nadie puede publicar HTML/JS
     // que se ejecute en la pantalla de los demás (XSS).
@@ -310,23 +279,37 @@
         const contenido = document.createElement('div');
         contenido.className = 'post-contenido';
 
+        // --- INICIO DEL HEADER (Nombre, @usuario y tiempo) ---
         const header = document.createElement('div');
         header.className = 'post-header';
 
+        const infoIzquierda = document.createElement('div');
+        infoIzquierda.className = 'post-info-izquierda';
+
         const autor = document.createElement('span');
         autor.className = 'post-autor';
-        autor.textContent = post.username; // texto plano, no HTML
+        autor.textContent = post.username;
 
         const userTag = document.createElement('span');
         userTag.className = 'post-user';
         userTag.textContent = `@${post.username}`;
 
-        header.appendChild(autor);
-        header.appendChild(userTag);
+        infoIzquierda.appendChild(autor);
+        infoIzquierda.appendChild(userTag);
+
+        const tiempo = document.createElement('span');
+        tiempo.className = 'post-tiempo';
+        // Le pasamos la fecha que viene de tu base de datos. 
+        // Normalmente se llama 'createdat', 'fecha' o 'timestamp'
+        tiempo.textContent = obtenerTiempoRelativo(post.created_at);
+
+        header.appendChild(infoIzquierda);
+        header.appendChild(tiempo);
+        // --- FIN DEL HEADER ---
 
         const texto = document.createElement('p');
         texto.className = 'post-texto';
-        texto.textContent = post.content; // texto plano, no HTML
+        texto.textContent = post.content; 
 
         const badge = document.createElement('div');
         badge.className = 'post-libro-badge';
@@ -334,6 +317,7 @@
         em.textContent = post.tag;
         badge.append('📚 ', em);
 
+        // Ensamblaje final
         contenido.appendChild(header);
         contenido.appendChild(texto);
         contenido.appendChild(badge);
