@@ -480,3 +480,27 @@ footer a {
     background-color: #0056b3;
 }
 
+/* --- Estilos para el Header de cada Publicación (Estilo Twitter) --- */
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.post-info-izquierda {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+}
+
+.post-autor {
+    font-weight: bold;
+    color: #333; /* Cambia esto si el texto de tu web es de otro color */
+}
+
+.post-user, .post-tiempo {
+    color: #777;
+    font-size: 0.9em;
+}
