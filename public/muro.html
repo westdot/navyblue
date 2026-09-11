@@ -76,6 +76,7 @@
         <p><a href="#inicio-header">Volver al inicio de la página</a></p>
     </footer>
 
+    <script src="js/header-comun.js"></script>
     <script>
     const listaPersonal = document.getElementById('lista-personal');
     const listaMuro = document.getElementById('lista-muro');
@@ -210,6 +211,7 @@
 
             cargarPersonal(sesion.user.username);
             activarTab('posts', sesion.user.username);
+            montarHeaderComun();
 
             botonesTab.forEach(btn => {
                 btn.addEventListener('click', () => activarTab(btn.dataset.tab, sesion.user.username));

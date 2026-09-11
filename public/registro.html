@@ -17,7 +17,6 @@
             </div>
 
             <div class="header-acciones">
-                <a href="index.html" class="btn-pill">Volver al Inicio</a>
             </div>
         </div>
     </header>
@@ -69,7 +68,9 @@
     </footer>
 
     <!-- SCRIPT DE CONEXIÓN CON EL BACKEND (/api/register) -->
+    <script src="js/header-comun.js"></script>
     <script>
+    window.addEventListener('DOMContentLoaded', () => montarHeaderComun());
     const registerForm = document.getElementById('registerForm');
     const mensaje = document.getElementById('mensaje');
 

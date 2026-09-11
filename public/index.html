@@ -24,8 +24,6 @@
             </div>
         </div>
     </header>
-        
-    </header>
 
     <!-- ESTRUCTURA PRINCIPAL EN 3 COLUMNAS (SEGÚN TU BOCETO) -->
     <main class="contenedor-principal">
@@ -178,6 +176,7 @@
         <p><a href="#inicio-header">Volver al inicio de la página</a></p>
     </footer>
     <!-- SCRIPT PARA ACHICAR EL HEADER AL BAJAR -->
+    <script src="js/header-comun.js"></script>
     <script>
         window.addEventListener('scroll', function() {
             const header = document.getElementById('inicio-header');
@@ -256,7 +255,7 @@
 
                 setTimeout(() => {
                     modalLogin.classList.remove('activo');
-                    actualizarInterfazUsuario(); // Actualiza la barra superior
+                    montarHeaderComun({ reemplazarBotonesInvitado: true }); // Actualiza la barra superior
                 }, 1000);
             } else {
                 mensajeLogin.style.color = 'red';
@@ -268,67 +267,8 @@
         }
     });
 
-    // Función para cambiar la barra superior si hay una sesión activa
-    async function actualizarInterfazUsuario() {
-        // Preguntamos al SERVIDOR si hay sesión activa (fuente de verdad real)
-        let sesion;
-        try {
-            const response = await fetch('/api/session');
-            sesion = await response.json();
-        } catch (error) {
-            sesion = { loggedIn: false };
-        }
-
-        const headerAcciones = document.querySelector('.header-acciones');
-        if (!headerAcciones) return;
-
-        if (sesion.loggedIn) {
-            // Mantenemos localStorage solo como caché para no parpadear la UI, no como autoridad
-            localStorage.setItem('usuarioLogueado', JSON.stringify(sesion.user));
-
-            headerAcciones.innerHTML = `
-                <div class="menu-usuario" style="position: relative; display: flex; align-items: center; gap: 6px;">
-                    <a href="muro.html" id="link-usuario" style="color: white; font-weight: bold; font-size: 15px; text-decoration: none;">
-                        ${sesion.user.username}
-                    </a>
-                    <button id="btn-flecha" style="background: none; border: none; color: white; font-size: 12px; cursor: pointer; padding: 4px;">▾</button>
-                    <div id="dropdown-usuario" style="display: none; position: absolute; right: 0; top: 130%; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); overflow: hidden; min-width: 160px; z-index: 100;">
-                        <a href="perfil.html" style="display: block; padding: 10px 15px; color: #333; text-decoration: none;">Perfil</a>
-                        <a href="#" id="btn-cerrar-sesion" style="display: block; padding: 10px 15px; color: #d9534f; text-decoration: none;">Cerrar Sesión</a>
-                    </div>
-                </div>
-            `;
-
-            const btnFlecha = document.getElementById('btn-flecha');
-            const dropdownUsuario = document.getElementById('dropdown-usuario');
-
-            // Abrir/cerrar el menú al pinchar SOLO la flechita (el nombre ahora lleva al muro)
-            btnFlecha.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const abierto = dropdownUsuario.style.display === 'block';
-                dropdownUsuario.style.display = abierto ? 'none' : 'block';
-            });
-
-            // Cerrar el menú si se hace clic fuera de él
-            document.addEventListener('click', () => {
-                dropdownUsuario.style.display = 'none';
-            });
-
-            // Evento para cerrar sesión
-            document.getElementById('btn-cerrar-sesion').addEventListener('click', async (e) => {
-                e.preventDefault();
-                await fetch('/api/logout', { method: 'POST' });
-                localStorage.removeItem('usuarioLogueado');
-                location.reload(); // Recarga la página para volver al estado original
-            });
-        } else {
-            // Sin sesión: nos aseguramos de limpiar cualquier resto viejo en localStorage
-            localStorage.removeItem('usuarioLogueado');
-        }
-    }
-
-    // Ejecutar al cargar la página por si ya estaba logueado
-    window.addEventListener('DOMContentLoaded', actualizarInterfazUsuario);
+    // El header (título como botón de inicio, menú de usuario y buscador) vive en header-comun.js
+    window.addEventListener('DOMContentLoaded', () => montarHeaderComun({ reemplazarBotonesInvitado: true }));
 
     // ==========================================
     // SCRIPT PARA EL MURO DE PUBLICACIONES

@@ -24,7 +24,8 @@ app.use(session({
 }));
 
 // Conexión y configuración de la base de datos SQLite
-const db = new sqlite3.Database('./database.db', (err) => {
+const dbPath = path.join(__dirname, 'database.db');
+const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error al conectar con la base de datos:', err.message);
     } else {
@@ -46,8 +47,18 @@ db.serialize(() => {
 
     // Migracion: si la tabla ya existia de antes (sin estas columnas), las agregamos.
     // Si ya existen, SQLite devuelve error "duplicate column" y simplemente lo ignoramos.
-    db.run(`ALTER TABLE users ADD COLUMN pais TEXT`, () => {});
-    db.run(`ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`, () => {});
+    db.run(`ALTER TABLE users ADD COLUMN pais TEXT`, (err) => {
+        console.log('[DEBUG] ALTER pais:', err ? err.message : 'OK, columna agregada');
+    });
+    // OJO: no se le puede poner "DEFAULT CURRENT_TIMESTAMP" a una columna agregada
+    // con ALTER TABLE si la tabla ya tiene filas (SQLite lo prohibe). Por eso se
+    // agrega sin default, y las filas existentes se rellenan aparte con UPDATE.
+    db.run(`ALTER TABLE users ADD COLUMN created_at DATETIME`, (err) => {
+        console.log('[DEBUG] ALTER created_at:', err ? err.message : 'OK, columna agregada');
+    });
+    db.run(`UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL`, (err) => {
+        console.log('[DEBUG] Backfill created_at:', err ? err.message : 'OK');
+    });
 
     db.run(`CREATE TABLE IF NOT EXISTS posts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,7 +89,7 @@ app.post('/api/register', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = `INSERT INTO users (name, username, email, password, pais) VALUES (?, ?, ?, ?, ?)`;
+        const query = `INSERT INTO users (name, username, email, password, pais, created_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`;
         
         db.run(query, [name, username, email, hashedPassword, pais || null], function(err) {
             if (err) {
@@ -249,6 +260,46 @@ app.put('/api/profile/password', requiereSesion, async (req, res) => {
             res.json({ message: 'Contraseña actualizada con éxito' });
         });
     });
+});
+
+// --- RUTA DE BÚSQUEDA ---
+
+app.get('/api/search', (req, res) => {
+    const tipo = (req.query.tipo || '').toLowerCase();
+    const q = (req.query.q || '').trim();
+
+    if (!q) {
+        return res.json({ implementado: true, resultados: [] });
+    }
+
+    if (tipo === 'usuarios') {
+        db.all(
+            `SELECT username, name FROM users WHERE username LIKE ? OR name LIKE ? LIMIT 10`,
+            [`%${q}%`, `%${q}%`],
+            (err, rows) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({
+                    implementado: true,
+                    resultados: rows.map(r => ({ titulo: r.username, subtitulo: r.name }))
+                });
+            }
+        );
+    } else if (tipo === 'libros') {
+        db.all(
+            `SELECT title, author FROM books WHERE title LIKE ? OR author LIKE ? LIMIT 10`,
+            [`%${q}%`, `%${q}%`],
+            (err, rows) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({
+                    implementado: true,
+                    resultados: rows.map(r => ({ titulo: r.title, subtitulo: r.author }))
+                });
+            }
+        );
+    } else {
+        // editoriales, mangas, novelas-ligeras: todavía no tienen tabla propia
+        res.json({ implementado: false, resultados: [] });
+    }
 });
 
 // --- RUTAS DE LIBROS ---
