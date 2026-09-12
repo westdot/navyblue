@@ -77,6 +77,7 @@
     </footer>
 
     <script src="js/header-comun.js"></script>
+    <script src="js/posts-comunes.js"></script>
     <script>
     const listaPersonal = document.getElementById('lista-personal');
     const listaMuro = document.getElementById('lista-muro');
@@ -91,7 +92,32 @@
     }
 
     // Construye una tarjeta de post con textContent (no innerHTML) para evitar XSS
-    function crearPostCard(post) {
+    // Misma función que en index.html: fecha relativa estilo Twitter (Ahora/5m/2h/3d)
+    function obtenerTiempoRelativo(fechaServidor) {
+        if (!fechaServidor) return 'Ahora';
+
+        let fechaLimpia = fechaServidor;
+        if (typeof fechaServidor === 'string' && !fechaServidor.endsWith('Z') && !fechaServidor.includes('+')) {
+            fechaLimpia = fechaServidor.replace(' ', 'T') + 'Z';
+        }
+
+        const fechaPost = new Date(fechaLimpia);
+        const ahora = new Date();
+        const diferenciaSegundos = Math.floor((ahora - fechaPost) / 1000);
+
+        if (diferenciaSegundos < 60) return 'Ahora';
+
+        const diferenciaMinutos = Math.floor(diferenciaSegundos / 60);
+        if (diferenciaMinutos <= 60) return `${diferenciaMinutos}m`;
+
+        const diferenciaHoras = Math.floor(diferenciaMinutos / 60);
+        if (diferenciaHoras < 24) return `${diferenciaHoras}h`;
+
+        const diferenciaDias = Math.floor(diferenciaHoras / 24);
+        return `${diferenciaDias}d`;
+    }
+
+    function crearPostCard(post, esMiMuro) {
         const article = document.createElement('article');
         article.className = 'post-card';
 
@@ -104,10 +130,44 @@
 
         const header = document.createElement('div');
         header.className = 'post-header';
-        const autor = document.createElement('span');
+        const autor = document.createElement('a');
         autor.className = 'post-autor';
+        autor.href = `muro.html?usuario=${encodeURIComponent(post.username)}`;
+        autor.style.cssText = 'text-decoration: none; color: inherit;';
         autor.textContent = post.username;
+        autor.addEventListener('click', (e) => e.stopPropagation()); // no abrir el detalle del post
         header.appendChild(autor);
+
+        const tiempo = document.createElement('span');
+        tiempo.className = 'post-tiempo';
+        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: #888;';
+        tiempo.textContent = obtenerTiempoRelativo(post.created_at);
+        header.appendChild(tiempo);
+
+        // El botón de eliminar solo aparece si estás viendo TU PROPIO muro
+        if (esMiMuro) {
+            const btnEliminar = document.createElement('button');
+            btnEliminar.type = 'button';
+            btnEliminar.title = 'Eliminar publicación';
+            btnEliminar.textContent = '🗑️';
+            btnEliminar.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.9rem;';
+            btnEliminar.addEventListener('click', async (e) => {
+                e.stopPropagation(); // que no abra el detalle al borrar
+                if (!confirm('¿Eliminar esta publicación?')) return;
+                try {
+                    const resp = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' });
+                    if (resp.ok) {
+                        article.remove();
+                    } else {
+                        const data = await resp.json().catch(() => ({}));
+                        alert(data.error || 'No se pudo eliminar la publicación.');
+                    }
+                } catch (error) {
+                    alert('No se pudo conectar con el servidor.');
+                }
+            });
+            header.appendChild(btnEliminar);
+        }
 
         const texto = document.createElement('p');
         texto.className = 'post-texto';
@@ -122,15 +182,25 @@
         contenido.appendChild(header);
         contenido.appendChild(texto);
         contenido.appendChild(badge);
+        contenido.appendChild(crearBarraAcciones(post, () => {
+            abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
+        }));
         article.appendChild(avatar);
         article.appendChild(contenido);
+
+        // Clic en cualquier parte en blanco del post (o la hora) abre el detalle
+        article.style.cursor = 'pointer';
+        article.addEventListener('click', () => {
+            abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
+        });
+
         return article;
     }
 
-    // Carga los datos de la columna "Personal"
-    async function cargarPersonal(username) {
+    // Carga los datos de la columna "Personal" de CUALQUIER usuario (perfil público)
+    async function cargarPersonal(username, esMiMuro) {
         try {
-            const response = await fetch('/api/profile');
+            const response = await fetch(`/api/users/${encodeURIComponent(username)}`);
             const data = await response.json();
             listaPersonal.innerHTML = '';
 
@@ -149,20 +219,22 @@
                 listaPersonal.appendChild(li);
             });
 
-            const liEditar = document.createElement('li');
-            liEditar.style.marginTop = '10px';
-            const linkEditar = document.createElement('a');
-            linkEditar.href = 'perfil.html';
-            linkEditar.textContent = 'Editar mi perfil →';
-            liEditar.appendChild(linkEditar);
-            listaPersonal.appendChild(liEditar);
+            if (esMiMuro) {
+                const liEditar = document.createElement('li');
+                liEditar.style.marginTop = '10px';
+                const linkEditar = document.createElement('a');
+                linkEditar.href = 'perfil.html';
+                linkEditar.textContent = 'Editar mi perfil →';
+                liEditar.appendChild(linkEditar);
+                listaPersonal.appendChild(liEditar);
+            }
         } catch (error) {
             listaPersonal.innerHTML = '<li>No se pudo cargar la información.</li>';
         }
     }
 
-    // Carga solo los posts del usuario actual
-    async function cargarMisPosts(username) {
+    // Carga las publicaciones del usuario que se está viendo (propio o de otra persona)
+    async function cargarMisPosts(username, esMiMuro) {
         listaMuro.innerHTML = '<p>Cargando...</p>';
         try {
             const response = await fetch(`/api/posts?username=${encodeURIComponent(username)}`);
@@ -170,17 +242,17 @@
             listaMuro.innerHTML = '';
 
             if (data.posts.length === 0) {
-                listaMuro.innerHTML = '<p>Todavía no has publicado nada.</p>';
+                listaMuro.innerHTML = `<p>${esMiMuro ? 'Todavía no has publicado nada.' : 'Esta persona todavía no ha publicado nada.'}</p>`;
                 return;
             }
-            data.posts.forEach(post => listaMuro.appendChild(crearPostCard(post)));
+            data.posts.forEach(post => listaMuro.appendChild(crearPostCard(post, esMiMuro)));
         } catch (error) {
-            listaMuro.innerHTML = '<p>No se pudo cargar tus publicaciones.</p>';
+            listaMuro.innerHTML = '<p>No se pudieron cargar las publicaciones.</p>';
         }
     }
 
     // Cambiar entre pestañas (por ahora solo "Post" está implementado de verdad)
-    function activarTab(tab, username) {
+    function activarTab(tab, username, esMiMuro) {
         botonesTab.forEach(btn => {
             const activo = btn.dataset.tab === tab;
             btn.style.background = activo ? '#34517c' : '#eee';
@@ -189,7 +261,7 @@
 
         if (tab === 'posts') {
             tituloLista.textContent = 'Publicaciones';
-            cargarMisPosts(username);
+            cargarMisPosts(username, esMiMuro);
         } else if (tab === 'comentarios') {
             tituloLista.textContent = 'Comentarios';
             listaMuro.innerHTML = '<p>Aún no implementado.</p>';
@@ -199,7 +271,8 @@
         }
     }
 
-    // Punto de entrada: confirmamos sesión y cargamos todo
+    // Punto de entrada: confirmamos sesión y cargamos el muro correspondiente
+    // (el propio, o el de otra persona si venimos de un link con ?usuario=)
     (async () => {
         try {
             const response = await fetch('/api/session');
@@ -209,12 +282,18 @@
                 return;
             }
 
-            cargarPersonal(sesion.user.username);
-            activarTab('posts', sesion.user.username);
+            const params = new URLSearchParams(window.location.search);
+            const usuarioObjetivo = params.get('usuario') || sesion.user.username;
+            const esMiMuro = usuarioObjetivo === sesion.user.username;
+
+            document.querySelector('.columna-centro h2').textContent = esMiMuro ? 'Mi Muro' : `Muro de ${usuarioObjetivo}`;
+
+            cargarPersonal(usuarioObjetivo, esMiMuro);
+            activarTab('posts', usuarioObjetivo, esMiMuro);
             montarHeaderComun();
 
             botonesTab.forEach(btn => {
-                btn.addEventListener('click', () => activarTab(btn.dataset.tab, sesion.user.username));
+                btn.addEventListener('click', () => activarTab(btn.dataset.tab, usuarioObjetivo, esMiMuro));
             });
         } catch (error) {
             window.location.href = 'index.html';

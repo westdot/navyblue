@@ -108,6 +108,7 @@
     </footer>
     <!-- SCRIPT PARA ACHICAR EL HEADER AL BAJAR -->
     <script src="js/header-comun.js"></script>
+    <script src="js/posts-comunes.js"></script>
     <script>
         window.addEventListener('scroll', function() {
             const header = document.getElementById('inicio-header');
@@ -213,13 +214,18 @@
     // Función para cargar los posts desde el servidor
     async function cargarPosts() {
         try {
-            const response = await fetch('/api/posts');
-            const data = await response.json();
+            const [respPosts, respSesion] = await Promise.all([
+                fetch('/api/posts'),
+                fetch('/api/session')
+            ]);
+            const data = await respPosts.json();
+            const sesion = await respSesion.json();
+            const miId = sesion.loggedIn ? sesion.user.id : null;
 
-            if (response.ok && data.posts.length > 0) {
+            if (respPosts.ok && data.posts.length > 0) {
                 feedPosts.innerHTML = ''; // Limpiamos el feed estático de prueba
                 data.posts.forEach(post => {
-                    feedPosts.appendChild(crearPostCard(post));
+                    feedPosts.appendChild(crearPostCard(post, miId));
                 });
             }
         } catch (error) {
@@ -268,7 +274,7 @@
     // Construye la tarjeta de un post usando textContent (no innerHTML) para el
     // contenido que viene de otros usuarios, así nadie puede publicar HTML/JS
     // que se ejecute en la pantalla de los demás (XSS).
-    function crearPostCard(post) {
+    function crearPostCard(post, miId) {
         const article = document.createElement('article');
         article.className = 'post-card';
 
@@ -286,9 +292,12 @@
         const infoIzquierda = document.createElement('div');
         infoIzquierda.className = 'post-info-izquierda';
 
-        const autor = document.createElement('span');
+        const autor = document.createElement('a');
         autor.className = 'post-autor';
+        autor.href = `muro.html?usuario=${encodeURIComponent(post.username)}`;
+        autor.style.cssText = 'text-decoration: none; color: inherit;';
         autor.textContent = post.username;
+        autor.addEventListener('click', (e) => e.stopPropagation()); // no abrir el detalle del post
 
         const userTag = document.createElement('span');
         userTag.className = 'post-user';
@@ -305,6 +314,31 @@
 
         header.appendChild(infoIzquierda);
         header.appendChild(tiempo);
+
+        // Botón de eliminar: solo aparece en tus propios posts
+        if (miId && post.user_id === miId) {
+            const btnEliminar = document.createElement('button');
+            btnEliminar.type = 'button';
+            btnEliminar.title = 'Eliminar publicación';
+            btnEliminar.textContent = '🗑️';
+            btnEliminar.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.9rem;';
+            btnEliminar.addEventListener('click', async (e) => {
+                e.stopPropagation(); // que no abra el detalle al borrar
+                if (!confirm('¿Eliminar esta publicación?')) return;
+                try {
+                    const resp = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' });
+                    if (resp.ok) {
+                        article.remove();
+                    } else {
+                        const data = await resp.json().catch(() => ({}));
+                        alert(data.error || 'No se pudo eliminar la publicación.');
+                    }
+                } catch (error) {
+                    alert('No se pudo conectar con el servidor.');
+                }
+            });
+            header.appendChild(btnEliminar);
+        }
         // --- FIN DEL HEADER ---
 
         const texto = document.createElement('p');
@@ -321,9 +355,19 @@
         contenido.appendChild(header);
         contenido.appendChild(texto);
         contenido.appendChild(badge);
+        contenido.appendChild(crearBarraAcciones(post, () => {
+            abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
+        }));
 
         article.appendChild(avatar);
         article.appendChild(contenido);
+
+        // Clic en cualquier parte en blanco del post (o la hora) abre el detalle.
+        // Los botones de arriba ya cortan la propagación, así que no interfieren.
+        article.style.cursor = 'pointer';
+        article.addEventListener('click', () => {
+            abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
+        });
 
         return article;
     }
