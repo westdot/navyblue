@@ -109,6 +109,28 @@ db.serialize(() => {
         UNIQUE(post_id, user_id)
     )`);
 
+    // Reseñas: funcionalidad TOTALMENTE separada de los posts (libro, autor,
+    // portada y valoración — sin texto de opinión, según lo pedido).
+    db.run(`CREATE TABLE IF NOT EXISTS reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        username TEXT NOT NULL,
+        libro_titulo TEXT NOT NULL,
+        autor TEXT NOT NULL,
+        portada_url TEXT,
+        valoracion INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Reacciones a una reseña: like O dislike (una sola por persona, se puede cambiar)
+    db.run(`CREATE TABLE IF NOT EXISTS review_reactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        review_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        tipo TEXT NOT NULL CHECK(tipo IN ('like','dislike')),
+        UNIQUE(review_id, user_id)
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS books (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
@@ -551,6 +573,135 @@ app.get('/api/search', (req, res) => {
         // editoriales, mangas, novelas-ligeras: todavía no tienen tabla propia
         res.json({ implementado: false, resultados: [] });
     }
+});
+
+// --- RUTAS DE RESEÑAS (funcionalidad separada de los posts) ---
+
+// Listar reseñas recientes, con sus contadores y tu propia reacción si tienes sesión
+app.get('/api/reviews', (req, res) => {
+    const miId = req.session.user ? req.session.user.id : null;
+    const query = `
+        SELECT
+            reviews.id, reviews.user_id, reviews.libro_titulo, reviews.autor,
+            reviews.portada_url, reviews.valoracion, reviews.created_at,
+            COALESCE(users.username, reviews.username) AS username,
+            (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'like') AS likes_count,
+            (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'dislike') AS dislikes_count,
+            (SELECT tipo FROM review_reactions WHERE review_id = reviews.id AND user_id = ?) AS mi_reaccion
+        FROM reviews
+        LEFT JOIN users ON reviews.user_id = users.id
+        ORDER BY reviews.id DESC
+        LIMIT 20
+    `;
+    db.all(query, [miId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ reviews: rows });
+    });
+});
+
+// Crear una reseña: título, autor, portada (opcional) y valoración 1-5. Sin texto de opinión.
+app.post('/api/reviews', requiereSesion, (req, res) => {
+    const { id: userId, username } = req.session.user;
+    const { libro_titulo, autor, portada_url, valoracion } = req.body;
+    const val = parseInt(valoracion, 10);
+
+    if (!libro_titulo || !autor || !val || val < 1 || val > 5) {
+        return res.status(400).json({ error: 'Completa título, autor y una valoración entre 1 y 5.' });
+    }
+
+    db.run(
+        `INSERT INTO reviews (user_id, username, libro_titulo, autor, portada_url, valoracion) VALUES (?, ?, ?, ?, ?, ?)`,
+        [userId, username, libro_titulo, autor, portada_url || null, val],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({ message: 'Reseña publicada con éxito', reviewId: this.lastID });
+        }
+    );
+});
+
+// Eliminar una reseña propia
+app.delete('/api/reviews/:id', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const userId = req.session.user.id;
+
+    db.get(`SELECT user_id FROM reviews WHERE id = ?`, [id], (err, review) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!review) return res.status(404).json({ error: 'Reseña no encontrada' });
+        if (review.user_id !== userId) {
+            return res.status(403).json({ error: 'No puedes eliminar reseñas de otros usuarios' });
+        }
+        db.run(`DELETE FROM reviews WHERE id = ?`, [id], (err) => {
+            if (err) return res.status(500).json({ error: 'Error al eliminar la reseña' });
+            db.run(`DELETE FROM review_reactions WHERE review_id = ?`, [id]);
+            res.json({ message: 'Reseña eliminada con éxito' });
+        });
+    });
+});
+
+// Dar/quitar/cambiar like o dislike a una reseña (una sola reacción por persona)
+app.post('/api/reviews/:id/reaccionar', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const userId = req.session.user.id;
+    const { tipo } = req.body; // 'like' | 'dislike'
+
+    if (tipo !== 'like' && tipo !== 'dislike') {
+        return res.status(400).json({ error: 'Tipo de reacción inválido' });
+    }
+
+    const responderConContadores = () => {
+        db.get(
+            `SELECT
+                (SELECT COUNT(*) FROM review_reactions WHERE review_id = ? AND tipo = 'like') AS likes_count,
+                (SELECT COUNT(*) FROM review_reactions WHERE review_id = ? AND tipo = 'dislike') AS dislikes_count,
+                (SELECT tipo FROM review_reactions WHERE review_id = ? AND user_id = ?) AS mi_reaccion
+            `,
+            [id, id, id, userId],
+            (err, row) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                res.json(row);
+            }
+        );
+    };
+
+    db.get(`SELECT id, tipo FROM review_reactions WHERE review_id = ? AND user_id = ?`, [id, userId], (err, existente) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+
+        if (existente && existente.tipo === tipo) {
+            // Ya tenías esta misma reacción -> se quita (toggle)
+            db.run(`DELETE FROM review_reactions WHERE id = ?`, [existente.id], (err) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                responderConContadores();
+            });
+        } else if (existente) {
+            // Tenías la contraria -> se reemplaza
+            db.run(`UPDATE review_reactions SET tipo = ? WHERE id = ?`, [tipo, existente.id], (err) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                responderConContadores();
+            });
+        } else {
+            db.run(`INSERT INTO review_reactions (review_id, user_id, tipo) VALUES (?, ?, ?)`, [id, userId, tipo], (err) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                responderConContadores();
+            });
+        }
+    });
+});
+
+// --- TRENDING: los tags más usados en los posts recientes ---
+app.get('/api/trending', (req, res) => {
+    db.all(
+        `SELECT tag, COUNT(*) AS cantidad
+         FROM posts
+         WHERE tag IS NOT NULL AND TRIM(tag) != ''
+         GROUP BY LOWER(tag)
+         ORDER BY cantidad DESC
+         LIMIT 8`,
+        [],
+        (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ trending: rows });
+        }
+    );
 });
 
 // --- RUTAS DE LIBROS ---

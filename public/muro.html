@@ -47,6 +47,9 @@
         <section class="columna-centro">
             <h2>Muro</h2>
 
+            <!-- Caja para publicar: solo aparece en tu propio muro -->
+            <div id="composer-mount"></div>
+
             <!-- Pestañas: Post / Comentarios / Likes -->
             <div class="publicar-footer" style="display: flex; gap: 0; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; overflow: hidden;">
                 <button class="btn-tab-muro tab-activa" data-tab="posts" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #34517c; color: white;">Post</button>
@@ -78,6 +81,7 @@
 
     <script src="js/header-comun.js"></script>
     <script src="js/posts-comunes.js"></script>
+    <script src="js/composer-comun.js"></script>
     <script>
     const listaPersonal = document.getElementById('lista-personal');
     const listaMuro = document.getElementById('lista-muro');
@@ -287,6 +291,13 @@
             const esMiMuro = usuarioObjetivo === sesion.user.username;
 
             document.querySelector('.columna-centro h2').textContent = esMiMuro ? 'Mi Muro' : `Muro de ${usuarioObjetivo}`;
+
+            if (esMiMuro) {
+                document.getElementById('composer-mount').appendChild(crearComposer({
+                    onPost: () => activarTab('posts', usuarioObjetivo, esMiMuro),
+                    onResena: () => {} // las reseñas no se muestran en el muro, solo en la columna derecha del inicio
+                }));
+            }
 
             cargarPersonal(usuarioObjetivo, esMiMuro);
             activarTab('posts', usuarioObjetivo, esMiMuro);

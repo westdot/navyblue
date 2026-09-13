@@ -110,7 +110,13 @@ async function abrirDetallePost(postId, contenedor) {
 }
 
 function cerrarDetallePost(contenedor) {
-    contenedor.innerHTML = contenedor._contenidoOriginal || '';
+    // Preferimos una función que vuelva a armar el contenido real (con sus
+    // listeners funcionando) antes que un simple string de HTML guardado.
+    if (typeof contenedor._volverCallback === 'function') {
+        contenedor._volverCallback();
+    } else {
+        contenedor.innerHTML = contenedor._contenidoOriginal || '';
+    }
 }
 
 function renderDetallePost(post, comentarios, contenedor) {

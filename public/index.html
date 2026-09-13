@@ -47,15 +47,8 @@
         <section class="columna-centro">
             <h2>Muro</h2>
 
-            <!-- Caja para publicar una nueva opinión -->
-            <div class="publicar-box">
-                <textarea id="post-content" placeholder="¿Qué libro estás leyendo o qué opinas hoy?"></textarea>
-                <div class="publicar-footer" style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-                    <input type="text" id="post-tag" placeholder="Ej: Libro, Autor, Editorial..." style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
-                    <button id="btn-publicar" class="btn-publicar" style="cursor: pointer;">Publicar</button>
-                </div>
-                <p id="mensaje-post" style="font-size: 12px; margin-top: 5px;"></p>
-            </div>
+            <!-- Caja para publicar: se arma con JS (composer-comun.js), con pestañas Postear/Reseñar -->
+            <div id="composer-mount"></div>
 
             <!-- Feed / Lista de publicaciones -->
             <div class="feed-posts">
@@ -63,18 +56,8 @@
             </div>
         </section>
 
-        <!-- COLUMNA DERECHA: RESEÑAS RECIENTES -->
+        <!-- COLUMNA DERECHA: se arma con JS (columna-derecha.js): Reseñas Recientes + Trending -->
         <aside class="columna-derecha">
-            <h2>Reseñas Recientes</h2>
-            
-            <div class="resena-card">
-                <img src="https://via.placeholder.com/100x140" alt="Libro de Reseña">
-                <div class="resena-info">
-                    <h3>Reseña: Alas de Sangre</h3>
-                    <p>alas de semen.</p>
-                    <p class="valoracion">Valoración: ★★★★★</p>
-                </div>
-            </div>
         </aside>
 
     </main>
@@ -109,6 +92,8 @@
     <!-- SCRIPT PARA ACHICAR EL HEADER AL BAJAR -->
     <script src="js/header-comun.js"></script>
     <script src="js/posts-comunes.js"></script>
+    <script src="js/columna-derecha.js"></script>
+    <script src="js/composer-comun.js"></script>
     <script>
         window.addEventListener('scroll', function() {
             const header = document.getElementById('inicio-header');
@@ -205,10 +190,6 @@
     // ==========================================
     // SCRIPT PARA EL MURO DE PUBLICACIONES
     // ==========================================
-    const btnPublicar = document.getElementById('btn-publicar');
-    const postContent = document.getElementById('post-content');
-    const postTag = document.getElementById('post-tag');
-    const mensajePost = document.getElementById('mensaje-post');
     const feedPosts = document.querySelector('.feed-posts');
 
     // Función para cargar los posts desde el servidor
@@ -372,54 +353,17 @@
         return article;
     }
 
-    // Evento al hacer clic en Publicar
-    if (btnPublicar) {
-        btnPublicar.addEventListener('click', async () => {
-            const content = postContent.value.trim();
-            const tag = postTag.value.trim() || 'General';
-
-            if (!content) {
-                mensajePost.style.color = 'red';
-                mensajePost.textContent = 'La publicación no puede estar vacía.';
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/posts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content, tag })
-                });
-
-                const textResponse = await response.text();
-                let data;
-                try {
-                    data = JSON.parse(textResponse);
-                } catch (e) {
-                    throw new Error("El servidor respondió con HTML en vez de JSON: " + textResponse.substring(0, 100));
-                }
-
-                if (response.ok) {
-                    postContent.value = '';
-                    postTag.value = '';
-                    mensajePost.style.color = 'green';
-                    mensajePost.textContent = '¡Publicado con éxito!';
-                    cargarPosts(); 
-                } else {
-                    mensajePost.style.color = 'red';
-                    mensajePost.textContent = data.error || 'Error al publicar.';
-                }
-            } catch (error) {
-                mensajePost.style.color = 'red';
-                mensajePost.textContent = error.message;
-                console.error('Detalle:', error);
-            }
-        });
-    }
-
-    // Cargar los posts al abrir la página
+    // Cargar los posts al abrir la página, y montar el composer + la columna derecha
     window.addEventListener('DOMContentLoaded', () => {
         cargarPosts();
+
+        const columnaDerecha = document.querySelector('.columna-derecha');
+        cargarColumnaDerecha(columnaDerecha);
+
+        document.getElementById('composer-mount').appendChild(crearComposer({
+            onPost: cargarPosts,
+            onResena: () => cargarColumnaDerecha(columnaDerecha)
+        }));
     });
 
     </script>
