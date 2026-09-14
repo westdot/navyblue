@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscar - NAVYBLUE</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- TÍTULO PRINCIPAL Y OPCIONES -->
+    <header id="inicio-header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>NAVYBLUE</h1>
+                <p>victimas de la pobreza</p>
+            </div>
+            <div class="header-acciones">
+            </div>
+        </div>
+    </header>
+
+    <main class="contenedor-principal" style="justify-content: center; display: flex;">
+        <section class="columna-centro" style="max-width: 650px; width: 100%;">
+            <h2>Buscar</h2>
+
+            <!-- Barra de búsqueda (se puede refinar aquí mismo) -->
+            <div style="position: relative; margin-bottom: 15px;">
+                <input type="text" id="buscar-input" placeholder="Buscar libros, usuarios..."
+                       style="width: 100%; box-sizing: border-box; padding: 10px 42px 10px 16px; border-radius: 999px; border: 1px solid #ccc; font-size: 0.95rem;">
+                <button type="button" id="buscar-boton" title="Buscar"
+                        style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; font-size: 1.1rem;">
+                    🔍
+                </button>
+            </div>
+
+            <!-- El filtro de categoría vive AQUÍ, no en el header -->
+            <div id="buscar-tabs" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px;">
+                <button type="button" class="tab-categoria" data-tipo="usuarios">Usuarios</button>
+                <button type="button" class="tab-categoria" data-tipo="libros">Libros</button>
+                <button type="button" class="tab-categoria" data-tipo="editoriales">Editoriales</button>
+                <button type="button" class="tab-categoria" data-tipo="mangas">Mangas</button>
+                <button type="button" class="tab-categoria" data-tipo="novelas-ligeras">Novelas Ligeras</button>
+            </div>
+
+            <div id="buscar-resultados">
+                <p style="color: #888;">Escribe algo y elige una categoría para buscar.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer>
+        <p>Desarrollado por: mis dos cojones</p>
+        <p>Fecha de desarrollo: Septiembre 2026</p>
+        <p>Contacto: <a href="mailto:gemujm@gmail.com">gemujm@gmail.com</a></p>
+        <p><a href="#inicio-header">Volver al inicio de la página</a></p>
+    </footer>
+
+    <style>
+        .tab-categoria {
+            padding: 7px 14px;
+            border-radius: 999px;
+            border: 1px solid #ccc;
+            background: #eee;
+            color: #333;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .tab-categoria.activa {
+            background: #34517c;
+            color: white;
+            border-color: #34517c;
+        }
+    </style>
+
+    <script src="js/header-comun.js"></script>
+    <script>
+    const inputBuscar = document.getElementById('buscar-input');
+    const botonBuscar = document.getElementById('buscar-boton');
+    const tabs = document.querySelectorAll('.tab-categoria');
+    const resultados = document.getElementById('buscar-resultados');
+
+    let tipoActual = 'usuarios';
+
+    function marcarTabActiva() {
+        tabs.forEach(t => t.classList.toggle('activa', t.dataset.tipo === tipoActual));
+    }
+
+    async function buscar() {
+        const q = inputBuscar.value.trim();
+        if (!q) {
+            resultados.innerHTML = '<p style="color: #888;">Escribe algo para buscar.</p>';
+            return;
+        }
+
+        resultados.innerHTML = '<p style="color: #888;">Buscando...</p>';
+
+        try {
+            const response = await fetch(`/api/search?tipo=${encodeURIComponent(tipoActual)}&q=${encodeURIComponent(q)}`);
+            const data = await response.json();
+
+            resultados.innerHTML = '';
+
+            if (!data.implementado) {
+                resultados.innerHTML = '<p style="color: #888;">Esta categoría todavía no está implementada.</p>';
+                return;
+            }
+            if (data.resultados.length === 0) {
+                resultados.innerHTML = '<p style="color: #888;">Sin resultados.</p>';
+                return;
+            }
+
+            data.resultados.forEach(item => {
+                const div = document.createElement('div');
+                div.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
+                const titulo = document.createElement('div');
+                titulo.style.fontWeight = 'bold';
+                titulo.textContent = item.titulo;
+                div.appendChild(titulo);
+                if (item.subtitulo) {
+                    const sub = document.createElement('div');
+                    sub.style.cssText = 'font-size: 0.85rem; color: #666;';
+                    sub.textContent = item.subtitulo;
+                    div.appendChild(sub);
+                }
+                resultados.appendChild(div);
+            });
+        } catch (error) {
+            resultados.innerHTML = '<p style="color: #888;">No se pudo buscar.</p>';
+        }
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tipoActual = tab.dataset.tipo;
+            marcarTabActiva();
+            buscar();
+        });
+    });
+
+    botonBuscar.addEventListener('click', buscar);
+    inputBuscar.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') buscar();
+    });
+
+    // Si venimos de ?q=... (desde la barra del header), precargamos y buscamos
+    window.addEventListener('DOMContentLoaded', () => {
+        montarHeaderComun();
+        marcarTabActiva();
+
+        const params = new URLSearchParams(window.location.search);
+        const q = params.get('q');
+        if (q) {
+            inputBuscar.value = q;
+            buscar();
+        }
+    });
+    </script>
+
+</body>
+</html>

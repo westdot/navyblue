@@ -57,82 +57,29 @@ function crearMenuUsuario(usuario) {
 function crearBuscador() {
     const contenedor = document.createElement('div');
     contenedor.className = 'buscador-header';
-    contenedor.style.cssText = 'position: relative; display: flex; align-items: center; gap: 4px;';
+    contenedor.style.cssText = 'position: relative; display: flex; align-items: center;';
     contenedor.innerHTML = `
-        <select class="buscador-tipo" style="padding: 7px; border-radius: 6px; border: none; font-size: 0.85rem;">
-            <option value="usuarios">Usuarios</option>
-            <option value="libros">Libros</option>
-            <option value="editoriales">Editoriales</option>
-            <option value="mangas">Mangas</option>
-            <option value="novelas-ligeras">Novelas Ligeras</option>
-        </select>
-        <input type="text" class="buscador-input" placeholder="Buscar..." style="padding: 7px 10px; border-radius: 6px; border: none; font-size: 0.85rem; width: 130px;">
-        <div class="buscador-resultados" style="display: none; position: absolute; top: 130%; left: 0; background: white; color: #333; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); min-width: 260px; max-height: 320px; overflow-y: auto; z-index: 200;"></div>
+        <input type="text" class="buscador-input" placeholder="Buscar libros, usuarios..."
+               style="padding: 8px 38px 8px 14px; border-radius: 999px; border: 1px solid #ccc; font-size: 0.85rem; width: 190px; background: white; color: #333;">
+        <button type="button" class="buscador-boton" title="Buscar"
+                style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex;">
+            🔍
+        </button>
     `;
 
-    const select = contenedor.querySelector('.buscador-tipo');
     const input = contenedor.querySelector('.buscador-input');
-    const resultados = contenedor.querySelector('.buscador-resultados');
+    const boton = contenedor.querySelector('.buscador-boton');
 
-    cerrarAlClickAfuera(resultados, contenedor);
-
-    let temporizador = null;
-    async function buscar() {
-        const tipo = select.value;
+    function irABuscar() {
         const q = input.value.trim();
-
-        if (!q) {
-            resultados.style.display = 'none';
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/search?tipo=${encodeURIComponent(tipo)}&q=${encodeURIComponent(q)}`);
-            const data = await response.json();
-
-            resultados.innerHTML = '';
-
-            if (!data.implementado) {
-                const p = document.createElement('p');
-                p.style.cssText = 'padding: 12px 15px; margin: 0; color: #666;';
-                p.textContent = 'Aún no implementado para esta categoría.';
-                resultados.appendChild(p);
-            } else if (data.resultados.length === 0) {
-                const p = document.createElement('p');
-                p.style.cssText = 'padding: 12px 15px; margin: 0; color: #666;';
-                p.textContent = 'Sin resultados.';
-                resultados.appendChild(p);
-            } else {
-                data.resultados.forEach(item => {
-                    const div = document.createElement('div');
-                    div.style.cssText = 'padding: 10px 15px; border-bottom: 1px solid #eee;';
-                    const titulo = document.createElement('div');
-                    titulo.style.fontWeight = 'bold';
-                    titulo.textContent = item.titulo;
-                    div.appendChild(titulo);
-                    if (item.subtitulo) {
-                        const sub = document.createElement('div');
-                        sub.style.cssText = 'font-size: 0.8rem; color: #666;';
-                        sub.textContent = item.subtitulo;
-                        div.appendChild(sub);
-                    }
-                    resultados.appendChild(div);
-                });
-            }
-
-            resultados.style.display = 'block';
-        } catch (error) {
-            resultados.innerHTML = '<p style="padding: 12px 15px; margin: 0; color: #666;">No se pudo buscar.</p>';
-            resultados.style.display = 'block';
-        }
+        if (!q) return;
+        window.location.href = `buscar.html?q=${encodeURIComponent(q)}`;
     }
 
+    boton.addEventListener('click', irABuscar);
     input.addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') { buscar(); return; }
-        clearTimeout(temporizador);
-        temporizador = setTimeout(buscar, 400); // pequeña espera para no buscar en cada tecla
+        if (e.key === 'Enter') irABuscar();
     });
-    select.addEventListener('change', buscar);
 
     return contenedor;
 }

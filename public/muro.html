@@ -23,23 +23,33 @@
     <!-- ESTRUCTURA EN 3 COLUMNAS, IGUAL QUE EL RESTO DEL SITIO -->
     <main class="contenedor-principal">
 
-        <!-- COLUMNA IZQUIERDA: INFO PERSONAL + SEGUIDOS/SEGUIDORES -->
+        <!-- COLUMNA IZQUIERDA: INFO PERSONAL + SEGUIDOS/SEGUIDORES + AMIGOS -->
         <aside class="columna-izquierda">
             <h2>Personal</h2>
             <ul class="lista-categorias" id="lista-personal">
                 <li>Cargando...</li>
             </ul>
 
+            <!-- Botones de Seguir / Agregar amigo: solo aparecen viendo el muro de OTRA persona -->
+            <div id="acciones-relacion" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;"></div>
+
             <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
 
             <h2>Seguidos</h2>
             <ul class="lista-categorias" id="lista-seguidos">
-                <li>Próximamente</li>
+                <li>Cargando...</li>
             </ul>
 
             <h2>Seguidores</h2>
             <ul class="lista-categorias" id="lista-seguidores">
-                <li>Próximamente</li>
+                <li>Cargando...</li>
+            </ul>
+
+            <!-- Amigos: separado de Seguir, con su propio divisor -->
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+            <h2>Amigos</h2>
+            <ul class="lista-categorias" id="lista-amigos">
+                <li>Cargando...</li>
             </ul>
         </aside>
 
@@ -85,6 +95,10 @@
     <script>
     const listaPersonal = document.getElementById('lista-personal');
     const listaMuro = document.getElementById('lista-muro');
+    const listaSeguidos = document.getElementById('lista-seguidos');
+    const listaSeguidores = document.getElementById('lista-seguidores');
+    const listaAmigos = document.getElementById('lista-amigos');
+    const accionesRelacion = document.getElementById('acciones-relacion');
     const tituloLista = document.getElementById('titulo-lista');
     const botonesTab = document.querySelectorAll('.btn-tab-muro');
 
@@ -201,6 +215,118 @@
         return article;
     }
 
+    // Pinta una lista de nombres (clickeables, van a su muro) dentro de un <ul>
+    function pintarListaNombres(ul, nombres, mensajeVacio) {
+        ul.innerHTML = '';
+        if (nombres.length === 0) {
+            const li = document.createElement('li');
+            li.style.cssText = 'color: #888; font-size: 0.85rem;';
+            li.textContent = mensajeVacio;
+            ul.appendChild(li);
+            return;
+        }
+        nombres.forEach(nombre => {
+            const li = document.createElement('li');
+            li.style.padding = '4px 0';
+            const a = document.createElement('a');
+            a.href = `muro.html?usuario=${encodeURIComponent(nombre)}`;
+            a.style.cssText = 'text-decoration: none; color: inherit;';
+            a.textContent = nombre;
+            li.appendChild(a);
+            ul.appendChild(li);
+        });
+    }
+
+    // Carga Seguidos / Seguidores de un usuario, y arma el botón de Seguir si corresponde
+    async function cargarSeguirInfo(username, esMiMuro) {
+        try {
+            const response = await fetch(`/api/users/${encodeURIComponent(username)}/seguir-info`);
+            const data = await response.json();
+
+            pintarListaNombres(listaSeguidos, data.seguidos, 'No sigue a nadie todavía.');
+            pintarListaNombres(listaSeguidores, data.seguidores, 'Nadie lo sigue todavía.');
+
+            if (!esMiMuro) {
+                const btnSeguir = document.createElement('button');
+                btnSeguir.type = 'button';
+                actualizarBotonSeguir(btnSeguir, data.yoLoSigo);
+                btnSeguir.addEventListener('click', async () => {
+                    try {
+                        const resp = await fetch(`/api/follow/${encodeURIComponent(username)}`, { method: 'POST' });
+                        const respData = await resp.json().catch(() => ({}));
+                        if (!resp.ok) { alert(respData.error || 'Debes iniciar sesión.'); return; }
+                        actualizarBotonSeguir(btnSeguir, respData.siguiendo);
+                        cargarSeguirInfo(username, esMiMuro); // refresca contadores/listas
+                    } catch (error) {
+                        alert('No se pudo conectar con el servidor.');
+                    }
+                });
+                accionesRelacion.appendChild(btnSeguir);
+            }
+        } catch (error) {
+            listaSeguidos.innerHTML = '<li>No se pudo cargar.</li>';
+            listaSeguidores.innerHTML = '<li>No se pudo cargar.</li>';
+        }
+    }
+
+    function actualizarBotonSeguir(btn, siguiendo) {
+        btn.textContent = siguiendo ? 'Dejar de seguir' : 'Seguir';
+        btn.style.cssText = `padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #34517c; background: ${siguiendo ? 'white' : '#34517c'}; color: ${siguiendo ? '#34517c' : 'white'};`;
+    }
+
+    // Carga Amigos de un usuario, y arma el botón de amistad según el estado (totalmente
+    // separado de Seguir: acá hace falta que la otra persona acepte)
+    async function cargarAmigosInfo(username, esMiMuro) {
+        try {
+            const response = await fetch(`/api/users/${encodeURIComponent(username)}/amigos-info`);
+            const data = await response.json();
+
+            pintarListaNombres(listaAmigos, data.amigos, 'Todavía no tiene amigos agregados.');
+
+            if (!esMiMuro) {
+                const btnAmigo = document.createElement('button');
+                btnAmigo.type = 'button';
+
+                async function accionAmistad(ruta, metodo) {
+                    try {
+                        const resp = await fetch(`/api/friends/${encodeURIComponent(username)}${ruta}`, { method: metodo });
+                        const respData = await resp.json().catch(() => ({}));
+                        if (!resp.ok) { alert(respData.error || 'Debes iniciar sesión.'); return; }
+                        cargarAmigosInfo(username, esMiMuro); // vuelve a armar el botón con el nuevo estado
+                    } catch (error) {
+                        alert('No se pudo conectar con el servidor.');
+                    }
+                }
+
+                if (data.estado === 'amigos') {
+                    btnAmigo.textContent = 'Amigos ✓ (quitar)';
+                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #198754; background: white; color: #198754;';
+                    btnAmigo.addEventListener('click', () => accionAmistad('', 'DELETE'));
+                } else if (data.estado === 'solicitud_enviada') {
+                    btnAmigo.textContent = 'Solicitud enviada (cancelar)';
+                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #ccc; background: #eee; color: #333;';
+                    btnAmigo.addEventListener('click', () => accionAmistad('', 'DELETE'));
+                } else if (data.estado === 'solicitud_recibida') {
+                    btnAmigo.textContent = 'Aceptar solicitud de amistad';
+                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #198754; background: #198754; color: white;';
+                    btnAmigo.addEventListener('click', () => accionAmistad('/aceptar', 'POST'));
+                } else {
+                    btnAmigo.textContent = 'Agregar amigo';
+                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #ccc; background: #eee; color: #333;';
+                    btnAmigo.addEventListener('click', () => accionAmistad('/solicitar', 'POST'));
+                }
+
+                // Reemplazamos el botón de amistad si ya había uno (sin tocar el de Seguir)
+                const anterior = accionesRelacion.querySelector('.btn-amistad');
+                if (anterior) anterior.remove();
+                btnAmigo.className = 'btn-amistad';
+                accionesRelacion.appendChild(btnAmigo);
+            }
+        } catch (error) {
+            listaAmigos.innerHTML = '<li>No se pudo cargar.</li>';
+        }
+    }
+
     // Carga los datos de la columna "Personal" de CUALQUIER usuario (perfil público)
     async function cargarPersonal(username, esMiMuro) {
         try {
@@ -300,6 +426,8 @@
             }
 
             cargarPersonal(usuarioObjetivo, esMiMuro);
+            cargarSeguirInfo(usuarioObjetivo, esMiMuro);
+            cargarAmigosInfo(usuarioObjetivo, esMiMuro);
             activarTab('posts', usuarioObjetivo, esMiMuro);
             montarHeaderComun();
 

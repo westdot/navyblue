@@ -131,6 +131,26 @@ db.serialize(() => {
         UNIQUE(review_id, user_id)
     )`);
 
+    // Seguir: asimétrico y sin permiso (como Twitter/X). Totalmente separado de amigos.
+    db.run(`CREATE TABLE IF NOT EXISTS follows (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        follower_id INTEGER NOT NULL,
+        followed_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(follower_id, followed_id)
+    )`);
+
+    // Amigos: simétrico, requiere solicitud + aceptación (como Facebook).
+    // estado: 'pendiente' | 'aceptada'. Rechazar/cancelar simplemente borra la fila.
+    db.run(`CREATE TABLE IF NOT EXISTS friend_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        from_user_id INTEGER NOT NULL,
+        to_user_id INTEGER NOT NULL,
+        estado TEXT NOT NULL DEFAULT 'pendiente' CHECK(estado IN ('pendiente','aceptada')),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(from_user_id, to_user_id)
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS books (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
@@ -532,6 +552,201 @@ app.put('/api/profile/password', requiereSesion, async (req, res) => {
             if (err) return res.status(500).json({ error: 'Error al actualizar la contraseña' });
             res.json({ message: 'Contraseña actualizada con éxito' });
         });
+    });
+});
+
+// --- RUTAS DE SEGUIR (asimétrico, sin permiso — separado de amigos) ---
+
+// Seguir / dejar de seguir a alguien (toggle)
+app.post('/api/follow/:username', requiereSesion, (req, res) => {
+    const miId = req.session.user.id;
+    const { username } = req.params;
+
+    if (username === req.session.user.username) {
+        return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
+    }
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, otro) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!otro) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        db.get(`SELECT id FROM follows WHERE follower_id = ? AND followed_id = ?`, [miId, otro.id], (err, existente) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+
+            if (existente) {
+                db.run(`DELETE FROM follows WHERE id = ?`, [existente.id], (err) => {
+                    if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                    res.json({ siguiendo: false });
+                });
+            } else {
+                db.run(`INSERT INTO follows (follower_id, followed_id) VALUES (?, ?)`, [miId, otro.id], (err) => {
+                    if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                    res.json({ siguiendo: true });
+                });
+            }
+        });
+    });
+});
+
+// Perfil de "seguir": cuántos seguidores/seguidos tiene, listas, y si YO lo sigo
+app.get('/api/users/:username/seguir-info', (req, res) => {
+    const { username } = req.params;
+    const miId = req.session.user ? req.session.user.id : null;
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        db.all(
+            `SELECT users.username FROM follows JOIN users ON users.id = follows.follower_id WHERE follows.followed_id = ? ORDER BY follows.id DESC`,
+            [user.id],
+            (err, seguidores) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+
+                db.all(
+                    `SELECT users.username FROM follows JOIN users ON users.id = follows.followed_id WHERE follows.follower_id = ? ORDER BY follows.id DESC`,
+                    [user.id],
+                    (err, seguidos) => {
+                        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+
+                        db.get(`SELECT id FROM follows WHERE follower_id = ? AND followed_id = ?`, [miId, user.id], (err, yoLoSigo) => {
+                            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                            res.json({
+                                seguidores: seguidores.map(r => r.username),
+                                seguidos: seguidos.map(r => r.username),
+                                yoLoSigo: !!yoLoSigo
+                            });
+                        });
+                    }
+                );
+            }
+        );
+    });
+});
+
+// --- RUTAS DE AMIGOS (simétrico, con solicitud + aceptación — separado de seguir) ---
+
+// Enviar solicitud de amistad
+app.post('/api/friends/:username/solicitar', requiereSesion, (req, res) => {
+    const miId = req.session.user.id;
+    const { username } = req.params;
+
+    if (username === req.session.user.username) {
+        return res.status(400).json({ error: 'No puedes agregarte a ti mismo' });
+    }
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, otro) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!otro) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        // Si el otro ya te había mandado una solicitud a ti, la aceptamos directo (como Facebook)
+        db.get(
+            `SELECT id, estado FROM friend_requests WHERE from_user_id = ? AND to_user_id = ?`,
+            [otro.id, miId],
+            (err, inversa) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+
+                if (inversa) {
+                    db.run(`UPDATE friend_requests SET estado = 'aceptada' WHERE id = ?`, [inversa.id], (err) => {
+                        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                        res.json({ estado: 'amigos' });
+                    });
+                    return;
+                }
+
+                db.run(
+                    `INSERT INTO friend_requests (from_user_id, to_user_id, estado) VALUES (?, ?, 'pendiente')`,
+                    [miId, otro.id],
+                    (err) => {
+                        if (err) return res.status(400).json({ error: 'Ya existe una solicitud con este usuario' });
+                        res.json({ estado: 'solicitud_enviada' });
+                    }
+                );
+            }
+        );
+    });
+});
+
+// Aceptar una solicitud que ME mandaron
+app.post('/api/friends/:username/aceptar', requiereSesion, (req, res) => {
+    const miId = req.session.user.id;
+    const { username } = req.params;
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, otro) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!otro) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        db.run(
+            `UPDATE friend_requests SET estado = 'aceptada' WHERE from_user_id = ? AND to_user_id = ? AND estado = 'pendiente'`,
+            [otro.id, miId],
+            function(err) {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                if (this.changes === 0) return res.status(404).json({ error: 'No hay ninguna solicitud pendiente de esa persona' });
+                res.json({ estado: 'amigos' });
+            }
+        );
+    });
+});
+
+// Rechazar una solicitud recibida, cancelar una que enviaste, o eliminar una amistad ya existente
+app.delete('/api/friends/:username', requiereSesion, (req, res) => {
+    const miId = req.session.user.id;
+    const { username } = req.params;
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, otro) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!otro) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        db.run(
+            `DELETE FROM friend_requests WHERE (from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)`,
+            [miId, otro.id, otro.id, miId],
+            (err) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                res.json({ estado: 'ninguno' });
+            }
+        );
+    });
+});
+
+// Estado de amistad entre TÚ y un usuario, además de su lista de amigos
+app.get('/api/users/:username/amigos-info', (req, res) => {
+    const { username } = req.params;
+    const miId = req.session.user ? req.session.user.id : null;
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        db.all(
+            `SELECT users.username
+             FROM friend_requests
+             JOIN users ON users.id = CASE WHEN friend_requests.from_user_id = ? THEN friend_requests.to_user_id ELSE friend_requests.from_user_id END
+             WHERE (friend_requests.from_user_id = ? OR friend_requests.to_user_id = ?) AND friend_requests.estado = 'aceptada'`,
+            [user.id, user.id, user.id],
+            (err, amigos) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+
+                if (!miId || miId === user.id) {
+                    return res.json({ amigos: amigos.map(r => r.username), estado: miId ? 'yo_mismo' : 'sin_sesion' });
+                }
+
+                db.get(
+                    `SELECT estado, from_user_id FROM friend_requests WHERE (from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)`,
+                    [miId, user.id, user.id, miId],
+                    (err, relacion) => {
+                        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+
+                        let estado = 'ninguno';
+                        if (relacion) {
+                            if (relacion.estado === 'aceptada') estado = 'amigos';
+                            else estado = relacion.from_user_id === miId ? 'solicitud_enviada' : 'solicitud_recibida';
+                        }
+
+                        res.json({ amigos: amigos.map(r => r.username), estado });
+                    }
+                );
+            }
+        );
     });
 });
 
