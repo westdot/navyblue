@@ -151,6 +151,37 @@ db.serialize(() => {
         UNIQUE(from_user_id, to_user_id)
     )`);
 
+    // Estanterías / colecciones de libros: cada usuario arma sus propias estanterías
+    // con nombre (ej: "Leídos", "Quiero leer", "Favoritos", o una personalizada),
+    // y en cada una va agregando libros (título/autor/portada — sin depender de un
+    // catálogo formal, igual que las reseñas).
+    db.run(`CREATE TABLE IF NOT EXISTS shelves (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        nombre TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS shelf_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        shelf_id INTEGER NOT NULL,
+        libro_titulo TEXT NOT NULL,
+        autor TEXT NOT NULL,
+        portada_url TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Notificaciones: le avisan a un usuario que alguien hizo algo relacionado con
+    // él (le dieron like, comentaron, lo siguieron, le mandaron solicitud, etc).
+    db.run(`CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        actor_username TEXT NOT NULL,
+        mensaje TEXT NOT NULL,
+        leida INTEGER NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS books (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
@@ -298,6 +329,9 @@ app.post('/api/posts/:id/comments', requiereSesion, (req, res) => {
         [id, req.session.user.id, content.trim()],
         function (err) {
             if (err) return res.status(500).json({ error: err.message });
+            db.get(`SELECT user_id FROM posts WHERE id = ?`, [id], (err, post) => {
+                if (post) crearNotificacion(post.user_id, req.session.user.username, `${req.session.user.username} comentó tu publicación`);
+            });
             res.status(201).json({ message: 'Comentario agregado', commentId: this.lastID });
         }
     );
@@ -344,6 +378,9 @@ app.post('/api/posts/:id/like', requiereSesion, (req, res) => {
         } else {
             db.run(`INSERT INTO likes (post_id, user_id) VALUES (?, ?)`, [id, userId], (err) => {
                 if (err) return res.status(500).json({ error: err.message });
+                db.get(`SELECT user_id FROM posts WHERE id = ?`, [id], (err, post) => {
+                    if (post) crearNotificacion(post.user_id, req.session.user.username, `A ${req.session.user.username} le gustó tu publicación`);
+                });
                 terminar(true);
             });
         }
@@ -374,6 +411,9 @@ app.post('/api/posts/:id/repost', requiereSesion, (req, res) => {
         } else {
             db.run(`INSERT INTO reposts (post_id, user_id) VALUES (?, ?)`, [id, userId], (err) => {
                 if (err) return res.status(500).json({ error: err.message });
+                db.get(`SELECT user_id FROM posts WHERE id = ?`, [id], (err, post) => {
+                    if (post) crearNotificacion(post.user_id, req.session.user.username, `${req.session.user.username} republicó tu publicación`);
+                });
                 terminar(true);
             });
         }
@@ -484,6 +524,20 @@ function requiereSesion(req, res, next) {
     next();
 }
 
+// Crea una notificación para userId, salvo que sea la misma persona que hizo la
+// acción (no tiene sentido notificarte a ti mismo por darte like a tu propio post).
+function crearNotificacion(userId, actorUsername, mensaje) {
+    if (!userId) return;
+    db.get(`SELECT username FROM users WHERE id = ?`, [userId], (err, destinatario) => {
+        if (err || !destinatario) return;
+        if (destinatario.username === actorUsername) return; // no te notifiques a ti mismo
+        db.run(
+            `INSERT INTO notifications (user_id, actor_username, mensaje) VALUES (?, ?, ?)`,
+            [userId, actorUsername, mensaje]
+        );
+    });
+}
+
 // Perfil PÚBLICO de cualquier usuario (nombre, país, fecha de registro) — para
 // poder mostrar el muro de otras personas, sin exponer correo ni datos privados
 app.get('/api/users/:username', (req, res) => {
@@ -581,6 +635,7 @@ app.post('/api/follow/:username', requiereSesion, (req, res) => {
             } else {
                 db.run(`INSERT INTO follows (follower_id, followed_id) VALUES (?, ?)`, [miId, otro.id], (err) => {
                     if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                    crearNotificacion(otro.id, req.session.user.username, `${req.session.user.username} empezó a seguirte`);
                     res.json({ siguiendo: true });
                 });
             }
@@ -649,6 +704,7 @@ app.post('/api/friends/:username/solicitar', requiereSesion, (req, res) => {
                 if (inversa) {
                     db.run(`UPDATE friend_requests SET estado = 'aceptada' WHERE id = ?`, [inversa.id], (err) => {
                         if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                        crearNotificacion(otro.id, req.session.user.username, `Tú y ${req.session.user.username} ahora son amigos`);
                         res.json({ estado: 'amigos' });
                     });
                     return;
@@ -659,6 +715,7 @@ app.post('/api/friends/:username/solicitar', requiereSesion, (req, res) => {
                     [miId, otro.id],
                     (err) => {
                         if (err) return res.status(400).json({ error: 'Ya existe una solicitud con este usuario' });
+                        crearNotificacion(otro.id, req.session.user.username, `${req.session.user.username} te envió una solicitud de amistad`);
                         res.json({ estado: 'solicitud_enviada' });
                     }
                 );
@@ -682,6 +739,7 @@ app.post('/api/friends/:username/aceptar', requiereSesion, (req, res) => {
             function(err) {
                 if (err) return res.status(500).json({ error: 'Error en el servidor' });
                 if (this.changes === 0) return res.status(404).json({ error: 'No hay ninguna solicitud pendiente de esa persona' });
+                crearNotificacion(otro.id, req.session.user.username, `${req.session.user.username} aceptó tu solicitud de amistad`);
                 res.json({ estado: 'amigos' });
             }
         );
@@ -748,6 +806,158 @@ app.get('/api/users/:username/amigos-info', (req, res) => {
             }
         );
     });
+});
+
+// --- RUTAS DE NOTIFICACIONES ---
+
+// Últimas notificaciones propias + cuántas no leídas
+app.get('/api/notifications', requiereSesion, (req, res) => {
+    const userId = req.session.user.id;
+    db.all(
+        `SELECT id, actor_username, mensaje, leida, created_at FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 20`,
+        [userId],
+        (err, rows) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            db.get(`SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND leida = 0`, [userId], (err, row) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                res.json({ notifications: rows, noLeidas: row.n });
+            });
+        }
+    );
+});
+
+// Marcar todas como leídas (se llama al abrir el panel de notificaciones)
+app.post('/api/notifications/marcar-leidas', requiereSesion, (req, res) => {
+    db.run(`UPDATE notifications SET leida = 1 WHERE user_id = ? AND leida = 0`, [req.session.user.id], (err) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        res.json({ message: 'Notificaciones marcadas como leídas' });
+    });
+});
+
+// --- RUTAS DE ESTANTERÍAS / COLECCIONES DE LIBROS ---
+
+// Trae las estanterías (con sus libros) de CUALQUIER usuario, por nombre — pública.
+// Si el que pregunta es el dueño y todavía no tiene ninguna, le creamos 3 por defecto.
+app.get('/api/users/:username/shelves', (req, res) => {
+    const { username } = req.params;
+    const miId = req.session.user ? req.session.user.id : null;
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        const traerEstanterias = () => {
+            db.all(`SELECT id, nombre FROM shelves WHERE user_id = ? ORDER BY id ASC`, [user.id], (err, estantes) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                if (estantes.length === 0) return res.json({ shelves: [] });
+
+                let pendientes = estantes.length;
+                estantes.forEach(estante => {
+                    db.all(
+                        `SELECT id, libro_titulo, autor, portada_url FROM shelf_items WHERE shelf_id = ? ORDER BY id DESC`,
+                        [estante.id],
+                        (err, libros) => {
+                            estante.libros = err ? [] : libros;
+                            pendientes--;
+                            if (pendientes === 0) res.json({ shelves: estantes });
+                        }
+                    );
+                });
+            });
+        };
+
+        const esDueno = miId === user.id;
+        if (!esDueno) return traerEstanterias();
+
+        db.get(`SELECT COUNT(*) AS n FROM shelves WHERE user_id = ?`, [user.id], (err, row) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            if (row.n > 0) return traerEstanterias();
+
+            const porDefecto = ['Leídos', 'Quiero leer', 'Favoritos'];
+            let creadas = 0;
+            porDefecto.forEach(nombre => {
+                db.run(`INSERT INTO shelves (user_id, nombre) VALUES (?, ?)`, [user.id, nombre], () => {
+                    creadas++;
+                    if (creadas === porDefecto.length) traerEstanterias();
+                });
+            });
+        });
+    });
+});
+
+// Crear una estantería nueva (propia)
+app.post('/api/shelves', requiereSesion, (req, res) => {
+    const { nombre } = req.body;
+    if (!nombre || !nombre.trim()) {
+        return res.status(400).json({ error: 'La estantería necesita un nombre' });
+    }
+    db.run(`INSERT INTO shelves (user_id, nombre) VALUES (?, ?)`, [req.session.user.id, nombre.trim()], function(err) {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        res.status(201).json({ message: 'Estantería creada', shelfId: this.lastID });
+    });
+});
+
+// Eliminar una estantería propia (y los libros que tenía adentro)
+app.delete('/api/shelves/:id', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    db.get(`SELECT user_id FROM shelves WHERE id = ?`, [id], (err, estante) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!estante) return res.status(404).json({ error: 'Estantería no encontrada' });
+        if (estante.user_id !== req.session.user.id) {
+            return res.status(403).json({ error: 'No puedes eliminar estanterías de otros usuarios' });
+        }
+        db.run(`DELETE FROM shelves WHERE id = ?`, [id], (err) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            db.run(`DELETE FROM shelf_items WHERE shelf_id = ?`, [id]);
+            res.json({ message: 'Estantería eliminada' });
+        });
+    });
+});
+
+// Agregar un libro a una estantería propia
+app.post('/api/shelves/:id/items', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const { libro_titulo, autor, portada_url } = req.body;
+
+    if (!libro_titulo || !autor) {
+        return res.status(400).json({ error: 'Completa al menos título y autor' });
+    }
+
+    db.get(`SELECT user_id FROM shelves WHERE id = ?`, [id], (err, estante) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!estante) return res.status(404).json({ error: 'Estantería no encontrada' });
+        if (estante.user_id !== req.session.user.id) {
+            return res.status(403).json({ error: 'No puedes agregar libros a estanterías de otros usuarios' });
+        }
+        db.run(
+            `INSERT INTO shelf_items (shelf_id, libro_titulo, autor, portada_url) VALUES (?, ?, ?, ?)`,
+            [id, libro_titulo, autor, portada_url || null],
+            function(err) {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                res.status(201).json({ message: 'Libro agregado', itemId: this.lastID });
+            }
+        );
+    });
+});
+
+// Quitar un libro de una estantería propia
+app.delete('/api/shelf-items/:id', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    db.get(
+        `SELECT shelves.user_id FROM shelf_items JOIN shelves ON shelves.id = shelf_items.shelf_id WHERE shelf_items.id = ?`,
+        [id],
+        (err, fila) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            if (!fila) return res.status(404).json({ error: 'Libro no encontrado' });
+            if (fila.user_id !== req.session.user.id) {
+                return res.status(403).json({ error: 'No puedes modificar estanterías de otros usuarios' });
+            }
+            db.run(`DELETE FROM shelf_items WHERE id = ?`, [id], (err) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                res.json({ message: 'Libro eliminado de la estantería' });
+            });
+        }
+    );
 });
 
 // --- RUTA DE BÚSQUEDA ---
@@ -896,6 +1106,12 @@ app.post('/api/reviews/:id/reaccionar', requiereSesion, (req, res) => {
         } else {
             db.run(`INSERT INTO review_reactions (review_id, user_id, tipo) VALUES (?, ?, ?)`, [id, userId, tipo], (err) => {
                 if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                db.get(`SELECT user_id FROM reviews WHERE id = ?`, [id], (err, review) => {
+                    if (review) {
+                        const verbo = tipo === 'like' ? 'le gustó' : 'no le gustó';
+                        crearNotificacion(review.user_id, req.session.user.username, `A ${req.session.user.username} ${verbo} tu reseña`);
+                    }
+                });
                 responderConContadores();
             });
         }

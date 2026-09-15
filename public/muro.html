@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Muro - NAVYBLUE</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%233f4f68'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23f5efe1'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%23c08a4e'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -33,7 +34,7 @@
             <!-- Botones de Seguir / Agregar amigo: solo aparecen viendo el muro de OTRA persona -->
             <div id="acciones-relacion" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;"></div>
 
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+            <div class="divisor-lomo"></div>
 
             <h2>Seguidos</h2>
             <ul class="lista-categorias" id="lista-seguidos">
@@ -46,7 +47,7 @@
             </ul>
 
             <!-- Amigos: separado de Seguir, con su propio divisor -->
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+            <div class="divisor-lomo"></div>
             <h2>Amigos</h2>
             <ul class="lista-categorias" id="lista-amigos">
                 <li>Cargando...</li>
@@ -73,10 +74,12 @@
             </div>
         </section>
 
-        <!-- COLUMNA DERECHA: LIBROS LEÍDOS (superficial por ahora) -->
+        <!-- COLUMNA DERECHA: ESTANTERÍAS / COLECCIONES DE LIBROS -->
         <aside class="columna-derecha">
-            <h2>Libros Leídos</h2>
-            <p style="font-size: 14px; color: #666;">Próximamente vas a poder ver aquí el detalle de los libros que has leído.</p>
+            <h2>Estanterías</h2>
+            <div id="estanterias-contenedor">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
         </aside>
 
     </main>
@@ -89,9 +92,11 @@
         <p><a href="#inicio-header">Volver al inicio de la página</a></p>
     </footer>
 
+    <script src="js/ui-comunes.js"></script>
     <script src="js/header-comun.js"></script>
     <script src="js/posts-comunes.js"></script>
     <script src="js/composer-comun.js"></script>
+    <script src="js/mobile-tabs.js"></script>
     <script>
     const listaPersonal = document.getElementById('lista-personal');
     const listaMuro = document.getElementById('lista-muro');
@@ -171,17 +176,17 @@
             btnEliminar.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.9rem;';
             btnEliminar.addEventListener('click', async (e) => {
                 e.stopPropagation(); // que no abra el detalle al borrar
-                if (!confirm('¿Eliminar esta publicación?')) return;
+                if (!(await confirmarAccion('¿Eliminar esta publicación?'))) return;
                 try {
                     const resp = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' });
                     if (resp.ok) {
                         article.remove();
                     } else {
                         const data = await resp.json().catch(() => ({}));
-                        alert(data.error || 'No se pudo eliminar la publicación.');
+                        mostrarAviso(data.error || 'No se pudo eliminar la publicación.');
                     }
                 } catch (error) {
-                    alert('No se pudo conectar con el servidor.');
+                    mostrarAviso('No se pudo conectar con el servidor.');
                 }
             });
             header.appendChild(btnEliminar);
@@ -254,11 +259,11 @@
                     try {
                         const resp = await fetch(`/api/follow/${encodeURIComponent(username)}`, { method: 'POST' });
                         const respData = await resp.json().catch(() => ({}));
-                        if (!resp.ok) { alert(respData.error || 'Debes iniciar sesión.'); return; }
+                        if (!resp.ok) { mostrarAviso(respData.error || 'Debes iniciar sesión.'); return; }
                         actualizarBotonSeguir(btnSeguir, respData.siguiendo);
                         cargarSeguirInfo(username, esMiMuro); // refresca contadores/listas
                     } catch (error) {
-                        alert('No se pudo conectar con el servidor.');
+                        mostrarAviso('No se pudo conectar con el servidor.');
                     }
                 });
                 accionesRelacion.appendChild(btnSeguir);
@@ -291,10 +296,10 @@
                     try {
                         const resp = await fetch(`/api/friends/${encodeURIComponent(username)}${ruta}`, { method: metodo });
                         const respData = await resp.json().catch(() => ({}));
-                        if (!resp.ok) { alert(respData.error || 'Debes iniciar sesión.'); return; }
+                        if (!resp.ok) { mostrarAviso(respData.error || 'Debes iniciar sesión.'); return; }
                         cargarAmigosInfo(username, esMiMuro); // vuelve a armar el botón con el nuevo estado
                     } catch (error) {
-                        alert('No se pudo conectar con el servidor.');
+                        mostrarAviso('No se pudo conectar con el servidor.');
                     }
                 }
 
@@ -372,7 +377,8 @@
             listaMuro.innerHTML = '';
 
             if (data.posts.length === 0) {
-                listaMuro.innerHTML = `<p>${esMiMuro ? 'Todavía no has publicado nada.' : 'Esta persona todavía no ha publicado nada.'}</p>`;
+                listaMuro.innerHTML = '';
+                listaMuro.appendChild(crearEstadoVacio(esMiMuro ? 'Todavía no has publicado nada.' : 'Esta persona todavía no ha publicado nada.'));
                 return;
             }
             data.posts.forEach(post => listaMuro.appendChild(crearPostCard(post, esMiMuro)));
@@ -394,10 +400,240 @@
             cargarMisPosts(username, esMiMuro);
         } else if (tab === 'comentarios') {
             tituloLista.textContent = 'Comentarios';
-            listaMuro.innerHTML = '<p>Aún no implementado.</p>';
+            listaMuro.innerHTML = ''; listaMuro.appendChild(crearEstadoVacio('Aún no implementado.'));
         } else if (tab === 'likes') {
             tituloLista.textContent = 'Likes';
-            listaMuro.innerHTML = '<p>Aún no implementado.</p>';
+            listaMuro.innerHTML = ''; listaMuro.appendChild(crearEstadoVacio('Aún no implementado.'));
+        }
+    }
+
+    // --- ESTANTERÍAS / COLECCIONES DE LIBROS ---
+
+    function crearLibroChip(libro, esMiMuro, alEliminar) {
+        const chip = document.createElement('div');
+        chip.style.cssText = 'display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee;';
+
+        const img = document.createElement('img');
+        img.src = libro.portada_url || 'https://via.placeholder.com/40x56';
+        img.alt = `Portada de ${libro.libro_titulo}`;
+        img.style.cssText = 'width: 32px; height: 45px; object-fit: cover; border-radius: 3px; flex-shrink: 0;';
+        chip.appendChild(img);
+
+        const info = document.createElement('div');
+        info.style.cssText = 'flex: 1; min-width: 0;';
+        const titulo = document.createElement('div');
+        titulo.style.cssText = 'font-size: 0.82rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+        titulo.textContent = libro.libro_titulo;
+        const autor = document.createElement('div');
+        autor.style.cssText = 'font-size: 0.75rem; color: #888;';
+        autor.textContent = libro.autor;
+        info.appendChild(titulo);
+        info.appendChild(autor);
+        chip.appendChild(info);
+
+        if (esMiMuro) {
+            const btnQuitar = document.createElement('button');
+            btnQuitar.type = 'button';
+            btnQuitar.textContent = '✕';
+            btnQuitar.title = 'Quitar de la estantería';
+            btnQuitar.style.cssText = 'background: none; border: none; cursor: pointer; color: #999; font-size: 0.8rem;';
+            btnQuitar.addEventListener('click', alEliminar);
+            chip.appendChild(btnQuitar);
+        }
+
+        return chip;
+    }
+
+    function crearFormularioLibro(shelfId, onAgregado) {
+        const form = document.createElement('div');
+        form.style.cssText = 'display: none; margin-top: 8px; padding: 8px; background: #f7f7f7; border-radius: 6px;';
+
+        function campo(placeholder) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = placeholder;
+            input.style.cssText = 'width: 100%; padding: 6px; margin-bottom: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8rem; box-sizing: border-box;';
+            return input;
+        }
+
+        const inputTitulo = campo('Título del libro');
+        const inputAutor = campo('Autor');
+        const inputPortada = campo('URL de portada (opcional)');
+
+        const btnGuardar = document.createElement('button');
+        btnGuardar.type = 'button';
+        btnGuardar.textContent = 'Agregar';
+        btnGuardar.style.cssText = 'padding: 5px 12px; border-radius: 999px; border: none; background: #34517c; color: white; font-size: 0.78rem; cursor: pointer;';
+
+        const mensaje = document.createElement('p');
+        mensaje.style.cssText = 'font-size: 0.75rem; margin-top: 4px;';
+
+        btnGuardar.addEventListener('click', async () => {
+            const libro_titulo = inputTitulo.value.trim();
+            const autor = inputAutor.value.trim();
+            const portada_url = inputPortada.value.trim();
+            if (!libro_titulo || !autor) {
+                mensaje.style.color = 'red';
+                mensaje.textContent = 'Completa título y autor.';
+                return;
+            }
+            try {
+                const resp = await fetch(`/api/shelves/${shelfId}/items`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ libro_titulo, autor, portada_url })
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok) {
+                    mensaje.style.color = 'red';
+                    mensaje.textContent = data.error || 'No se pudo agregar.';
+                    return;
+                }
+                inputTitulo.value = '';
+                inputAutor.value = '';
+                inputPortada.value = '';
+                mensaje.style.color = 'green';
+                mensaje.textContent = '¡Agregado!';
+                onAgregado();
+            } catch (error) {
+                mensaje.style.color = 'red';
+                mensaje.textContent = 'No se pudo conectar con el servidor.';
+            }
+        });
+
+        form.appendChild(inputTitulo);
+        form.appendChild(inputAutor);
+        form.appendChild(inputPortada);
+        form.appendChild(btnGuardar);
+        form.appendChild(mensaje);
+
+        return form;
+    }
+
+    function crearEstanteCard(estante, usuarioObjetivo, esMiMuro) {
+        const div = document.createElement('div');
+        div.style.cssText = 'margin-bottom: 18px;';
+
+        const header = document.createElement('div');
+        header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;';
+        const h3 = document.createElement('h3');
+        h3.style.fontSize = '0.95rem';
+        h3.textContent = estante.nombre;
+        header.appendChild(h3);
+
+        if (esMiMuro) {
+            const btnBorrarEstante = document.createElement('button');
+            btnBorrarEstante.type = 'button';
+            btnBorrarEstante.textContent = '🗑️';
+            btnBorrarEstante.title = 'Eliminar estantería';
+            btnBorrarEstante.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 0.8rem;';
+            btnBorrarEstante.addEventListener('click', async () => {
+                if (!(await confirmarAccion(`¿Eliminar la estantería "${estante.nombre}" y todos sus libros?`))) return;
+                try {
+                    const resp = await fetch(`/api/shelves/${estante.id}`, { method: 'DELETE' });
+                    if (resp.ok) {
+                        cargarEstanterias(usuarioObjetivo, esMiMuro);
+                    } else {
+                        const data = await resp.json().catch(() => ({}));
+                        mostrarAviso(data.error || 'No se pudo eliminar.');
+                    }
+                } catch (error) {
+                    mostrarAviso('No se pudo conectar con el servidor.');
+                }
+            });
+            header.appendChild(btnBorrarEstante);
+        }
+        div.appendChild(header);
+
+        const listaLibros = document.createElement('div');
+        if (estante.libros.length === 0) {
+            listaLibros.appendChild(crearEstadoVacio('Vacía por ahora.'));
+        } else {
+            estante.libros.forEach(libro => {
+                listaLibros.appendChild(crearLibroChip(libro, esMiMuro, async () => {
+                    if (!(await confirmarAccion(`¿Quitar "${libro.libro_titulo}" de esta estantería?`))) return;
+                    try {
+                        const resp = await fetch(`/api/shelf-items/${libro.id}`, { method: 'DELETE' });
+                        if (resp.ok) {
+                            cargarEstanterias(usuarioObjetivo, esMiMuro);
+                        } else {
+                            const data = await resp.json().catch(() => ({}));
+                            mostrarAviso(data.error || 'No se pudo quitar.');
+                        }
+                    } catch (error) {
+                        mostrarAviso('No se pudo conectar con el servidor.');
+                    }
+                }));
+            });
+        }
+        div.appendChild(listaLibros);
+
+        if (esMiMuro) {
+            const btnMostrarForm = document.createElement('button');
+            btnMostrarForm.type = 'button';
+            btnMostrarForm.textContent = '+ Agregar libro';
+            btnMostrarForm.style.cssText = 'margin-top: 6px; background: none; border: none; color: #34517c; cursor: pointer; font-size: 0.78rem; font-weight: bold;';
+
+            const form = crearFormularioLibro(estante.id, () => cargarEstanterias(usuarioObjetivo, esMiMuro));
+            btnMostrarForm.addEventListener('click', () => {
+                form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            });
+
+            div.appendChild(btnMostrarForm);
+            div.appendChild(form);
+        }
+
+        return div;
+    }
+
+    async function cargarEstanterias(usuarioObjetivo, esMiMuro) {
+        const contenedor = document.getElementById('estanterias-contenedor');
+        contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">Cargando...</p>';
+        try {
+            const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}/shelves`);
+            const data = await resp.json();
+            contenedor.innerHTML = '';
+
+            if (!data.shelves || data.shelves.length === 0) {
+                contenedor.appendChild(crearEstadoVacio(esMiMuro ? 'Todavía no tienes estanterías.' : 'Esta persona todavía no tiene estanterías.'));
+            } else {
+                data.shelves.forEach(estante => {
+                    contenedor.appendChild(crearEstanteCard(estante, usuarioObjetivo, esMiMuro));
+                });
+            }
+
+            if (esMiMuro) {
+                const btnNuevaEstanteria = document.createElement('button');
+                btnNuevaEstanteria.type = 'button';
+                btnNuevaEstanteria.textContent = '+ Nueva estantería';
+                btnNuevaEstanteria.style.cssText = 'width: 100%; padding: 8px; border-radius: 999px; border: 1px dashed #34517c; background: none; color: #34517c; cursor: pointer; font-size: 0.85rem; margin-top: 10px;';
+                btnNuevaEstanteria.addEventListener('click', async () => {
+                    const nombre = prompt('Nombre de la nueva estantería:');
+                    if (!nombre || !nombre.trim()) return;
+                    try {
+                        const resp = await fetch('/api/shelves', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ nombre: nombre.trim() })
+                        });
+                        if (resp.ok) {
+                            cargarEstanterias(usuarioObjetivo, esMiMuro);
+                        } else {
+                            const dataErr = await resp.json().catch(() => ({}));
+                            mostrarAviso(dataErr.error || 'No se pudo crear la estantería.');
+                        }
+                    } catch (error) {
+                        mostrarAviso('No se pudo conectar con el servidor.');
+                    }
+                });
+                contenedor.appendChild(btnNuevaEstanteria);
+            }
+
+            // Igual que en columna-derecha.js: guardamos cómo volver a este estado
+            // después de ver el detalle de un post, para no perder los listeners.
+            document.querySelector('.columna-derecha')._volverCallback = () => cargarEstanterias(usuarioObjetivo, esMiMuro);
+        } catch (error) {
+            contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar las estanterías.</p>';
         }
     }
 
@@ -427,9 +663,16 @@
 
             cargarPersonal(usuarioObjetivo, esMiMuro);
             cargarSeguirInfo(usuarioObjetivo, esMiMuro);
+            cargarEstanterias(usuarioObjetivo, esMiMuro);
             cargarAmigosInfo(usuarioObjetivo, esMiMuro);
             activarTab('posts', usuarioObjetivo, esMiMuro);
             montarHeaderComun();
+
+            activarTabsMobile([
+                { selector: '.columna-izquierda', texto: 'Personal' },
+                { selector: '.columna-centro', texto: 'Muro' },
+                { selector: '.columna-derecha', texto: 'Libros' }
+            ]);
 
             botonesTab.forEach(btn => {
                 btn.addEventListener('click', () => activarTab(btn.dataset.tab, usuarioObjetivo, esMiMuro));

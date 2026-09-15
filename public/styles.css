@@ -5,10 +5,40 @@
     padding: 0;
 }
 
+/* =====================================================
+   PALETA: navy suavizado + fondo "papel" + acento cálido
+   (todo pasa por acá, así que ajustar el tono es cambiar
+   estas variables, no cazar colores sueltos en el archivo)
+   ===================================================== */
+:root {
+    --color-papel: #f5efe1;          /* fondo tipo papel/crema, no blanco frío */
+    --color-tarjeta: #fdfaf3;        /* "hojas" (columnas, cards) — blanco cálido, no puro */
+    --color-borde: #e3d9c2;          /* bordes cálidos en vez de gris frío */
+    --color-texto: #3a3226;          /* marrón oscuro cálido, más suave que negro/gris */
+    --color-texto-suave: #7a7061;
+
+    --color-navy: #5b6f8f;           /* navy suavizado/pastel — el azul principal */
+    --color-navy-oscuro: #3f4f68;    /* variante un poco más oscura, para header/footer */
+    --color-navy-claro: #e7ecf3;     /* fondo azulado pastel para hovers/badges */
+    --color-navy-texto: #445269;     /* texto sobre fondos claros azulados */
+
+    --color-acento: #c08a4e;         /* dorado envejecido — CTAs, valoraciones, detalles */
+    --color-acento-oscuro: #a06f3a;
+
+    --color-like: #7fa88b;           /* verde salvia suavizado (antes verde neón) */
+    --color-like-fondo: #eaf3ee;
+    --color-dislike: #c17b83;        /* rosa/terracota suave (antes rojo neón) */
+    --color-dislike-fondo: #f8ecee;
+}
+
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f6f8;
-    color: #333;
+    background-color: var(--color-papel);
+    /* Textura de papel muy sutil (cuadrícula fina), sin imágenes externas */
+    background-image:
+        repeating-linear-gradient(0deg, rgba(58,50,38,0.03) 0px, rgba(58,50,38,0.03) 1px, transparent 1px, transparent 3px),
+        repeating-linear-gradient(90deg, rgba(58,50,38,0.03) 0px, rgba(58,50,38,0.03) 1px, transparent 1px, transparent 3px);
+    color: var(--color-texto);
     line-height: 1.5;
     padding-top: 110px; /* ¡NUEVO! Compensa el espacio del header fijo para que no tape el contenido */
 }
@@ -20,7 +50,7 @@ header {
     left: 0;
     width: 100%; /* Al ser fixed, necesita que le digamos que ocupe todo el ancho */
     z-index: 1000;
-    background-color: #111e38;
+    background-color: var(--color-navy-oscuro);
     color: white;
     padding: 20px;
     transition: padding 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
@@ -59,13 +89,13 @@ header {
 
 /* BOTÓN DESTACADO (INICIAR SESIÓN) */
 .btn-pill.btn-destacado {
-    background-color: #007bff; /* Azul primario de tu paleta */
-    border-color: #007bff;
+    background-color: var(--color-acento);
+    border-color: var(--color-acento);
 }
 
 .btn-pill.btn-destacado:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
+    background-color: var(--color-acento-oscuro);
+    border-color: var(--color-acento-oscuro);
 }
 /* EFECTO CUANDO EL HEADER SE ACHICA */
 header.shrink {
@@ -100,10 +130,10 @@ header .header-title p {
     position: sticky;
     top: 90px; /* Distancia respecto al techo para no solaparse con el header */
     align-self: start; /* Permite que la columna mantenga su altura y pueda fijarse */
-    background: white;
+    background: var(--color-tarjeta);
     border-radius: 8px;
     padding: 15px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--color-borde);
     max-height: calc(100vh - 110px); /* Evita que la barra lateral sobrepase la pantalla */
     overflow-y: auto; /* Permite scroll interno en la columna si es muy larga */
 }
@@ -133,17 +163,46 @@ header .header-title p {
 
 /* ESTILOS DE COLUMNAS (TARJETAS) */
 .columna-izquierda, .columna-centro, .columna-derecha {
-    background: white;
+    background: var(--color-tarjeta);
     border-radius: 8px;
     padding: 15px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--color-borde);
+    position: relative; /* para la esquina doblada de abajo */
+}
+
+/* Esquina doblada tipo "hoja de papel", sutil, en cada panel grande */
+.columna-izquierda::before, .columna-centro::before, .columna-derecha::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 16px 16px 0;
+    border-color: transparent var(--color-papel) transparent transparent;
+    filter: drop-shadow(-1px 1px 1px rgba(58, 50, 38, 0.15));
+    pointer-events: none;
 }
 
 h2 {
     font-size: 1.2rem;
     margin-bottom: 15px;
-    border-bottom: 2px solid #eee;
+    border-bottom: 2px solid var(--color-borde);
     padding-bottom: 8px;
+}
+
+/* Divisor tipo "lomo de libro" — reemplaza los <hr> sueltos */
+.divisor-lomo {
+    height: 8px;
+    margin: 22px 0;
+    border-radius: 4px;
+    background: repeating-linear-gradient(
+        90deg,
+        var(--color-navy) 0px, var(--color-navy) 6px,
+        var(--color-navy-oscuro) 6px, var(--color-navy-oscuro) 8px
+    );
+    box-shadow: 0 1px 3px rgba(58, 50, 38, 0.25);
 }
 
 /* COLUMNA IZQUIERDA: MENÚ INTERACTIVO */
@@ -159,7 +218,7 @@ h2 {
 
 .lista-categorias a {
     text-decoration: none;
-    color: #444; /* Color gris oscuro más elegante por defecto */
+    color: var(--color-texto-suave);
     font-weight: 500;
     display: block;
     padding: 8px 12px;
@@ -169,15 +228,15 @@ h2 {
 }
 
 .lista-categorias a:hover {
-    background-color: #eef5ff; /* Fondo azul clarito */
-    color: #007bff; /* El texto se vuelve azul brillante */
+    background-color: var(--color-navy-claro);
+    color: var(--color-navy-texto);
     padding-left: 18px; /* ¡Efecto dinámico! El texto se desplaza a la derecha */
 }
 
 /* COLUMNA CENTRO: FEED ESTILO TWITTER */
 .publicar-box {
-    background-color: #f8f9fa;
-    border: 1px solid #ddd;
+    background-color: var(--color-navy-claro);
+    border: 1px solid var(--color-borde);
     border-radius: 8px;
     padding: 12px;
     margin-bottom: 20px;
@@ -212,21 +271,21 @@ h2 {
 }
 
 .btn-publicar {
-    background-color: #007bff;
+    background-color: var(--color-navy);
     color: white;
     border: none;
     padding: 8px 18px; /* Ligeramente más grande para mejor área de clic */
     border-radius: 20px;
     cursor: pointer;
     font-weight: bold;
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2); /* Sombra sutil base */
+    box-shadow: 0 2px 4px rgba(91, 111, 143, 0.25); /* Sombra sutil base */
     transition: all 0.2s ease-in-out; /* Transición suave */
 }
 
 .btn-publicar:hover {
-    background-color: #0056b3; /* Azul más oscuro */
+    background-color: var(--color-navy-oscuro);
     transform: translateY(-2px); /* Se levanta ligeramente hacia arriba */
-    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4); /* La sombra crece */
+    box-shadow: 0 4px 8px rgba(91, 111, 143, 0.4); /* La sombra crece */
 }
 
 .post-card {
@@ -238,7 +297,7 @@ h2 {
 
 .post-avatar {
     font-size: 24px;
-    background: #eef2f7;
+    background: var(--color-navy-claro);
     width: 40px;
     height: 40px;
     display: flex;
@@ -274,8 +333,8 @@ h2 {
 
 .post-libro-badge {
     display: inline-block;
-    background-color: #eaf2ff;
-    color: #0056b3;
+    background-color: var(--color-navy-claro);
+    color: var(--color-navy-texto);
     padding: 3px 8px;
     border-radius: 12px;
     font-size: 0.8rem;
@@ -299,30 +358,46 @@ h2 {
     display: flex;
     align-items: center;
 }
-/* EFECTO HOVER: BOTÓN COMENTAR (1er botón - Azul) */
+/* EFECTO HOVER: BOTÓN COMENTAR (1er botón - navy) */
 .post-acciones button:nth-child(1):hover {
-    background-color: #eef5ff;
-    color: #007bff;
+    background-color: var(--color-navy-claro);
+    color: var(--color-navy-texto);
 }
 
-/* EFECTO HOVER: BOTÓN REPOSTEAR (2do botón - Verde) */
+/* EFECTO HOVER: BOTÓN REPOSTEAR (2do botón - verde suave) */
 .post-acciones button:nth-child(2):hover {
-    background-color: #eafcf0;
-    color: #198754;
+    background-color: var(--color-like-fondo);
+    color: var(--color-like);
 }
 
-/* EFECTO HOVER: BOTÓN LIKE (3er botón - Rojo) */
+/* EFECTO HOVER: BOTÓN LIKE (3er botón - terracota suave) */
 .post-acciones button:nth-child(3):hover {
-    background-color: #ffeef2;
-    color: #e63946;
+    background-color: var(--color-dislike-fondo);
+    color: var(--color-dislike);
 }
 /* COLUMNA DERECHA: RESEÑAS RECIENTES */
 .resena-card {
     display: flex;
     gap: 12px;
-    background: #f9f9f9;
+    background: var(--color-papel);
     padding: 10px;
     border-radius: 6px;
+    border: 1px solid var(--color-borde);
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.resena-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 10px 10px 0;
+    border-color: transparent var(--color-tarjeta) transparent transparent;
+    filter: drop-shadow(-1px 1px 1px rgba(58, 50, 38, 0.15));
 }
 
 .resena-card img {
@@ -340,14 +415,14 @@ h2 {
 }
 
 .valoracion {
-    color: #ffb400;
+    color: var(--color-acento);
     font-weight: bold;
     margin-top: 5px;
 }
 
 /* FOOTER */
 footer {
-    background-color: #111e38;
+    background-color: var(--color-navy-oscuro);
     color: white;
     text-align: center;
     padding: 20px;
@@ -356,7 +431,7 @@ footer {
 }
 
 footer a {
-    color: #a0c4ff;
+    color: #e3cb9c; /* dorado suave, legible sobre navy oscuro */
 }
 
 /* RESPONSIVO EN PANTALLAS PEQUEÑAS */
@@ -388,14 +463,14 @@ footer a {
 }
 
 .modal-content {
-    background-color: white;
+    background-color: var(--color-tarjeta);
     padding: 30px;
     border-radius: 12px;
     width: 90%;
     max-width: 380px;
     position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    color: #333;
+    box-shadow: 0 5px 15px rgba(58, 50, 38, 0.3);
+    color: var(--color-texto);
     animation: aparecer 0.3s ease-out; /* Pequeña animación al abrir */
 }
 
@@ -434,27 +509,29 @@ footer a {
     font-size: 0.9rem;
     margin-bottom: 5px;
     font-weight: bold;
-    color: #444;
+    color: var(--color-texto-suave);
 }
 
 .form-grupo input {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--color-borde);
     border-radius: 6px;
     font-size: 1rem;
     outline: none;
+    background: var(--color-tarjeta);
+    color: var(--color-texto);
 }
 
 .form-grupo input:focus {
-    border-color: #007bff;
+    border-color: var(--color-navy);
 }
 
 .link-olvido {
     display: block;
     text-align: right;
     font-size: 0.85rem;
-    color: #007bff;
+    color: var(--color-navy);
     text-decoration: none;
     margin-bottom: 20px;
 }
@@ -465,7 +542,7 @@ footer a {
 
 .btn-entrar {
     width: 100%;
-    background-color: #007bff;
+    background-color: var(--color-navy);
     color: white;
     border: none;
     padding: 12px;
@@ -477,7 +554,7 @@ footer a {
 }
 
 .btn-entrar:hover {
-    background-color: #0056b3;
+    background-color: var(--color-navy-oscuro);
 }
 
 /* --- Estilos para el Header de cada Publicación (Estilo Twitter) --- */
@@ -503,4 +580,160 @@ footer a {
 .post-user, .post-tiempo {
     color: #777;
     font-size: 0.9em;
+}
+
+/* ====================================================== */
+/* DIÁLOGOS PROPIOS (reemplazan confirm()/alert() del navegador) */
+/* ====================================================== */
+.dialogo-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(58, 50, 38, 0.45);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+}
+.dialogo-overlay.activo {
+    display: flex;
+}
+.dialogo-caja {
+    background-color: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    padding: 24px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 340px;
+    box-shadow: 0 6px 20px rgba(58, 50, 38, 0.3);
+    color: var(--color-texto);
+    animation: aparecer 0.2s ease-out;
+    text-align: center;
+}
+.dialogo-caja p {
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+.dialogo-botones {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.dialogo-botones button {
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+}
+.dialogo-btn-cancelar {
+    background-color: var(--color-navy-claro);
+    color: var(--color-navy-texto);
+}
+.dialogo-btn-confirmar {
+    background-color: var(--color-dislike);
+    color: white;
+}
+.dialogo-btn-ok {
+    background-color: var(--color-navy);
+    color: white;
+}
+
+/* ====================================================== */
+/* ESTADOS VACÍOS ILUSTRADOS (en vez de solo texto suelto) */
+/* ====================================================== */
+.estado-vacio {
+    text-align: center;
+    padding: 18px 10px;
+    color: var(--color-texto-suave);
+}
+.estado-vacio svg {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 8px;
+    opacity: 0.55;
+}
+.estado-vacio p {
+    font-size: 0.85rem;
+}
+
+/* ====================================================== */
+/* MODO COMPACTO (togglable desde el header) */
+/* ====================================================== */
+body.modo-compacto .post-card {
+    padding: 8px 0;
+    gap: 8px;
+}
+body.modo-compacto .post-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+}
+body.modo-compacto .post-texto {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+body.modo-compacto .post-acciones button {
+    padding: 4px 8px;
+    font-size: 0.78rem;
+}
+body.modo-compacto .resena-card {
+    padding: 6px;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.btn-modo-compacto {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 6px;
+    opacity: 0.85;
+}
+.btn-modo-compacto:hover {
+    opacity: 1;
+}
+
+/* ====================================================== */
+/* PESTAÑAS EN MÓVIL (reemplazan la vista apilada de 3 columnas) */
+/* ====================================================== */
+.tabs-mobile {
+    display: none;
+    gap: 6px;
+    margin: 0 15px 15px 15px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.tabs-mobile button {
+    flex: 1;
+    padding: 8px;
+    border-radius: 999px;
+    border: 1px solid var(--color-borde);
+    background: var(--color-tarjeta);
+    color: var(--color-texto-suave);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.tabs-mobile button.activa {
+    background: var(--color-navy);
+    color: white;
+    border-color: var(--color-navy);
+}
+
+@media (max-width: 850px) {
+    .tabs-mobile {
+        display: flex;
+    }
+    .contenedor-principal > .columna-izquierda,
+    .contenedor-principal > .columna-centro,
+    .contenedor-principal > .columna-derecha {
+        display: none;
+    }
+    .contenedor-principal > .col-mobile-activa {
+        display: block;
+    }
 }

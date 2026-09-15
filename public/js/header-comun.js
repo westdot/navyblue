@@ -54,6 +54,126 @@ function crearMenuUsuario(usuario) {
     return contenedor;
 }
 
+function crearBotonModoCompacto() {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-modo-compacto';
+    btn.title = 'Cambiar densidad del feed';
+
+    function actualizarIcono() {
+        const activo = document.body.classList.contains('modo-compacto');
+        btn.textContent = activo ? '☰' : '☷';
+    }
+
+    // Se recuerda entre páginas (es solo una preferencia visual, no datos sensibles)
+    if (localStorage.getItem('modoCompacto') === '1') {
+        document.body.classList.add('modo-compacto');
+    }
+    actualizarIcono();
+
+    btn.addEventListener('click', () => {
+        document.body.classList.toggle('modo-compacto');
+        localStorage.setItem('modoCompacto', document.body.classList.contains('modo-compacto') ? '1' : '0');
+        actualizarIcono();
+    });
+
+    return btn;
+}
+
+function crearCampanaNotificaciones() {
+    const contenedor = document.createElement('div');
+    contenedor.style.cssText = 'position: relative; display: flex; align-items: center;';
+    contenedor.innerHTML = `
+        <button type="button" class="btn-campana" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.1rem; padding: 6px; position: relative;">
+            🔔
+            <span class="badge-notificaciones" style="display: none; position: absolute; top: 0; right: 0; background: #c17b83; color: white; border-radius: 999px; font-size: 0.65rem; padding: 1px 5px; font-weight: bold;"></span>
+        </button>
+        <div class="panel-notificaciones" style="display: none; position: absolute; right: 0; top: 130%; background: white; color: #333; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); min-width: 280px; max-height: 350px; overflow-y: auto; z-index: 200;"></div>
+    `;
+
+    const btn = contenedor.querySelector('.btn-campana');
+    const badge = contenedor.querySelector('.badge-notificaciones');
+    const panel = contenedor.querySelector('.panel-notificaciones');
+
+    cerrarAlClickAfuera(panel, btn);
+
+    // Formatea "hace 5m/2h/3d", igual que en los posts
+    function tiempoRelativo(fechaBD) {
+        const fecha = new Date(fechaBD.replace(' ', 'T') + 'Z');
+        const diffSeg = Math.floor((new Date() - fecha) / 1000);
+        if (diffSeg < 60) return 'Ahora';
+        const diffMin = Math.floor(diffSeg / 60);
+        if (diffMin < 60) return `${diffMin}m`;
+        const diffHoras = Math.floor(diffMin / 60);
+        if (diffHoras < 24) return `${diffHoras}h`;
+        return `${Math.floor(diffHoras / 24)}d`;
+    }
+
+    async function actualizarBadge() {
+        try {
+            const resp = await fetch('/api/notifications');
+            const data = await resp.json();
+            if (data.noLeidas > 0) {
+                badge.textContent = data.noLeidas > 9 ? '9+' : data.noLeidas;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+            return data.notifications || [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    async function abrirPanel() {
+        const abierto = panel.style.display === 'block';
+        if (abierto) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        const notificaciones = await actualizarBadge();
+        panel.innerHTML = '';
+
+        if (notificaciones.length === 0) {
+            panel.innerHTML = '<p style="padding: 15px; margin: 0; color: #888; font-size: 0.85rem;">No tienes notificaciones todavía.</p>';
+        } else {
+            notificaciones.forEach(n => {
+                const item = document.createElement('a');
+                item.href = `muro.html?usuario=${encodeURIComponent(n.actor_username)}`;
+                item.style.cssText = `display: block; padding: 10px 15px; border-bottom: 1px solid #eee; text-decoration: none; color: #333; font-size: 0.83rem; ${n.leida ? '' : 'background: #eef2f7;'}`;
+                const mensaje = document.createElement('div');
+                mensaje.textContent = n.mensaje;
+                const fecha = document.createElement('div');
+                fecha.style.cssText = 'font-size: 0.72rem; color: #999; margin-top: 2px;';
+                fecha.textContent = tiempoRelativo(n.created_at);
+                item.appendChild(mensaje);
+                item.appendChild(fecha);
+                panel.appendChild(item);
+            });
+        }
+
+        panel.style.display = 'block';
+
+        // Al abrir el panel, marcamos todo como leído y apagamos el contador
+        if (badge.style.display !== 'none') {
+            try {
+                await fetch('/api/notifications/marcar-leidas', { method: 'POST' });
+                badge.style.display = 'none';
+            } catch (error) { /* si falla, no pasa nada grave */ }
+        }
+    }
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        abrirPanel();
+    });
+
+    actualizarBadge(); // contador inicial al cargar la página
+
+    return contenedor;
+}
+
 function crearBuscador() {
     const contenedor = document.createElement('div');
     contenedor.className = 'buscador-header';
@@ -114,6 +234,8 @@ async function montarHeaderComun(opciones = {}) {
         if (titulo && btnVolver) btnVolver.remove();
 
         headerAcciones.appendChild(crearBuscador());
+        headerAcciones.appendChild(crearBotonModoCompacto());
+        headerAcciones.appendChild(crearCampanaNotificaciones());
         headerAcciones.appendChild(crearMenuUsuario(sesion.user));
     } else {
         localStorage.removeItem('usuarioLogueado');

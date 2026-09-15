@@ -28,7 +28,7 @@ function crearBarraAcciones(post, onAbrirDetalle) {
             const resp = await fetch(`/api/posts/${post.id}/repost`, { method: 'POST' });
             const data = await resp.json().catch(() => ({}));
             if (!resp.ok) {
-                alert(data.error || 'Debes iniciar sesión para repostear.');
+                mostrarAviso(data.error || 'Debes iniciar sesión para repostear.');
                 return;
             }
             post.reposted_by_me = data.reposted;
@@ -36,7 +36,7 @@ function crearBarraAcciones(post, onAbrirDetalle) {
             btnRepostear.textContent = `🔄 ${data.count}`;
             btnRepostear.style.color = data.reposted ? '#198754' : '';
         } catch (error) {
-            alert('No se pudo conectar con el servidor.');
+            mostrarAviso('No se pudo conectar con el servidor.');
         }
     });
 
@@ -50,7 +50,7 @@ function crearBarraAcciones(post, onAbrirDetalle) {
             const resp = await fetch(`/api/posts/${post.id}/like`, { method: 'POST' });
             const data = await resp.json().catch(() => ({}));
             if (!resp.ok) {
-                alert(data.error || 'Debes iniciar sesión para dar like.');
+                mostrarAviso(data.error || 'Debes iniciar sesión para dar like.');
                 return;
             }
             post.liked_by_me = data.liked;
@@ -58,7 +58,7 @@ function crearBarraAcciones(post, onAbrirDetalle) {
             btnLike.textContent = `❤️ ${data.count}`;
             btnLike.style.color = data.liked ? '#e63946' : '';
         } catch (error) {
-            alert('No se pudo conectar con el servidor.');
+            mostrarAviso('No se pudo conectar con el servidor.');
         }
     });
 
@@ -221,13 +221,13 @@ function renderDetallePost(post, comentarios, contenedor) {
             });
             const data = await resp.json().catch(() => ({}));
             if (!resp.ok) {
-                alert(data.error || 'No se pudo comentar (¿iniciaste sesión?).');
+                mostrarAviso(data.error || 'No se pudo comentar (¿iniciaste sesión?).');
                 return;
             }
             input.value = '';
             abrirDetallePost(post.id, contenedor); // recarga el detalle con el comentario nuevo
         } catch (error) {
-            alert('No se pudo conectar con el servidor.');
+            mostrarAviso('No se pudo conectar con el servidor.');
         }
     });
 }

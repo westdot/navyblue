@@ -69,7 +69,7 @@ function crearResenaCard(resena) {
             });
             const data = await resp.json().catch(() => ({}));
             if (!resp.ok) {
-                alert(data.error || 'Debes iniciar sesión para reaccionar.');
+                mostrarAviso(data.error || 'Debes iniciar sesión para reaccionar.');
                 return;
             }
             resena.likes_count = data.likes_count;
@@ -80,7 +80,7 @@ function crearResenaCard(resena) {
             btnLike.style.color = data.mi_reaccion === 'like' ? '#198754' : '';
             btnDislike.style.color = data.mi_reaccion === 'dislike' ? '#e63946' : '';
         } catch (error) {
-            alert('No se pudo conectar con el servidor.');
+            mostrarAviso('No se pudo conectar con el servidor.');
         }
     }
 
@@ -102,7 +102,8 @@ async function cargarResenasRecientes(contenedor) {
         const data = await resp.json();
         contenedor.innerHTML = '';
         if (!data.reviews || data.reviews.length === 0) {
-            contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">Todavía no hay reseñas.</p>';
+            contenedor.innerHTML = '';
+            contenedor.appendChild(crearEstadoVacio('Todavía no hay reseñas.'));
             return;
         }
         data.reviews.forEach(r => contenedor.appendChild(crearResenaCard(r)));
@@ -118,7 +119,8 @@ async function cargarTrending(contenedor) {
         const data = await resp.json();
         contenedor.innerHTML = '';
         if (!data.trending || data.trending.length === 0) {
-            contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">Todavía no hay temas en tendencia.</p>';
+            contenedor.innerHTML = '';
+            contenedor.appendChild(crearEstadoVacio('Todavía no hay temas en tendencia.'));
             return;
         }
         const ol = document.createElement('ol');
@@ -145,7 +147,7 @@ async function cargarColumnaDerecha(contenedor) {
     contenedor.innerHTML = `
         <h2>Reseñas Recientes</h2>
         <div class="lista-resenas"></div>
-        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+        <div class="divisor-lomo"></div>
         <h2>Trending</h2>
         <div class="lista-trending"></div>
     `;

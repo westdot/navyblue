@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Navybluerageagainstthemachism</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%233f4f68'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23f5efe1'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%23c08a4e'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -90,10 +91,12 @@
         <p><a href="#inicio-header">Volver al inicio de la página</a></p>
     </footer>
     <!-- SCRIPT PARA ACHICAR EL HEADER AL BAJAR -->
+    <script src="js/ui-comunes.js"></script>
     <script src="js/header-comun.js"></script>
     <script src="js/posts-comunes.js"></script>
     <script src="js/columna-derecha.js"></script>
     <script src="js/composer-comun.js"></script>
+    <script src="js/mobile-tabs.js"></script>
     <script>
         window.addEventListener('scroll', function() {
             const header = document.getElementById('inicio-header');
@@ -305,17 +308,17 @@
             btnEliminar.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.9rem;';
             btnEliminar.addEventListener('click', async (e) => {
                 e.stopPropagation(); // que no abra el detalle al borrar
-                if (!confirm('¿Eliminar esta publicación?')) return;
+                if (!(await confirmarAccion('¿Eliminar esta publicación?'))) return;
                 try {
                     const resp = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' });
                     if (resp.ok) {
                         article.remove();
                     } else {
                         const data = await resp.json().catch(() => ({}));
-                        alert(data.error || 'No se pudo eliminar la publicación.');
+                        mostrarAviso(data.error || 'No se pudo eliminar la publicación.');
                     }
                 } catch (error) {
-                    alert('No se pudo conectar con el servidor.');
+                    mostrarAviso('No se pudo conectar con el servidor.');
                 }
             });
             header.appendChild(btnEliminar);
@@ -364,6 +367,12 @@
             onPost: cargarPosts,
             onResena: () => cargarColumnaDerecha(columnaDerecha)
         }));
+
+        activarTabsMobile([
+            { selector: '.columna-izquierda', texto: 'Menú' },
+            { selector: '.columna-centro', texto: 'Muro' },
+            { selector: '.columna-derecha', texto: 'Reseñas' }
+        ]);
     });
 
     </script>
