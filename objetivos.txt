@@ -28,5 +28,6 @@ crear una casilla de preguntas de seguidores (directa) y que se vean posteadas e
 
 agregar opcion para ocultar amigos (o partes del perfil) de nuestro muro
 
+agregar signo zodiacal al muro de informacion, sol luna y ascendente
 
-
+agregar extras de informacion random
