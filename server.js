@@ -1351,6 +1351,8 @@ app.get('/api/reviews', (req, res) => {
 });
 
 // Crear una reseña: título, autor, portada (opcional) y valoración 1-5. Sin texto de opinión.
+// Además, la reseña reciente se agrega automáticamente a la estantería "Leídos"
+// (se crea si el usuario todavía no la tiene, y no se duplica si el libro ya estaba ahí).
 app.post('/api/reviews', requiereSesion, (req, res) => {
     const { id: userId, username } = req.session.user;
     const { libro_titulo, autor, portada_url, valoracion } = req.body;
@@ -1360,12 +1362,47 @@ app.post('/api/reviews', requiereSesion, (req, res) => {
         return res.status(400).json({ error: 'Completa título, autor y una valoración entre 1 y 5.' });
     }
 
+    // Agrega el libro reseñado a la estantería "Leídos" del usuario, creándola
+    // si todavía no existe, y sin duplicarlo si ya estaba ahí.
+    function agregarALeidos(callback) {
+        db.get(`SELECT id FROM shelves WHERE user_id = ? AND LOWER(nombre) = LOWER(?)`, [userId, 'Leídos'], (err, estante) => {
+            if (err) return callback();
+
+            const insertarSiFalta = (shelfId) => {
+                db.get(
+                    `SELECT id FROM shelf_items WHERE shelf_id = ? AND LOWER(libro_titulo) = LOWER(?) AND LOWER(autor) = LOWER(?)`,
+                    [shelfId, libro_titulo, autor],
+                    (err, existente) => {
+                        if (err || existente) return callback();
+                        db.run(
+                            `INSERT INTO shelf_items (shelf_id, libro_titulo, autor, portada_url) VALUES (?, ?, ?, ?)`,
+                            [shelfId, libro_titulo, autor, portada_url || null],
+                            () => callback()
+                        );
+                    }
+                );
+            };
+
+            if (estante) {
+                insertarSiFalta(estante.id);
+            } else {
+                db.run(`INSERT INTO shelves (user_id, nombre) VALUES (?, ?)`, [userId, 'Leídos'], function(err) {
+                    if (err) return callback();
+                    insertarSiFalta(this.lastID);
+                });
+            }
+        });
+    }
+
     db.run(
         `INSERT INTO reviews (user_id, username, libro_titulo, autor, portada_url, valoracion) VALUES (?, ?, ?, ?, ?, ?)`,
         [userId, username, libro_titulo, autor, portada_url || null, val],
         function(err) {
             if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Reseña publicada con éxito', reviewId: this.lastID });
+            const reviewId = this.lastID;
+            agregarALeidos(() => {
+                res.status(201).json({ message: 'Reseña publicada con éxito', reviewId });
+            });
         }
     );
 });
@@ -1447,7 +1484,7 @@ app.post('/api/reviews/:id/reaccionar', requiereSesion, (req, res) => {
 // --- TRENDING: los tags más usados en los posts recientes ---
 app.get('/api/trending', (req, res) => {
     db.all(
-        `SELECT tag, COUNT(*) AS cantidad
+        `SELECT MIN(tag) AS tag, COUNT(*) AS cantidad
          FROM posts
          WHERE tag IS NOT NULL AND TRIM(tag) != ''
          GROUP BY LOWER(tag)

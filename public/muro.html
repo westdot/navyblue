@@ -124,6 +124,7 @@
     const accionesRelacion = document.getElementById('acciones-relacion');
     const tituloLista = document.getElementById('titulo-lista');
     const botonesTab = document.querySelectorAll('.btn-tab-muro');
+    let composerActual = null; // referencia al composer, para poder abrir "Reseñar" precargado al terminar una lectura
 
     // Formatea la fecha de registro en algo legible, ej: "septiembre de 2026"
     function formatearFecha(fechaISO) {
@@ -777,6 +778,18 @@
                         mostrarAviso(data.error || 'No se pudo actualizar.');
                         return;
                     }
+
+                    // Si llegó a la última página, abrimos "Reseñar" ya con los
+                    // datos del libro listos (solo falta poner las estrellas).
+                    if (pagina >= lectura.paginas_totales && composerActual) {
+                        mostrarAviso(`¡Terminaste "${lectura.libro_titulo}"! Te dejamos la reseña lista para que la completes.`);
+                        composerActual.mostrarResenaPrecargada({
+                            titulo: lectura.libro_titulo,
+                            autor: lectura.autor,
+                            portada: lectura.portada_url
+                        });
+                    }
+
                     cargarLecturas(usuarioObjetivo, esMiMuro);
                 } catch (error) {
                     mostrarAviso('No se pudo conectar con el servidor.');
@@ -951,10 +964,11 @@
             }
 
             if (esMiMuro) {
-                document.getElementById('composer-mount').appendChild(crearComposer({
+                composerActual = crearComposer({
                     onPost: () => activarTab('posts', usuarioObjetivo, esMiMuro),
                     onResena: () => {} // las reseñas no se muestran en el muro, solo en la columna derecha del inicio
-                }));
+                });
+                document.getElementById('composer-mount').appendChild(composerActual);
             }
 
             cargarPersonal(usuarioObjetivo, esMiMuro);

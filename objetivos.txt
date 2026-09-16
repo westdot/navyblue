@@ -32,15 +32,15 @@ agregar signo zodiacal al muro de informacion, sol luna y ascendente
 
 agregar extras de informacion random
 
-boton para borrar comentarios
+--boton para borrar comentarios
 
 --al terminar las paginas de un libro en los "leyendo ahora" actualizarlo a Leídos
 
-al poner enter, publicar
+--al poner enter, publicar
 
 porcentaje de insignias que tiene (por ejemplo, esta insignia la tiene el 0,0% de personas)
 
-en estanterias (dentro del perfil) solo notar libros (portadas), crear html de estanterias
+--en estanterias (dentro del perfil) solo notar libros (portadas), crear html de estanterias
 
 --separar muro izq en 2, parte social y avances o weas de libros
 
@@ -52,4 +52,6 @@ abajo de los likes en las reseñas, que aparezca la reseña escrita (añadir bot
 
 al hacer reseña del libro que se agregue a leidos, igual que al terminar la hoja de leyendo ahora aparezca automaticamente el libro en reseñar y darle los datos necesarios para que se reseñe
 
-el aetiquetar con arroba para responder un comentario directo
+el etiquetar con arroba para responder un comentario directo 
+
+achicar portadas de las reseñas recientes, para que calce

@@ -241,5 +241,18 @@ function crearComposer({ onPost, onResena } = {}) {
         btnTabPost.style.color = '#333';
     });
 
+    // Abre la pestaña "Reseñar" con título/autor/portada ya cargados (se usa,
+    // por ejemplo, al terminar un libro en "Leyendo ahora": solo falta poner
+    // las estrellas y publicar).
+    contenedor.mostrarResenaPrecargada = function ({ titulo, autor, portada } = {}) {
+        btnTabResena.click();
+        inputTitulo.value = titulo || '';
+        inputAutor.value = autor || '';
+        inputPortada.value = portada || '';
+        mensajeResena.textContent = '';
+        contenedor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        inputTitulo.focus();
+    };
+
     return contenedor;
 }
