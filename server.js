@@ -963,14 +963,14 @@ app.get('/api/users/:username/badges', (req, res) => {
             )
         ]).then(([posts, reviews, amigos, seguidores, librosEnEstantes]) => {
             const badges = [
-                { nombre: 'Primera Publicación', icono: '📝', desbloqueada: posts >= 1, descripcion: 'Publica tu primer post' },
-                { nombre: 'Publicador Activo', icono: '📚', desbloqueada: posts >= 10, descripcion: 'Publica 10 posts' },
-                { nombre: 'Primera Reseña', icono: '⭐', desbloqueada: reviews >= 1, descripcion: 'Publica tu primera reseña' },
-                { nombre: 'Crítico Literario', icono: '🏆', desbloqueada: reviews >= 5, descripcion: 'Publica 5 reseñas' },
-                { nombre: 'Primer Amigo', icono: '🤝', desbloqueada: amigos >= 1, descripcion: 'Agrega tu primer amigo' },
-                { nombre: 'Sociable', icono: '🎉', desbloqueada: amigos >= 5, descripcion: 'Ten 5 amigos' },
-                { nombre: 'Popular', icono: '🌟', desbloqueada: seguidores >= 10, descripcion: 'Consigue 10 seguidores' },
-                { nombre: 'Lector', icono: '📖', desbloqueada: librosEnEstantes >= 1, descripcion: 'Agrega un libro a una estantería' }
+                { nombre: 'Primera Publicación', icono: '1', desbloqueada: posts >= 1, descripcion: 'Publica tu primer post' },
+                { nombre: 'Publicador Activo', icono: '2', desbloqueada: posts >= 10, descripcion: 'Publica 10 posts' },
+                { nombre: 'Primera Reseña', icono: '3', desbloqueada: reviews >= 1, descripcion: 'Publica tu primera reseña' },
+                { nombre: 'Crítico Literario', icono: '4', desbloqueada: reviews >= 5, descripcion: 'Publica 5 reseñas' },
+                { nombre: 'Primer Amigo', icono: '5', desbloqueada: amigos >= 1, descripcion: 'Agrega tu primer amigo' },
+                { nombre: 'Sociable', icono: '6', desbloqueada: amigos >= 5, descripcion: 'Ten 5 amigos' },
+                { nombre: 'Popular', icono: '7', desbloqueada: seguidores >= 10, descripcion: 'Consigue 10 seguidores' },
+                { nombre: 'Lector', icono: '8', desbloqueada: librosEnEstantes >= 1, descripcion: 'Agrega un libro a una estanteria' }
             ];
             res.json({ badges });
         });
