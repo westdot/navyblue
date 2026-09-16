@@ -7,11 +7,11 @@ const session = require('express-session');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware para parsear JSON y servir archivos estáticos
+// middleware para parsear JSON y servir archivos estaticos
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // Asume que los archivos HTML/CSS están en una carpeta 'public'
+app.use(express.static(path.join(__dirname, 'public'))); // se asume que los archivos HTML/CSS estan en una carpeta 'public'
 
-// Middleware de sesión: el servidor recuerda quién inició sesión mediante una cookie firmada
+// middleware de sesión: el servidor recuerda quién inicio sesion mediante una cookie firmada
 app.use(session({
     secret: 'cambia-esto-por-una-frase-larga-y-secreta', // TODO: mover a una variable de entorno
     resave: false,
@@ -19,11 +19,11 @@ app.use(session({
     cookie: {
         maxAge: 1000 * 60 * 60 * 24, // la sesión dura 24 horas
         httpOnly: true
-        // secure: true  // descomenta esto cuando sirvas el sitio con HTTPS
+        // secure: true  // descomenta esto cuando se sirve el sitio con HTTPS
     }
 }));
 
-// Conexión y configuración de la base de datos SQLite
+// conexión y configuracion de la base de datos SQLite
 const dbPath = path.join(__dirname, 'database.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
@@ -33,7 +33,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
-// Crear tablas, si no existen
+// crear tablas, si no existen
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,14 +45,14 @@ db.serialize(() => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    // Migracion: si la tabla ya existia de antes (sin estas columnas), las agregamos.
-    // Si ya existen, SQLite devuelve error "duplicate column" y simplemente lo ignoramos.
+    // migracion: si la tabla ya existia de antes (sin estas columnas), las agregamos
+    // si ya existen, SQLite devuelve error "duplicate column" y simplemente lo ignoramos
     db.run(`ALTER TABLE users ADD COLUMN pais TEXT`, (err) => {
         console.log('[DEBUG] ALTER pais:', err ? err.message : 'OK, columna agregada');
     });
-    // OJO: no se le puede poner "DEFAULT CURRENT_TIMESTAMP" a una columna agregada
+    // no se le puede poner "DEFAULT CURRENT_TIMESTAMP" a una columna agregada
     // con ALTER TABLE si la tabla ya tiene filas (SQLite lo prohibe). Por eso se
-    // agrega sin default, y las filas existentes se rellenan aparte con UPDATE.
+    // agrega sin default, y las filas existentes se rellenan aparte con UPDATE
     db.run(`ALTER TABLE users ADD COLUMN created_at DATETIME`, (err) => {
         console.log('[DEBUG] ALTER created_at:', err ? err.message : 'OK, columna agregada');
     });
@@ -69,7 +69,7 @@ db.serialize(() => {
     )`);
 
     // user_id: ligamos cada post a la CUENTA (id fijo), no al nombre de usuario
-    // (que puede cambiar). Así, aunque cambies tu username, tus posts te siguen
+    // (que puede cambiar). Así, aunque cambie el username, tus posts te siguen
     // perteneciendo. "username" se sigue guardando como respaldo, pero al leer
     // los posts se prioriza el nombre ACTUAL de la cuenta vía este id.
     db.run(`ALTER TABLE posts ADD COLUMN user_id INTEGER`, (err) => {

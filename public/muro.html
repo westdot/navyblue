@@ -180,7 +180,7 @@
         tiempo.textContent = obtenerTiempoRelativo(post.created_at);
         header.appendChild(tiempo);
 
-        // El botón de eliminar solo aparece si estás viendo TU PROPIO muro
+        // el boton de eliminar solo aparece si estss viendo TU PROPIO muro
         if (esMiMuro) {
             const btnEliminar = document.createElement('button');
             btnEliminar.type = 'button';
@@ -224,7 +224,7 @@
         article.appendChild(avatar);
         article.appendChild(contenido);
 
-        // Clic en cualquier parte en blanco del post (o la hora) abre el detalle
+        // clic en cualquier parte en blanco del post (o la hora) abre el detalle
         article.style.cursor = 'pointer';
         article.addEventListener('click', () => {
             abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
@@ -233,7 +233,7 @@
         return article;
     }
 
-    // Pinta una lista de nombres (clickeables, van a su muro) dentro de un <ul>
+    // pinta una lista de nombres (clickeables, van a su muro) dentro de un <ul>
     function pintarListaNombres(ul, nombres, mensajeVacio) {
         ul.innerHTML = '';
         if (nombres.length === 0) {
