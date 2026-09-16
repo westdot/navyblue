@@ -43,5 +43,3 @@ al poner enter, publicar
 porcentaje de insignias que tiene (por ejemplo, esta insignia la tiene el 0,0% de personas)
 
 en estanterias (dentro del perfil) solo notar libros (portadas), crear html de estanterias
-
-agregar medias estrellas
