@@ -70,6 +70,9 @@
             color: white;
             border-color: #34517c;
         }
+        #buscar-resultados a:hover {
+            background: #f7f7f7;
+        }
     </style>
 
     <script src="js/ui-comunes.js"></script>
@@ -111,8 +114,17 @@
             }
 
             data.resultados.forEach(item => {
-                const div = document.createElement('div');
-                div.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
+                const esUsuario = tipoActual === 'usuarios';
+
+                // Para usuarios, todo el bloque es un link que lleva a su perfil (muro.html).
+                // Para el resto (libros, etc.) se mantiene como texto simple por ahora.
+                const div = document.createElement(esUsuario ? 'a' : 'div');
+                div.style.cssText = 'display: block; padding: 12px 0; border-bottom: 1px solid #eee; text-decoration: none; color: inherit;';
+                if (esUsuario) {
+                    div.href = `muro.html?usuario=${encodeURIComponent(item.titulo)}`;
+                    div.style.cursor = 'pointer';
+                }
+
                 const titulo = document.createElement('div');
                 titulo.style.fontWeight = 'bold';
                 titulo.textContent = item.titulo;

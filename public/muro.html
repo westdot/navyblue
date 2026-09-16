@@ -21,29 +21,15 @@
     <!-- ESPACIO RESERVADO PARA EL FONDO DEL MURO (sin gestor de imágenes todavía) -->
     <div id="fondo-muro" style="height: 180px; background: linear-gradient(135deg, var(--color-navy-oscuro), var(--color-navy));"></div>
 
-    <!-- ESTRUCTURA EN 3 COLUMNAS, IGUAL QUE EL RESTO DEL SITIO -->
-    <main class="contenedor-principal">
+    <!-- ESTRUCTURA EN 4 COLUMNAS: SOCIAL + LECTOR (antes una sola izquierda) + CENTRO + DERECHA -->
+    <main class="contenedor-principal cuatro-columnas">
 
-        <!-- COLUMNA IZQUIERDA: INFO PERSONAL + SEGUIDOS/SEGUIDORES + AMIGOS -->
-        <aside class="columna-izquierda">
+        <!-- SUB-COLUMNA IZQUIERDA 1: SOCIAL (INFO PERSONAL + AMIGOS + SEGUIDORES/SEGUIDOS) -->
+        <aside class="columna-izquierda" id="col-social">
             <h2>Personal</h2>
             <ul class="lista-categorias" id="lista-personal">
                 <li>Cargando...</li>
             </ul>
-
-            <div class="divisor-lomo"></div>
-
-            <h2>Leyendo ahora</h2>
-            <div id="lecturas-contenedor">
-                <p style="font-size: 14px; color: #666;">Cargando...</p>
-            </div>
-
-            <div class="divisor-lomo"></div>
-
-            <h2>Insignias</h2>
-            <div id="insignias-contenedor" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                <p style="font-size: 14px; color: #666;">Cargando...</p>
-            </div>
 
             <!-- Botones de Seguir / Agregar amigo: solo aparecen viendo el muro de OTRA persona -->
             <div id="acciones-relacion" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;"></div>
@@ -68,6 +54,21 @@
             </ul>
         </aside>
 
+        <!-- SUB-COLUMNA IZQUIERDA 2: LECTOR (LEYENDO AHORA + INSIGNIAS) -->
+        <aside class="columna-izquierda" id="col-lector">
+            <h2>Leyendo ahora</h2>
+            <div id="lecturas-contenedor">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
+
+            <div class="divisor-lomo"></div>
+
+            <h2>Insignias</h2>
+            <div id="insignias-contenedor" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
+        </aside>
+
         <!-- COLUMNA CENTRO: MURO -->
         <section class="columna-centro">
             <h2>Muro</h2>
@@ -90,7 +91,11 @@
 
         <!-- COLUMNA DERECHA: ESTANTERÍAS / COLECCIONES DE LIBROS -->
         <aside class="columna-derecha">
-            <h2>Estanterías</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Estanterías</h2>
+                <a id="link-gestionar-estanterias" href="estanterias.html" style="display: none; font-size: 0.75rem; color: #34517c; text-decoration: none; font-weight: bold;">Gestionar</a>
+            </div>
+            <div style="border-bottom: 2px solid var(--color-borde); margin-bottom: 15px;"></div>
             <div id="estanterias-contenedor">
                 <p style="font-size: 14px; color: #666;">Cargando...</p>
             </div>
@@ -905,6 +910,10 @@
             document.querySelector('.columna-centro h2').textContent = esMiMuro ? 'Mi Muro' : `Muro de ${usuarioObjetivo}`;
 
             if (esMiMuro) {
+                document.getElementById('link-gestionar-estanterias').style.display = 'inline';
+            }
+
+            if (esMiMuro) {
                 document.getElementById('composer-mount').appendChild(crearComposer({
                     onPost: () => activarTab('posts', usuarioObjetivo, esMiMuro),
                     onResena: () => {} // las reseñas no se muestran en el muro, solo en la columna derecha del inicio
@@ -921,7 +930,8 @@
             montarHeaderComun();
 
             activarTabsMobile([
-                { selector: '.columna-izquierda', texto: 'Personal' },
+                { selector: '#col-social', texto: 'Social' },
+                { selector: '#col-lector', texto: 'Lector' },
                 { selector: '.columna-centro', texto: 'Muro' },
                 { selector: '.columna-derecha', texto: 'Libros' }
             ]);

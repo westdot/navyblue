@@ -1115,6 +1115,26 @@ app.post('/api/shelves', requiereSesion, (req, res) => {
     });
 });
 
+// Renombrar una estantería propia
+app.put('/api/shelves/:id', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const { nombre } = req.body;
+    if (!nombre || !nombre.trim()) {
+        return res.status(400).json({ error: 'La estantería necesita un nombre' });
+    }
+    db.get(`SELECT user_id FROM shelves WHERE id = ?`, [id], (err, estante) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!estante) return res.status(404).json({ error: 'Estantería no encontrada' });
+        if (estante.user_id !== req.session.user.id) {
+            return res.status(403).json({ error: 'No puedes modificar estanterías de otros usuarios' });
+        }
+        db.run(`UPDATE shelves SET nombre = ? WHERE id = ?`, [nombre.trim(), id], (err) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            res.json({ message: 'Estantería actualizada' });
+        });
+    });
+});
+
 // Eliminar una estantería propia (y los libros que tenía adentro)
 app.delete('/api/shelves/:id', requiereSesion, (req, res) => {
     const { id } = req.params;
@@ -1156,6 +1176,36 @@ app.post('/api/shelves/:id/items', requiereSesion, (req, res) => {
             }
         );
     });
+});
+
+// Modificar un libro de una estantería propia (título, autor y/o portada)
+app.put('/api/shelf-items/:id', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const { libro_titulo, autor, portada_url } = req.body;
+
+    if (!libro_titulo || !autor) {
+        return res.status(400).json({ error: 'Completa al menos título y autor' });
+    }
+
+    db.get(
+        `SELECT shelves.user_id FROM shelf_items JOIN shelves ON shelves.id = shelf_items.shelf_id WHERE shelf_items.id = ?`,
+        [id],
+        (err, fila) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            if (!fila) return res.status(404).json({ error: 'Libro no encontrado' });
+            if (fila.user_id !== req.session.user.id) {
+                return res.status(403).json({ error: 'No puedes modificar estanterías de otros usuarios' });
+            }
+            db.run(
+                `UPDATE shelf_items SET libro_titulo = ?, autor = ?, portada_url = ? WHERE id = ?`,
+                [libro_titulo, autor, portada_url || null, id],
+                (err) => {
+                    if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                    res.json({ message: 'Libro actualizado' });
+                }
+            );
+        }
+    );
 });
 
 // Quitar un libro de una estantería propia

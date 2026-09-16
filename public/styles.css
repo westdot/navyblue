@@ -161,6 +161,15 @@ header .header-title p {
     padding: 0 15px;
 }
 
+/* VARIANTE DE 4 COLUMNAS (usada en el Muro): la izquierda se divide en
+   "Social" y "Lector", una al lado de la otra. El centro (1fr) y la derecha
+   (280px) conservan exactamente el mismo ancho y orden que en el resto del
+   sitio; solo se agranda el contenedor para que quepa la columna extra. */
+.contenedor-principal.cuatro-columnas {
+    grid-template-columns: 190px 190px 1fr 280px;
+    max-width: 1350px;
+}
+
 /* ESTILOS DE COLUMNAS (TARJETAS) */
 .columna-izquierda, .columna-centro, .columna-derecha {
     background: var(--color-tarjeta);
@@ -420,7 +429,8 @@ footer a {
 
 /* RESPONSIVO EN PANTALLAS PEQUEÑAS */
 @media (max-width: 850px) {
-    .contenedor-principal {
+    .contenedor-principal,
+    .contenedor-principal.cuatro-columnas {
         grid-template-columns: 1fr;
     }
 }

@@ -30,6 +30,7 @@ function crearMenuUsuario(usuario) {
         <a href="muro.html" style="color: white; font-weight: bold; font-size: 15px; text-decoration: none;">${usuario.username}</a>
         <button type="button" class="btn-flecha-usuario" style="background: none; border: none; color: white; font-size: 12px; cursor: pointer; padding: 4px;">▾</button>
         <div class="dropdown-usuario" style="display: none; position: absolute; right: 0; top: 130%; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); overflow: hidden; min-width: 160px; z-index: 200;">
+            <a href="estanterias.html" style="display: block; padding: 10px 15px; color: #333; text-decoration: none;">Mis Estanterías</a>
             <a href="perfil.html" style="display: block; padding: 10px 15px; color: #333; text-decoration: none;">Configuración</a>
             <a href="#" class="btn-cerrar-sesion" style="display: block; padding: 10px 15px; color: #d9534f; text-decoration: none;">Cerrar Sesión</a>
         </div>
