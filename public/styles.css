@@ -166,8 +166,22 @@ header .header-title p {
    (280px) conservan exactamente el mismo ancho y orden que en el resto del
    sitio; solo se agranda el contenedor para que quepa la columna extra. */
 .contenedor-principal.cuatro-columnas {
-    grid-template-columns: 190px 190px 1fr 280px;
-    max-width: 1350px;
+    /* Las 2 columnas de la izquierda ahora son más anchas (para que quepan
+       bien los datos de Personal/Seguidos/Amigos/Lector) y quedan "pegadas"
+       entre sí (gap chico); el espacio grande antes del muro lo pone el
+       margin-right de #col-lector más abajo, para que el muro quede
+       centrado. La columna derecha (estanterías) mide lo mismo que las
+       2 columnas izquierdas juntas: 240px + 240px = 480px. */
+    grid-template-columns: 240px 240px 1fr 480px;
+    column-gap: 10px;
+    max-width: 1500px;
+}
+
+/* Empuja el muro hacia el centro dejando un espacio obvio entre la
+   segunda columna izquierda y el muro, mientras las 2 de la izquierda
+   quedan pegadas entre sí (mismo gap chico que el resto). */
+#col-lector {
+    margin-right: 30px;
 }
 
 /* ESTILOS DE COLUMNAS (TARJETAS) */
@@ -432,6 +446,9 @@ footer a {
     .contenedor-principal,
     .contenedor-principal.cuatro-columnas {
         grid-template-columns: 1fr;
+    }
+    #col-lector {
+        margin-right: 0;
     }
 }
 

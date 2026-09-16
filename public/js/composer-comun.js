@@ -57,6 +57,27 @@ function crearComposer({ onPost, onResena } = {}) {
     formPost.appendChild(footerPost);
     formPost.appendChild(mensajePost);
 
+    // Autocompletado con libros/autores/editoriales reales (Open Library),
+    // dejando solo el nombre elegido en el campo.
+    if (typeof activarBuscadorTag === 'function') {
+        activarBuscadorTag(inputTag);
+    }
+
+    // Enter para publicar: en el texto, Enter publica y Shift+Enter hace un
+    // salto de línea normal; en el campo de tag, Enter publica directo.
+    textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            btnPublicarPost.click();
+        }
+    });
+    inputTag.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            btnPublicarPost.click();
+        }
+    });
+
     btnPublicarPost.addEventListener('click', async () => {
         const content = textarea.value.trim();
         const tag = inputTag.value.trim();
@@ -149,6 +170,16 @@ function crearComposer({ onPost, onResena } = {}) {
     if (typeof activarBuscadorLibro === 'function') {
         activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada });
     }
+
+    // Enter en cualquiera de los 3 campos también publica la reseña
+    [inputTitulo, inputAutor, inputPortada].forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnPublicarResena.click();
+            }
+        });
+    });
 
     btnPublicarResena.addEventListener('click', async () => {
         const libro_titulo = inputTitulo.value.trim();

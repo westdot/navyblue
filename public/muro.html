@@ -539,6 +539,35 @@
         return form;
     }
 
+    // Miniatura de solo-portada para la vista resumida del muro (a diferencia
+    // de crearLibroChip, que muestra título/autor completos y se usa en
+    // estanterias.html, la página de gestión completa).
+    function crearPortadaLibro(libro, esMiMuro, alEliminar) {
+        const envoltorio = document.createElement('div');
+        envoltorio.style.cssText = 'position: relative; width: 60px; flex-shrink: 0;';
+
+        const img = document.createElement('img');
+        img.src = libro.portada_url || 'https://via.placeholder.com/60x86';
+        img.alt = `Portada de ${libro.libro_titulo}`;
+        img.title = `${libro.libro_titulo} — ${libro.autor}`;
+        img.style.cssText = 'width: 60px; height: 86px; object-fit: cover; border-radius: 4px; display: block; box-shadow: 0 2px 5px rgba(0,0,0,0.2);';
+        envoltorio.appendChild(img);
+
+        if (esMiMuro) {
+            const btnQuitar = document.createElement('button');
+            btnQuitar.type = 'button';
+            btnQuitar.textContent = '✕';
+            btnQuitar.title = 'Quitar de la estantería';
+            btnQuitar.style.cssText = 'position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; line-height: 16px; padding: 0; border-radius: 50%; border: 1px solid #ccc; background: white; color: #999; cursor: pointer; font-size: 0.7rem; opacity: 0; transition: opacity 0.15s ease;';
+            envoltorio.addEventListener('mouseenter', () => { btnQuitar.style.opacity = '1'; });
+            envoltorio.addEventListener('mouseleave', () => { btnQuitar.style.opacity = '0'; });
+            btnQuitar.addEventListener('click', alEliminar);
+            envoltorio.appendChild(btnQuitar);
+        }
+
+        return envoltorio;
+    }
+
     function crearEstanteCard(estante, usuarioObjetivo, esMiMuro) {
         const div = document.createElement('div');
         div.style.cssText = 'margin-bottom: 18px;';
@@ -574,12 +603,15 @@
         }
         div.appendChild(header);
 
+        // Acá en el muro solo mostramos las portadas (máx. 3, las más
+        // recientes agregadas). El detalle completo vive en "Gestionar".
         const listaLibros = document.createElement('div');
+        listaLibros.style.cssText = 'display: flex; gap: 10px;';
         if (estante.libros.length === 0) {
             listaLibros.appendChild(crearEstadoVacio('Vacía por ahora.'));
         } else {
-            estante.libros.forEach(libro => {
-                listaLibros.appendChild(crearLibroChip(libro, esMiMuro, async () => {
+            estante.libros.slice(0, 3).forEach(libro => {
+                listaLibros.appendChild(crearPortadaLibro(libro, esMiMuro, async () => {
                     if (!(await confirmarAccion(`¿Quitar "${libro.libro_titulo}" de esta estantería?`))) return;
                     try {
                         const resp = await fetch(`/api/shelf-items/${libro.id}`, { method: 'DELETE' });

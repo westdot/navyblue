@@ -1241,13 +1241,14 @@ function portadaOpenLibrary(coverId) {
 }
 
 async function buscarEnOpenLibrary(q, limite = 8) {
-    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=${limite}&fields=title,author_name,cover_i,first_publish_year,number_of_pages_median`;
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=${limite}&fields=title,author_name,cover_i,first_publish_year,number_of_pages_median,publisher`;
     const resp = await fetch(url, { headers: { 'User-Agent': 'NavyBlue (proyecto personal)' } });
     if (!resp.ok) throw new Error(`Open Library respondió ${resp.status}`);
     const data = await resp.json();
     return (data.docs || []).map(doc => ({
         titulo: doc.title,
         autor: (doc.author_name && doc.author_name[0]) || 'Autor desconocido',
+        editorial: (doc.publisher && doc.publisher[0]) || null,
         portada_url: portadaOpenLibrary(doc.cover_i),
         anio: doc.first_publish_year || null,
         paginas: doc.number_of_pages_median || null

@@ -4,6 +4,21 @@
 // - abrir el detalle de un post con sus comentarios, reemplazando el
 //   contenido de la columna derecha (y poder volver a lo que había antes)
 
+// Cachea el username de la sesión actual para saber qué comentarios son
+// "míos" (y así poder mostrarles el botón de eliminar). Se pide una sola vez.
+let _usuarioSesionCache = null;
+async function obtenerUsuarioSesion() {
+    if (_usuarioSesionCache !== null) return _usuarioSesionCache;
+    try {
+        const resp = await fetch('/api/session');
+        const data = await resp.json();
+        _usuarioSesionCache = data.loggedIn ? data.user.username : '';
+    } catch (error) {
+        _usuarioSesionCache = '';
+    }
+    return _usuarioSesionCache;
+}
+
 // Convierte un texto con @menciones (ej: "hola @takato") en nodos de texto +
 // links clickeables a su muro. Nunca usa innerHTML con el texto del post, así
 // que sigue siendo seguro contra XSS igual que antes (solo texto plano + <a>).
@@ -117,9 +132,10 @@ async function abrirDetallePost(postId, contenedor) {
     contenedor.innerHTML = '<p>Cargando publicación...</p>';
 
     try {
-        const [respPost, respComentarios] = await Promise.all([
+        const [respPost, respComentarios, usuarioActual] = await Promise.all([
             fetch(`/api/posts/${postId}`),
-            fetch(`/api/posts/${postId}/comments`)
+            fetch(`/api/posts/${postId}/comments`),
+            obtenerUsuarioSesion()
         ]);
         const dataPost = await respPost.json();
         const dataComentarios = await respComentarios.json();
@@ -129,7 +145,7 @@ async function abrirDetallePost(postId, contenedor) {
             return;
         }
 
-        renderDetallePost(dataPost.post, dataComentarios.comments || [], contenedor);
+        renderDetallePost(dataPost.post, dataComentarios.comments || [], contenedor, usuarioActual);
     } catch (error) {
         contenedor.innerHTML = '<p>No se pudo conectar con el servidor.</p>';
     }
@@ -145,7 +161,7 @@ function cerrarDetallePost(contenedor) {
     }
 }
 
-function renderDetallePost(post, comentarios, contenedor) {
+function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
     contenedor.innerHTML = '';
 
     const btnVolver = document.createElement('button');
@@ -205,14 +221,45 @@ function renderDetallePost(post, comentarios, contenedor) {
         comentarios.forEach(c => {
             const div = document.createElement('div');
             div.style.cssText = 'border-top: 1px solid #eee; padding: 8px 0;';
+
+            const cabeceraC = document.createElement('div');
+            cabeceraC.style.cssText = 'display: flex; align-items: center;';
+
             const autorC = document.createElement('a');
             autorC.style.cssText = 'font-size: 0.85rem; font-weight: bold; text-decoration: none; color: inherit;';
             autorC.href = `muro.html?usuario=${encodeURIComponent(c.username)}`;
             autorC.textContent = c.username;
+            cabeceraC.appendChild(autorC);
+
+            // El botón de eliminar solo aparece en TUS PROPIOS comentarios
+            if (usuarioActual && c.username === usuarioActual) {
+                const btnBorrarComentario = document.createElement('button');
+                btnBorrarComentario.type = 'button';
+                btnBorrarComentario.title = 'Eliminar comentario';
+                btnBorrarComentario.textContent = '🗑️';
+                btnBorrarComentario.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.8rem;';
+                btnBorrarComentario.addEventListener('click', async () => {
+                    if (!(await confirmarAccion('¿Eliminar este comentario?'))) return;
+                    try {
+                        const resp = await fetch(`/api/comments/${c.id}`, { method: 'DELETE' });
+                        if (resp.ok) {
+                            div.remove();
+                            if (post.comments_count) post.comments_count--;
+                        } else {
+                            const data = await resp.json().catch(() => ({}));
+                            mostrarAviso(data.error || 'No se pudo eliminar el comentario.');
+                        }
+                    } catch (error) {
+                        mostrarAviso('No se pudo conectar con el servidor.');
+                    }
+                });
+                cabeceraC.appendChild(btnBorrarComentario);
+            }
+
             const textoC = document.createElement('p');
             textoC.style.cssText = 'margin: 4px 0 0 0; font-size: 0.85rem;';
             textoC.appendChild(renderizarTextoConMenciones(c.content));
-            div.appendChild(autorC);
+            div.appendChild(cabeceraC);
             div.appendChild(textoC);
             listaComentarios.appendChild(div);
         });

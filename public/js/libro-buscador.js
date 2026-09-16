@@ -108,3 +108,114 @@ function activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada, inputPagi
         if (!envoltorio.contains(e.target)) ocultar();
     });
 }
+
+// Autocompletado para un campo de UN SOLO NOMBRE (el "tag" al postear una
+// opinión: puede ser un libro, un autor o una editorial). A diferencia de
+// activarBuscadorLibro (que llena varios campos con los datos de un libro),
+// acá cada resultado de Open Library se muestra como hasta 3 opciones
+// separadas — 📖 Libro / ✍️ Autor / 🏢 Editorial — y al elegir una se deja
+// SOLO ese nombre en el input, nada más.
+//
+// Uso: activarBuscadorTag(inputTag)
+function activarBuscadorTag(inputTag) {
+    if (!inputTag) return;
+
+    const envoltorio = document.createElement('div');
+    envoltorio.style.cssText = 'position: relative;';
+    inputTag.parentNode.insertBefore(envoltorio, inputTag);
+    envoltorio.appendChild(inputTag);
+
+    const lista = document.createElement('div');
+    lista.style.cssText = 'display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; z-index: 80; margin-top: 2px;';
+    envoltorio.appendChild(lista);
+
+    let temporizador = null;
+    let controlador = null;
+
+    function ocultar() {
+        lista.style.display = 'none';
+        lista.innerHTML = '';
+    }
+
+    function opcion(icono, etiqueta, valor) {
+        const item = document.createElement('div');
+        item.style.cssText = 'display: flex; gap: 8px; align-items: center; padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.82rem;';
+        item.addEventListener('mouseenter', () => { item.style.background = '#f5f5f5'; });
+        item.addEventListener('mouseleave', () => { item.style.background = 'white'; });
+
+        const pre = document.createElement('span');
+        pre.textContent = icono;
+        item.appendChild(pre);
+
+        const texto = document.createElement('span');
+        texto.style.cssText = 'overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+        texto.textContent = etiqueta;
+        item.appendChild(texto);
+
+        item.addEventListener('click', () => {
+            inputTag.value = valor;
+            ocultar();
+            inputTag.focus();
+        });
+        return item;
+    }
+
+    function pintarResultados(resultados) {
+        lista.innerHTML = '';
+        if (!resultados || resultados.length === 0) {
+            ocultar();
+            return;
+        }
+
+        // Evitamos repetir el mismo nombre de autor/editorial varias veces
+        // si aparece en más de un resultado.
+        const vistos = new Set();
+        resultados.forEach(libro => {
+            if (libro.titulo && !vistos.has('L:' + libro.titulo)) {
+                vistos.add('L:' + libro.titulo);
+                lista.appendChild(opcion('📖', libro.titulo, libro.titulo));
+            }
+            if (libro.autor && libro.autor !== 'Autor desconocido' && !vistos.has('A:' + libro.autor)) {
+                vistos.add('A:' + libro.autor);
+                lista.appendChild(opcion('✍️', libro.autor, libro.autor));
+            }
+            if (libro.editorial && !vistos.has('E:' + libro.editorial)) {
+                vistos.add('E:' + libro.editorial);
+                lista.appendChild(opcion('🏢', libro.editorial, libro.editorial));
+            }
+        });
+
+        lista.style.display = lista.innerHTML ? 'block' : 'none';
+    }
+
+    async function buscar(q) {
+        if (controlador) controlador.abort();
+        controlador = new AbortController();
+        try {
+            const resp = await fetch(`/api/libros/buscar?q=${encodeURIComponent(q)}`, { signal: controlador.signal });
+            if (!resp.ok) { ocultar(); return; }
+            const data = await resp.json();
+            pintarResultados(data.resultados);
+        } catch (error) {
+            if (error.name !== 'AbortError') ocultar();
+        }
+    }
+
+    inputTag.setAttribute('autocomplete', 'off');
+    inputTag.addEventListener('input', () => {
+        const q = inputTag.value.trim();
+        clearTimeout(temporizador);
+        if (q.length < 3) { ocultar(); return; }
+        temporizador = setTimeout(() => buscar(q), 350);
+    });
+
+    inputTag.addEventListener('focus', () => {
+        if (inputTag.value.trim().length >= 3 && lista.innerHTML !== '') {
+            lista.style.display = 'block';
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!envoltorio.contains(e.target)) ocultar();
+    });
+}
