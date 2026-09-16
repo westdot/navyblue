@@ -1228,6 +1228,46 @@ app.delete('/api/shelf-items/:id', requiereSesion, (req, res) => {
     );
 });
 
+// --- INTEGRACIÓN CON OPEN LIBRARY ---
+// API pública y 100% gratuita de libros (sin API key, sin límites agresivos):
+// https://openlibrary.org/developers/api
+// Se usa en todo el sitio donde se necesitan datos reales de libros: la
+// pestaña "Libros" del buscador, y el autocompletado al agregar libros a una
+// estantería, empezar una lectura o publicar una reseña.
+
+// Arma la URL de la portada a partir del cover_i que devuelve Open Library.
+function portadaOpenLibrary(coverId) {
+    return coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null;
+}
+
+async function buscarEnOpenLibrary(q, limite = 8) {
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=${limite}&fields=title,author_name,cover_i,first_publish_year,number_of_pages_median`;
+    const resp = await fetch(url, { headers: { 'User-Agent': 'NavyBlue (proyecto personal)' } });
+    if (!resp.ok) throw new Error(`Open Library respondió ${resp.status}`);
+    const data = await resp.json();
+    return (data.docs || []).map(doc => ({
+        titulo: doc.title,
+        autor: (doc.author_name && doc.author_name[0]) || 'Autor desconocido',
+        portada_url: portadaOpenLibrary(doc.cover_i),
+        anio: doc.first_publish_year || null,
+        paginas: doc.number_of_pages_median || null
+    }));
+}
+
+// Ruta que usan los formularios (estanterías, lecturas, reseñas) para
+// autocompletar título/autor/portada mientras la persona escribe.
+app.get('/api/libros/buscar', async (req, res) => {
+    const q = (req.query.q || '').trim();
+    if (!q) return res.json({ resultados: [] });
+    try {
+        const resultados = await buscarEnOpenLibrary(q, 8);
+        res.json({ resultados });
+    } catch (error) {
+        console.error('Error consultando Open Library:', error.message);
+        res.status(502).json({ error: 'No se pudo conectar con Open Library', resultados: [] });
+    }
+});
+
 // --- RUTA DE BÚSQUEDA ---
 
 app.get('/api/search', (req, res) => {
@@ -1251,17 +1291,21 @@ app.get('/api/search', (req, res) => {
             }
         );
     } else if (tipo === 'libros') {
-        db.all(
-            `SELECT title, author FROM books WHERE title ILIKE ? OR author ILIKE ? LIMIT 10`,
-            [`%${q}%`, `%${q}%`],
-            (err, rows) => {
-                if (err) return res.status(500).json({ error: err.message });
+        buscarEnOpenLibrary(q, 10)
+            .then(resultados => {
                 res.json({
                     implementado: true,
-                    resultados: rows.map(r => ({ titulo: r.title, subtitulo: r.author }))
+                    resultados: resultados.map(r => ({
+                        titulo: r.titulo,
+                        subtitulo: r.anio ? `${r.autor} · ${r.anio}` : r.autor,
+                        portada_url: r.portada_url
+                    }))
                 });
-            }
-        );
+            })
+            .catch((error) => {
+                console.error('Error buscando libros en Open Library:', error.message);
+                res.json({ implementado: true, resultados: [] });
+            });
     } else {
         // editoriales, mangas, novelas-ligeras: todavía no tienen tabla propia
         res.json({ implementado: false, resultados: [] });

@@ -46,6 +46,7 @@
 
     <script src="js/ui-comunes.js"></script>
     <script src="js/header-comun.js"></script>
+    <script src="js/libro-buscador.js"></script>
     <script>
     const contenedor = document.getElementById('estanterias-contenedor');
     let miUsuario = null;
@@ -114,6 +115,8 @@
         form.appendChild(inputPortada);
         form.appendChild(btnGuardar);
         form.appendChild(mensaje);
+
+        activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada });
 
         return form;
     }
@@ -190,6 +193,8 @@
         form.appendChild(inputPortada);
         form.appendChild(acciones);
         form.appendChild(mensaje);
+
+        activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada });
 
         return form;
     }

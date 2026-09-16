@@ -145,6 +145,11 @@ function crearComposer({ onPost, onResena } = {}) {
     formResena.appendChild(btnPublicarResena);
     formResena.appendChild(mensajeResena);
 
+    // Autocompletado con datos de libros reales (Open Library)
+    if (typeof activarBuscadorLibro === 'function') {
+        activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada });
+    }
+
     btnPublicarResena.addEventListener('click', async () => {
         const libro_titulo = inputTitulo.value.trim();
         const autor = inputAutor.value.trim();

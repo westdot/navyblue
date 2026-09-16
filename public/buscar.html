@@ -117,24 +117,35 @@
                 const esUsuario = tipoActual === 'usuarios';
 
                 // Para usuarios, todo el bloque es un link que lleva a su perfil (muro.html).
-                // Para el resto (libros, etc.) se mantiene como texto simple por ahora.
+                // Para libros (que vienen de Open Library) se muestra la portada real.
                 const div = document.createElement(esUsuario ? 'a' : 'div');
-                div.style.cssText = 'display: block; padding: 12px 0; border-bottom: 1px solid #eee; text-decoration: none; color: inherit;';
+                div.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee; text-decoration: none; color: inherit;';
                 if (esUsuario) {
                     div.href = `muro.html?usuario=${encodeURIComponent(item.titulo)}`;
                     div.style.cursor = 'pointer';
                 }
 
+                if (item.portada_url) {
+                    const img = document.createElement('img');
+                    img.src = item.portada_url;
+                    img.alt = '';
+                    img.style.cssText = 'width: 38px; height: 54px; object-fit: cover; border-radius: 3px; flex-shrink: 0; background: #eee;';
+                    div.appendChild(img);
+                }
+
+                const textos = document.createElement('div');
+                textos.style.cssText = 'min-width: 0;';
                 const titulo = document.createElement('div');
                 titulo.style.fontWeight = 'bold';
                 titulo.textContent = item.titulo;
-                div.appendChild(titulo);
+                textos.appendChild(titulo);
                 if (item.subtitulo) {
                     const sub = document.createElement('div');
                     sub.style.cssText = 'font-size: 0.85rem; color: #666;';
                     sub.textContent = item.subtitulo;
-                    div.appendChild(sub);
+                    textos.appendChild(sub);
                 }
+                div.appendChild(textos);
                 resultados.appendChild(div);
             });
         } catch (error) {
