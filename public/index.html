@@ -196,18 +196,33 @@
     // Función para cargar los posts desde el servidor
     async function cargarPosts() {
         try {
-            const [respPosts, respSesion] = await Promise.all([
+            const [respPosts, respReviews, respSesion] = await Promise.all([
                 fetch('/api/posts'),
+                fetch('/api/reviews'),
                 fetch('/api/session')
             ]);
-            const data = await respPosts.json();
+            const dataPosts = await respPosts.json();
+            const dataReviews = await respReviews.json();
             const sesion = await respSesion.json();
             const miId = sesion.loggedIn ? sesion.user.id : null;
 
-            if (respPosts.ok && data.posts.length > 0) {
+            // Mezclamos posts y reseñas en un solo feed, ordenados por fecha
+            const items = [
+                ...dataPosts.posts.map(p => ({ _tipo: 'post', ...p })),
+                ...dataReviews.reviews.map(r => ({ _tipo: 'reseña', ...r }))
+            ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (items.length > 0) {
                 feedPosts.innerHTML = ''; // Limpiamos el feed estático de prueba
-                data.posts.forEach(post => {
-                    feedPosts.appendChild(crearPostCard(post, miId));
+                items.forEach(item => {
+                    if (item._tipo === 'post') {
+                        feedPosts.appendChild(crearPostCard(item, miId));
+                    } else {
+                        const envoltorio = document.createElement('div');
+                        envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
+                        envoltorio.appendChild(crearResenaCard(item));
+                        feedPosts.appendChild(envoltorio);
+                    }
                 });
             }
         } catch (error) {
@@ -325,7 +340,7 @@
 
         const texto = document.createElement('p');
         texto.className = 'post-texto';
-        texto.textContent = post.content; 
+        texto.appendChild(renderizarTextoConMenciones(post.content));
 
         const badge = document.createElement('div');
         badge.className = 'post-libro-badge';

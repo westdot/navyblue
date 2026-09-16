@@ -167,22 +167,6 @@ header .header-title p {
     border-radius: 8px;
     padding: 15px;
     border: 1px solid var(--color-borde);
-    position: relative; /* para la esquina doblada de abajo */
-}
-
-/* Esquina doblada tipo "hoja de papel", sutil, en cada panel grande */
-.columna-izquierda::before, .columna-centro::before, .columna-derecha::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 0 16px 16px 0;
-    border-color: transparent var(--color-papel) transparent transparent;
-    filter: drop-shadow(-1px 1px 1px rgba(58, 50, 38, 0.15));
-    pointer-events: none;
 }
 
 h2 {

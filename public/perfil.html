@@ -9,7 +9,7 @@
 </head>
 <body>
 
-    <!-- TÍTULO PRINCIPAL Y OPCIONES (Mismo header del index) -->
+    <!-- titulo y opcines (son las mismas del index.html) -->
     <header id="inicio-header">
         <div class="header-content">
             <div class="header-title">
@@ -22,14 +22,15 @@
         </div>
     </header>
 
-    <!-- ESTRUCTURA PRINCIPAL PARA EL PERFIL -->
-    <main class="contenedor-principal" style="justify-content: center; display: flex;">
+    <!-- est princ del perfil -->
+    <main class="contenedor-principal" style="display: flex; align-items: flex-start; gap: 40px; justify-content: center;">
 
-        <section class="columna-centro" style="max-width: 500px; width: 100%; margin-top: 20px;">
+        <!-- izq, las config ya existentes (hay que añadir el correo deo confirmacion para cambiar contraseña (seguridad po wn ponte serio)) -->
+        <section class="columna-centro" style="max-width: 420px; width: 100%; margin-top: 20px; flex-shrink: 0;">
             <h2>Mi Perfil</h2>
 
-            <!-- Formulario de datos del perfil -->
-            <div class="publicar-box" style="padding: 25px;">
+            <!-- datos del perfil -->
+            <div class="publicar-box" style="padding: 15px;">
                 <form id="profileForm">
                     <div class="form-grupo" style="margin-bottom: 15px;">
                         <label for="name" style="display: block; margin-bottom: 5px;">Nombre</label>
@@ -57,7 +58,7 @@
                 <p id="mensajePerfil" style="margin-top: 15px; text-align: center; font-weight: bold;"></p>
             </div>
 
-            <!-- Formulario de cambio de contraseña, separado por seguridad -->
+            <!-- cambio de contraseña dejado por seguridad ahi separado -->
             <div class="publicar-box" style="padding: 25px; margin-top: 20px;">
                 <h3 style="margin-top: 0;">Cambiar contraseña</h3>
                 <form id="passwordForm">
@@ -83,9 +84,16 @@
             </div>
         </section>
 
+        <!-- derecha (pensar que wea ponerles wn) -->
+        <section class="columna-derecha" style="flex: 1; max-width: 700px; margin-top: 20px; min-height: 400px;">
+            <h2>Más opciones</h2>
+            <div id="config-extra-contenedor" style="display: flex; align-items: center; justify-content: center; min-height: 300px;">
+            </div>
+        </section>
+
     </main>
 
-    <!-- PIE DE PÁGINA -->
+    <!-- pie de pagina -->
     <footer>
         <p>Desarrollado por: mis dos cojones</p>
         <p><a href="#inicio-header">Volver al inicio de la página</a></p>
@@ -99,8 +107,8 @@
     const passwordForm = document.getElementById('passwordForm');
     const mensajePassword = document.getElementById('mensajePassword');
 
-    // Al cargar la página: pedimos los datos reales al servidor.
-    // Si no hay sesión activa, nos devuelve a la portada.
+    // al cargar la pagina pedimos los datos reales al servidor.
+    // si no hay sesión activa, nos devuelve a la portada.
     async function cargarPerfil() {
         try {
             const response = await fetch('/api/profile');
@@ -118,7 +126,7 @@
         }
     }
 
-    // Guardar cambios de nombre / usuario / correo
+    // guardar cambios de nombre / usuario / correo
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -139,7 +147,7 @@
             if (response.ok) {
                 mensajePerfil.style.color = 'green';
                 mensajePerfil.textContent = '¡Perfil actualizado con éxito!';
-                // Como localStorage se usa solo como caché de la sesión, la refrescamos
+                // como localStorage se usa solo como cache de la sesion, la refrescamos
                 localStorage.setItem('usuarioLogueado', JSON.stringify(data.user));
             } else {
                 mensajePerfil.style.color = 'red';
@@ -151,7 +159,7 @@
         }
     });
 
-    // Cambiar contraseña
+    // cambiar contraseña
     passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -189,6 +197,11 @@
     });
 
     cargarPerfil();
+
+    // recuadro reservado para futuras configuraciones (aun sin definir)
+    document.getElementById('config-extra-contenedor').appendChild(
+        crearEstadoVacio('Acá van a ir más opciones de configuración más adelante.')
+    );
     montarHeaderComun();
     </script>
 

@@ -182,6 +182,21 @@ db.serialize(() => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // Progreso de lectura: libros que estás leyendo AHORA, con página actual.
+    // Separado de las estanterías (esas son colecciones fijas, esto es algo vivo
+    // que cambia mientras vas leyendo).
+    db.run(`CREATE TABLE IF NOT EXISTS lecturas_en_curso (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        libro_titulo TEXT NOT NULL,
+        autor TEXT NOT NULL,
+        portada_url TEXT,
+        pagina_actual INTEGER NOT NULL DEFAULT 0,
+        paginas_totales INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS books (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
@@ -332,6 +347,7 @@ app.post('/api/posts/:id/comments', requiereSesion, (req, res) => {
             db.get(`SELECT user_id FROM posts WHERE id = ?`, [id], (err, post) => {
                 if (post) crearNotificacion(post.user_id, req.session.user.username, `${req.session.user.username} comentó tu publicación`);
             });
+            notificarMenciones(content.trim(), req.session.user.username, 'un comentario');
             res.status(201).json({ message: 'Comentario agregado', commentId: this.lastID });
         }
     );
@@ -439,6 +455,7 @@ app.post('/api/posts', (req, res) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
+        notificarMenciones(content, username, 'una publicación');
         res.status(201).json({ 
             message: 'Publicación creada con éxito', 
             postId: this.lastID 
@@ -535,6 +552,19 @@ function crearNotificacion(userId, actorUsername, mensaje) {
             `INSERT INTO notifications (user_id, actor_username, mensaje) VALUES (?, ?, ?)`,
             [userId, actorUsername, mensaje]
         );
+    });
+}
+
+// Busca @menciones en un texto (ej: "hola @takato, ¿leíste esto?") y le manda una
+// notificación a cada usuario válido mencionado (si existe, y si no es él mismo).
+function notificarMenciones(texto, actorUsername, tipoLugar) {
+    const nombres = [...new Set((texto.match(/@(\w+)/g) || []).map(m => m.slice(1)))];
+    nombres.forEach(nombre => {
+        if (nombre === actorUsername) return;
+        db.get(`SELECT id FROM users WHERE username = ?`, [nombre], (err, user) => {
+            if (err || !user) return;
+            crearNotificacion(user.id, actorUsername, `${actorUsername} te mencionó en ${tipoLugar}`);
+        });
     });
 }
 
@@ -808,6 +838,145 @@ app.get('/api/users/:username/amigos-info', (req, res) => {
     });
 });
 
+// --- RUTAS DE PROGRESO DE LECTURA ---
+
+// Lecturas en curso de CUALQUIER usuario — pública
+app.get('/api/users/:username/lecturas', (req, res) => {
+    const { username } = req.params;
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        db.all(
+            `SELECT id, libro_titulo, autor, portada_url, pagina_actual, paginas_totales, updated_at
+             FROM lecturas_en_curso WHERE user_id = ? ORDER BY updated_at DESC`,
+            [user.id],
+            (err, rows) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                res.json({ lecturas: rows });
+            }
+        );
+    });
+});
+
+// Empezar una lectura nueva
+app.post('/api/lecturas', requiereSesion, (req, res) => {
+    const { libro_titulo, autor, portada_url, paginas_totales } = req.body;
+    const totales = parseInt(paginas_totales, 10);
+
+    if (!libro_titulo || !autor || !totales || totales < 1) {
+        return res.status(400).json({ error: 'Completa título, autor y el total de páginas' });
+    }
+
+    db.run(
+        `INSERT INTO lecturas_en_curso (user_id, libro_titulo, autor, portada_url, pagina_actual, paginas_totales) VALUES (?, ?, ?, ?, 0, ?)`,
+        [req.session.user.id, libro_titulo, autor, portada_url || null, totales],
+        function(err) {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            res.status(201).json({ message: 'Lectura agregada', lecturaId: this.lastID });
+        }
+    );
+});
+
+// Actualizar la página actual (y, si se pide, compartirlo como post automático)
+app.put('/api/lecturas/:id', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const { pagina_actual, compartir } = req.body;
+    const pagina = parseInt(pagina_actual, 10);
+
+    if (isNaN(pagina) || pagina < 0) {
+        return res.status(400).json({ error: 'Página inválida' });
+    }
+
+    db.get(`SELECT * FROM lecturas_en_curso WHERE id = ?`, [id], (err, lectura) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!lectura) return res.status(404).json({ error: 'Lectura no encontrada' });
+        if (lectura.user_id !== req.session.user.id) {
+            return res.status(403).json({ error: 'No puedes modificar lecturas de otros usuarios' });
+        }
+        if (pagina > lectura.paginas_totales) {
+            return res.status(400).json({ error: `Esa página supera el total del libro (${lectura.paginas_totales})` });
+        }
+
+        db.run(
+            `UPDATE lecturas_en_curso SET pagina_actual = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [pagina, id],
+            (err) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+
+                if (compartir) {
+                    const { username } = req.session.user;
+                    const contenido = `📖 Voy en la página ${pagina} de ${lectura.paginas_totales} de "${lectura.libro_titulo}"`;
+                    db.run(
+                        `INSERT INTO posts (user_id, username, content, tag) VALUES (?, ?, ?, ?)`,
+                        [req.session.user.id, username, contenido, lectura.autor]
+                    );
+                }
+
+                res.json({ message: 'Progreso actualizado', pagina_actual: pagina });
+            }
+        );
+    });
+});
+
+// Quitar una lectura en curso (terminada o abandonada)
+app.delete('/api/lecturas/:id', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    db.get(`SELECT user_id FROM lecturas_en_curso WHERE id = ?`, [id], (err, lectura) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!lectura) return res.status(404).json({ error: 'Lectura no encontrada' });
+        if (lectura.user_id !== req.session.user.id) {
+            return res.status(403).json({ error: 'No puedes eliminar lecturas de otros usuarios' });
+        }
+        db.run(`DELETE FROM lecturas_en_curso WHERE id = ?`, [id], (err) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            res.json({ message: 'Lectura eliminada' });
+        });
+    });
+});
+
+// --- RUTA DE INSIGNIAS / LOGROS ---
+// Se calculan al vuelo según tu actividad real (no se guardan aparte, así
+// siempre reflejan el estado actual sin desincronizarse).
+app.get('/api/users/:username/badges', (req, res) => {
+    const { username } = req.params;
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        const contar = (sql, params) => new Promise((resolve) => {
+            db.get(sql, params, (err, row) => resolve(err ? 0 : row.n));
+        });
+
+        Promise.all([
+            contar(`SELECT COUNT(*) AS n FROM posts WHERE user_id = ?`, [user.id]),
+            contar(`SELECT COUNT(*) AS n FROM reviews WHERE user_id = ?`, [user.id]),
+            contar(
+                `SELECT COUNT(*) AS n FROM friend_requests WHERE (from_user_id = ? OR to_user_id = ?) AND estado = 'aceptada'`,
+                [user.id, user.id]
+            ),
+            contar(`SELECT COUNT(*) AS n FROM follows WHERE followed_id = ?`, [user.id]),
+            contar(
+                `SELECT COUNT(*) AS n FROM shelf_items JOIN shelves ON shelves.id = shelf_items.shelf_id WHERE shelves.user_id = ?`,
+                [user.id]
+            )
+        ]).then(([posts, reviews, amigos, seguidores, librosEnEstantes]) => {
+            const badges = [
+                { nombre: 'Primera Publicación', icono: '📝', desbloqueada: posts >= 1, descripcion: 'Publica tu primer post' },
+                { nombre: 'Publicador Activo', icono: '📚', desbloqueada: posts >= 10, descripcion: 'Publica 10 posts' },
+                { nombre: 'Primera Reseña', icono: '⭐', desbloqueada: reviews >= 1, descripcion: 'Publica tu primera reseña' },
+                { nombre: 'Crítico Literario', icono: '🏆', desbloqueada: reviews >= 5, descripcion: 'Publica 5 reseñas' },
+                { nombre: 'Primer Amigo', icono: '🤝', desbloqueada: amigos >= 1, descripcion: 'Agrega tu primer amigo' },
+                { nombre: 'Sociable', icono: '🎉', desbloqueada: amigos >= 5, descripcion: 'Ten 5 amigos' },
+                { nombre: 'Popular', icono: '🌟', desbloqueada: seguidores >= 10, descripcion: 'Consigue 10 seguidores' },
+                { nombre: 'Lector', icono: '📖', desbloqueada: librosEnEstantes >= 1, descripcion: 'Agrega un libro a una estantería' }
+            ];
+            res.json({ badges });
+        });
+    });
+});
+
 // --- RUTAS DE NOTIFICACIONES ---
 
 // Últimas notificaciones propias + cuántas no leídas
@@ -1005,7 +1174,9 @@ app.get('/api/search', (req, res) => {
 // Listar reseñas recientes, con sus contadores y tu propia reacción si tienes sesión
 app.get('/api/reviews', (req, res) => {
     const miId = req.session.user ? req.session.user.id : null;
-    const query = `
+    const { username } = req.query;
+
+    const baseQuery = `
         SELECT
             reviews.id, reviews.user_id, reviews.libro_titulo, reviews.autor,
             reviews.portada_url, reviews.valoracion, reviews.created_at,
@@ -1015,13 +1186,24 @@ app.get('/api/reviews', (req, res) => {
             (SELECT tipo FROM review_reactions WHERE review_id = reviews.id AND user_id = ?) AS mi_reaccion
         FROM reviews
         LEFT JOIN users ON reviews.user_id = users.id
-        ORDER BY reviews.id DESC
-        LIMIT 20
     `;
-    db.all(query, [miId], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ reviews: rows });
-    });
+
+    if (username) {
+        db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (!user) return res.json({ reviews: [] });
+
+            db.all(`${baseQuery} WHERE reviews.user_id = ? ORDER BY reviews.id DESC`, [miId, user.id], (err, rows) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ reviews: rows });
+            });
+        });
+    } else {
+        db.all(`${baseQuery} ORDER BY reviews.id DESC LIMIT 20`, [miId], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ reviews: rows });
+        });
+    }
 });
 
 // Crear una reseña: título, autor, portada (opcional) y valoración 1-5. Sin texto de opinión.

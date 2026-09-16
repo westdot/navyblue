@@ -4,6 +4,32 @@
 // - abrir el detalle de un post con sus comentarios, reemplazando el
 //   contenido de la columna derecha (y poder volver a lo que había antes)
 
+// Convierte un texto con @menciones (ej: "hola @takato") en nodos de texto +
+// links clickeables a su muro. Nunca usa innerHTML con el texto del post, así
+// que sigue siendo seguro contra XSS igual que antes (solo texto plano + <a>).
+function renderizarTextoConMenciones(texto) {
+    const frag = document.createDocumentFragment();
+    const regex = /@(\w+)/g;
+    let ultimo = 0;
+    let match;
+    while ((match = regex.exec(texto)) !== null) {
+        if (match.index > ultimo) {
+            frag.appendChild(document.createTextNode(texto.slice(ultimo, match.index)));
+        }
+        const link = document.createElement('a');
+        link.href = `muro.html?usuario=${encodeURIComponent(match[1])}`;
+        link.textContent = '@' + match[1];
+        link.style.cssText = 'color: #5b6f8f; font-weight: bold; text-decoration: none;';
+        link.addEventListener('click', (e) => e.stopPropagation()); // no abrir el detalle del post al pinchar la mención
+        frag.appendChild(link);
+        ultimo = regex.lastIndex;
+    }
+    if (ultimo < texto.length) {
+        frag.appendChild(document.createTextNode(texto.slice(ultimo)));
+    }
+    return frag;
+}
+
 // Crea la barra de botones 💬 🔄 ❤️ de un post.
 // `onAbrirDetalle` se llama al pinchar el botón de comentar.
 function crearBarraAcciones(post, onAbrirDetalle) {
@@ -151,7 +177,7 @@ function renderDetallePost(post, comentarios, contenedor) {
 
     const texto = document.createElement('p');
     texto.className = 'post-texto';
-    texto.textContent = post.content;
+    texto.appendChild(renderizarTextoConMenciones(post.content));
 
     const fecha = document.createElement('p');
     fecha.style.cssText = 'font-size: 0.75rem; color: #888; margin: 4px 0 8px 0;';
@@ -185,7 +211,7 @@ function renderDetallePost(post, comentarios, contenedor) {
             autorC.textContent = c.username;
             const textoC = document.createElement('p');
             textoC.style.cssText = 'margin: 4px 0 0 0; font-size: 0.85rem;';
-            textoC.textContent = c.content;
+            textoC.appendChild(renderizarTextoConMenciones(c.content));
             div.appendChild(autorC);
             div.appendChild(textoC);
             listaComentarios.appendChild(div);

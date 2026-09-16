@@ -19,7 +19,7 @@
     </header>
 
     <!-- ESPACIO RESERVADO PARA EL FONDO DEL MURO (sin gestor de imágenes todavía) -->
-    <div id="fondo-muro" style="height: 180px; background: linear-gradient(135deg, #1c2b45, #34517c);"></div>
+    <div id="fondo-muro" style="height: 180px; background: linear-gradient(135deg, var(--color-navy-oscuro), var(--color-navy));"></div>
 
     <!-- ESTRUCTURA EN 3 COLUMNAS, IGUAL QUE EL RESTO DEL SITIO -->
     <main class="contenedor-principal">
@@ -30,6 +30,20 @@
             <ul class="lista-categorias" id="lista-personal">
                 <li>Cargando...</li>
             </ul>
+
+            <div class="divisor-lomo"></div>
+
+            <h2>Leyendo ahora</h2>
+            <div id="lecturas-contenedor">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
+
+            <div class="divisor-lomo"></div>
+
+            <h2>Insignias</h2>
+            <div id="insignias-contenedor" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
 
             <!-- Botones de Seguir / Agregar amigo: solo aparecen viendo el muro de OTRA persona -->
             <div id="acciones-relacion" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;"></div>
@@ -93,6 +107,7 @@
     <script src="js/ui-comunes.js"></script>
     <script src="js/header-comun.js"></script>
     <script src="js/posts-comunes.js"></script>
+    <script src="js/columna-derecha.js"></script>
     <script src="js/composer-comun.js"></script>
     <script src="js/mobile-tabs.js"></script>
     <script>
@@ -192,7 +207,7 @@
 
         const texto = document.createElement('p');
         texto.className = 'post-texto';
-        texto.textContent = post.content;
+        texto.appendChild(renderizarTextoConMenciones(post.content));
 
         const badge = document.createElement('div');
         badge.className = 'post-libro-badge';
@@ -352,15 +367,6 @@
                 listaPersonal.appendChild(li);
             });
 
-            if (esMiMuro) {
-                const liEditar = document.createElement('li');
-                liEditar.style.marginTop = '10px';
-                const linkEditar = document.createElement('a');
-                linkEditar.href = 'perfil.html';
-                linkEditar.textContent = 'Editar mi perfil →';
-                liEditar.appendChild(linkEditar);
-                listaPersonal.appendChild(liEditar);
-            }
         } catch (error) {
             listaPersonal.innerHTML = '<li>No se pudo cargar la información.</li>';
         }
@@ -370,16 +376,34 @@
     async function cargarMisPosts(username, esMiMuro) {
         listaMuro.innerHTML = '<p>Cargando...</p>';
         try {
-            const response = await fetch(`/api/posts?username=${encodeURIComponent(username)}`);
-            const data = await response.json();
+            const [respPosts, respReviews] = await Promise.all([
+                fetch(`/api/posts?username=${encodeURIComponent(username)}`),
+                fetch(`/api/reviews?username=${encodeURIComponent(username)}`)
+            ]);
+            const dataPosts = await respPosts.json();
+            const dataReviews = await respReviews.json();
             listaMuro.innerHTML = '';
 
-            if (data.posts.length === 0) {
-                listaMuro.innerHTML = '';
+            const items = [
+                ...dataPosts.posts.map(p => ({ _tipo: 'post', ...p })),
+                ...dataReviews.reviews.map(r => ({ _tipo: 'reseña', ...r }))
+            ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (items.length === 0) {
                 listaMuro.appendChild(crearEstadoVacio(esMiMuro ? 'Todavía no has publicado nada.' : 'Esta persona todavía no ha publicado nada.'));
                 return;
             }
-            data.posts.forEach(post => listaMuro.appendChild(crearPostCard(post, esMiMuro)));
+
+            items.forEach(item => {
+                if (item._tipo === 'post') {
+                    listaMuro.appendChild(crearPostCard(item, esMiMuro));
+                } else {
+                    const envoltorio = document.createElement('div');
+                    envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
+                    envoltorio.appendChild(crearResenaCard(item));
+                    listaMuro.appendChild(envoltorio);
+                }
+            });
         } catch (error) {
             listaMuro.innerHTML = '<p>No se pudieron cargar las publicaciones.</p>';
         }
@@ -635,6 +659,235 @@
         }
     }
 
+    // --- PROGRESO DE LECTURA ---
+
+    function crearBarraProgreso(pagina, total) {
+        const porcentaje = total > 0 ? Math.min(100, Math.round((pagina / total) * 100)) : 0;
+        const contenedor = document.createElement('div');
+        contenedor.style.cssText = 'background: #e3d9c2; border-radius: 999px; height: 6px; margin: 4px 0; overflow: hidden;';
+        const relleno = document.createElement('div');
+        relleno.style.cssText = `background: #c08a4e; height: 100%; width: ${porcentaje}%; border-radius: 999px;`;
+        contenedor.appendChild(relleno);
+        return contenedor;
+    }
+
+    function crearLecturaCard(lectura, usuarioObjetivo, esMiMuro) {
+        const div = document.createElement('div');
+        div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 14px;';
+
+        const img = document.createElement('img');
+        img.src = lectura.portada_url || 'https://via.placeholder.com/40x56';
+        img.alt = `Portada de ${lectura.libro_titulo}`;
+        img.style.cssText = 'width: 34px; height: 48px; object-fit: cover; border-radius: 3px; flex-shrink: 0;';
+        div.appendChild(img);
+
+        const info = document.createElement('div');
+        info.style.cssText = 'flex: 1; min-width: 0;';
+
+        const titulo = document.createElement('div');
+        titulo.style.cssText = 'font-size: 0.82rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+        titulo.textContent = lectura.libro_titulo;
+        info.appendChild(titulo);
+
+        info.appendChild(crearBarraProgreso(lectura.pagina_actual, lectura.paginas_totales));
+
+        const textoPagina = document.createElement('div');
+        textoPagina.style.cssText = 'font-size: 0.72rem; color: #888;';
+        textoPagina.textContent = `Pág. ${lectura.pagina_actual} de ${lectura.paginas_totales}`;
+        info.appendChild(textoPagina);
+
+        if (esMiMuro) {
+            const controles = document.createElement('div');
+            controles.style.cssText = 'display: flex; gap: 4px; margin-top: 5px; align-items: center;';
+
+            const inputPagina = document.createElement('input');
+            inputPagina.type = 'number';
+            inputPagina.min = '0';
+            inputPagina.max = String(lectura.paginas_totales);
+            inputPagina.value = lectura.pagina_actual;
+            inputPagina.style.cssText = 'width: 55px; padding: 3px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.75rem;';
+
+            const btnActualizar = document.createElement('button');
+            btnActualizar.type = 'button';
+            btnActualizar.title = 'Actualizar página';
+            btnActualizar.textContent = '🔄';
+            btnActualizar.style.cssText = 'padding: 3px 6px; border-radius: 999px; border: none; background: #5b6f8f; color: white; font-size: 0.75rem; cursor: pointer;';
+
+            const btnCompartir = document.createElement('button');
+            btnCompartir.type = 'button';
+            btnCompartir.title = 'Actualizar y compartir como post';
+            btnCompartir.textContent = '📣';
+            btnCompartir.style.cssText = 'padding: 3px 6px; border-radius: 999px; border: none; background: #c08a4e; color: white; font-size: 0.7rem; cursor: pointer;';
+
+            const btnQuitar = document.createElement('button');
+            btnQuitar.type = 'button';
+            btnQuitar.textContent = '🗑️';
+            btnQuitar.title = 'Quitar esta lectura';
+            btnQuitar.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 0.75rem;';
+
+            async function actualizar(compartir) {
+                const pagina = parseInt(inputPagina.value, 10);
+                try {
+                    const resp = await fetch(`/api/lecturas/${lectura.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pagina_actual: pagina, compartir })
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok) {
+                        mostrarAviso(data.error || 'No se pudo actualizar.');
+                        return;
+                    }
+                    cargarLecturas(usuarioObjetivo, esMiMuro);
+                } catch (error) {
+                    mostrarAviso('No se pudo conectar con el servidor.');
+                }
+            }
+
+            btnActualizar.addEventListener('click', () => actualizar(false));
+            btnCompartir.addEventListener('click', () => actualizar(true));
+            btnQuitar.addEventListener('click', async () => {
+                if (!(await confirmarAccion(`¿Quitar "${lectura.libro_titulo}" de tus lecturas en curso?`))) return;
+                try {
+                    const resp = await fetch(`/api/lecturas/${lectura.id}`, { method: 'DELETE' });
+                    if (resp.ok) {
+                        cargarLecturas(usuarioObjetivo, esMiMuro);
+                    } else {
+                        const data = await resp.json().catch(() => ({}));
+                        mostrarAviso(data.error || 'No se pudo quitar.');
+                    }
+                } catch (error) {
+                    mostrarAviso('No se pudo conectar con el servidor.');
+                }
+            });
+
+            controles.appendChild(inputPagina);
+            controles.appendChild(btnActualizar);
+            controles.appendChild(btnCompartir);
+            controles.appendChild(btnQuitar);
+            info.appendChild(controles);
+        }
+
+        div.appendChild(info);
+        return div;
+    }
+
+    async function cargarLecturas(usuarioObjetivo, esMiMuro) {
+        const contenedor = document.getElementById('lecturas-contenedor');
+        contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">Cargando...</p>';
+        try {
+            const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}/lecturas`);
+            const data = await resp.json();
+            contenedor.innerHTML = '';
+
+            if (!data.lecturas || data.lecturas.length === 0) {
+                contenedor.appendChild(crearEstadoVacio(esMiMuro ? 'No estás leyendo nada por ahora.' : 'No está leyendo nada por ahora.'));
+            } else {
+                data.lecturas.forEach(lectura => {
+                    contenedor.appendChild(crearLecturaCard(lectura, usuarioObjetivo, esMiMuro));
+                });
+            }
+
+            if (esMiMuro) {
+                const btnNueva = document.createElement('button');
+                btnNueva.type = 'button';
+                btnNueva.textContent = '+ Empezar una lectura';
+                btnNueva.style.cssText = 'width: 100%; padding: 7px; border-radius: 999px; border: 1px dashed #5b6f8f; background: none; color: #5b6f8f; cursor: pointer; font-size: 0.8rem;';
+                btnNueva.addEventListener('click', () => {
+                    formNuevaLectura.style.display = formNuevaLectura.style.display === 'none' ? 'block' : 'none';
+                });
+
+                const formNuevaLectura = document.createElement('div');
+                formNuevaLectura.style.cssText = 'display: none; margin-top: 8px; padding: 8px; background: #f7f7f7; border-radius: 6px;';
+
+                function campo(placeholder, tipo) {
+                    const input = document.createElement('input');
+                    input.type = tipo || 'text';
+                    input.placeholder = placeholder;
+                    input.style.cssText = 'width: 100%; padding: 6px; margin-bottom: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8rem; box-sizing: border-box;';
+                    return input;
+                }
+                const inputTitulo = campo('Título del libro');
+                const inputAutor = campo('Autor');
+                const inputPortada = campo('URL de portada (opcional)');
+                const inputTotales = campo('Total de páginas', 'number');
+
+                const btnGuardar = document.createElement('button');
+                btnGuardar.type = 'button';
+                btnGuardar.textContent = 'Empezar';
+                btnGuardar.style.cssText = 'padding: 5px 12px; border-radius: 999px; border: none; background: #5b6f8f; color: white; font-size: 0.78rem; cursor: pointer;';
+
+                const mensaje = document.createElement('p');
+                mensaje.style.cssText = 'font-size: 0.75rem; margin-top: 4px;';
+
+                btnGuardar.addEventListener('click', async () => {
+                    const libro_titulo = inputTitulo.value.trim();
+                    const autor = inputAutor.value.trim();
+                    const portada_url = inputPortada.value.trim();
+                    const paginas_totales = inputTotales.value.trim();
+                    try {
+                        const resp = await fetch('/api/lecturas', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ libro_titulo, autor, portada_url, paginas_totales })
+                        });
+                        const data2 = await resp.json().catch(() => ({}));
+                        if (!resp.ok) {
+                            mensaje.style.color = 'red';
+                            mensaje.textContent = data2.error || 'No se pudo agregar.';
+                            return;
+                        }
+                        cargarLecturas(usuarioObjetivo, esMiMuro);
+                    } catch (error) {
+                        mensaje.style.color = 'red';
+                        mensaje.textContent = 'No se pudo conectar con el servidor.';
+                    }
+                });
+
+                formNuevaLectura.appendChild(inputTitulo);
+                formNuevaLectura.appendChild(inputAutor);
+                formNuevaLectura.appendChild(inputPortada);
+                formNuevaLectura.appendChild(inputTotales);
+                formNuevaLectura.appendChild(btnGuardar);
+                formNuevaLectura.appendChild(mensaje);
+
+                contenedor.appendChild(btnNueva);
+                contenedor.appendChild(formNuevaLectura);
+            }
+        } catch (error) {
+            contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar las lecturas.</p>';
+        }
+    }
+
+    // --- INSIGNIAS / LOGROS ---
+
+    async function cargarInsignias(usuarioObjetivo) {
+        const contenedor = document.getElementById('insignias-contenedor');
+        try {
+            const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}/badges`);
+            const data = await resp.json();
+            contenedor.innerHTML = '';
+
+            data.badges.forEach(badge => {
+                const chip = document.createElement('div');
+                chip.title = `${badge.nombre}: ${badge.descripcion}`;
+                chip.style.cssText = `
+                    width: 42px; height: 42px; border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 1.3rem;
+                    background: ${badge.desbloqueada ? '#e7ecf3' : '#f0f0f0'};
+                    filter: ${badge.desbloqueada ? 'none' : 'grayscale(100%)'};
+                    opacity: ${badge.desbloqueada ? '1' : '0.4'};
+                    border: 1px solid ${badge.desbloqueada ? '#c08a4e' : '#ddd'};
+                `;
+                chip.textContent = badge.icono;
+                contenedor.appendChild(chip);
+            });
+        } catch (error) {
+            contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar las insignias.</p>';
+        }
+    }
+
     // Punto de entrada: confirmamos sesión y cargamos el muro correspondiente
     // (el propio, o el de otra persona si venimos de un link con ?usuario=)
     (async () => {
@@ -662,6 +915,8 @@
             cargarPersonal(usuarioObjetivo, esMiMuro);
             cargarSeguirInfo(usuarioObjetivo, esMiMuro);
             cargarEstanterias(usuarioObjetivo, esMiMuro);
+            cargarLecturas(usuarioObjetivo, esMiMuro);
+            cargarInsignias(usuarioObjetivo);
             cargarAmigosInfo(usuarioObjetivo, esMiMuro);
             activarTab('posts', usuarioObjetivo, esMiMuro);
             montarHeaderComun();
