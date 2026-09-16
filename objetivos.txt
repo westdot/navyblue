@@ -31,3 +31,17 @@ agregar opcion para ocultar amigos (o partes del perfil) de nuestro muro
 agregar signo zodiacal al muro de informacion, sol luna y ascendente
 
 agregar extras de informacion random
+
+no sirve el boton de registrar
+el volver al header
+boton para borrar comentarios
+
+al terminar las paginas de un libro en los "leyendo ahora" actualizarlo a Leídos
+
+al poner enter, publicar
+
+porcentaje de insignias que tiene (por ejemplo, esta insignia la tiene el 0,0% de personas)
+
+en estanterias (dentro del perfil) solo notar libros (portadas), crear html de estanterias
+
+agregar medias estrellas
