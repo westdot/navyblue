@@ -47,3 +47,9 @@ en estanterias (dentro del perfil) solo notar libros (portadas), crear html de e
 --crear nueva pagina que muestre las estanterias y permita modificar dentro de ellas
 
 --al buscar y pinchar el nombre, ir al perfil del usuario
+
+abajo de los likes en las reseñas, que aparezca la reseña escrita (añadir boton de escribir en la reseña)
+
+al hacer reseña del libro que se agregue a leidos, igual que al terminar la hoja de leyendo ahora aparezca automaticamente el libro en reseñar y darle los datos necesarios para que se reseñe
+
+el aetiquetar con arroba para responder un comentario directo
