@@ -26,7 +26,7 @@ EN EL PERFIL DE CONFIGURACIONES AÑADIR:
 
 crear una casilla de preguntas de seguidores (directa) y que se vean posteadas en el muro (como reseñas y publicaciones)
 
-
+agregar opcion para ocultar amigos (o partes del perfil) de nuestro muro
 
 
 
