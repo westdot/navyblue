@@ -1,5 +1,6 @@
+require('dotenv').config();
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool, types } = require('pg');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const session = require('express-session');
@@ -13,7 +14,7 @@ app.use(express.static(path.join(__dirname, 'public'))); // se asume que los arc
 
 // middleware de sesión: el servidor recuerda quién inicio sesion mediante una cookie firmada
 app.use(session({
-    secret: 'cambia-esto-por-una-frase-larga-y-secreta', // TODO: mover a una variable de entorno
+    secret: process.env.SESSION_SECRET || 'cambia-esto-por-una-frase-larga-y-secreta',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -23,188 +24,236 @@ app.use(session({
     }
 }));
 
-// conexión y configuracion de la base de datos SQLite
-const dbPath = path.join(__dirname, 'database.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error al conectar con la base de datos:', err.message);
-    } else {
-        console.log('Conectado a la base de datos SQLite.');
+// --- CONEXIÓN A LA BASE DE DATOS (PostgreSQL en Neon) ---
+// DATABASE_URL viene de una variable de entorno:
+//   - En tu PC: ponla en un archivo .env (ver .env.example)
+//   - En Render: Settings -> Environment -> Add Environment Variable
+if (!process.env.DATABASE_URL) {
+    console.error('¡Falta la variable de entorno DATABASE_URL! Revisa tu archivo .env (o la configuración en Render).');
+}
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false } // Neon requiere conexión con SSL
+});
+
+// PostgreSQL devuelve los resultados de COUNT(*) como texto (tipo "bigint"), para
+// no perder precisión en números gigantes. Como en este proyecto ningún contador
+// se acerca a ese límite, los convertimos siempre a un número normal de JS —
+// si no hiciéramos esto, cosas como "liked_by_me" (0 o 1 como texto) se
+// evaluarían siempre como verdaderas en el frontend.
+types.setTypeParser(20, (val) => parseInt(val, 10));
+
+pool.query('SELECT NOW()')
+    .then(() => console.log('Conectado a la base de datos PostgreSQL (Neon).'))
+    .catch((err) => console.error('Error al conectar con la base de datos:', err.message));
+
+// --- CAPA DE COMPATIBILIDAD CON LA API DE sqlite3 ---
+// Todo el resto de este archivo (más abajo) sigue escrito EXACTAMENTE igual que
+// antes: usa "?" como placeholders y callbacks al estilo sqlite3
+// (db.run/db.get/db.all). Este pequeño adaptador traduce esas mismas llamadas
+// para que funcionen contra PostgreSQL, así no fue necesario reescribir cada
+// una de las consultas del archivo.
+function aPlaceholdersPg(sql) {
+    let i = 0;
+    return sql.replace(/\?/g, () => `$${++i}`);
+}
+
+const db = {
+    // Para INSERT/UPDATE/DELETE. Imita this.lastID y this.changes de sqlite3.
+    run(sql, params, callback) {
+        if (typeof params === 'function') { callback = params; params = []; }
+        params = params || [];
+
+        let consulta = aPlaceholdersPg(sql);
+        const esInsert = /^\s*insert/i.test(consulta);
+        // Todas las tablas de este proyecto usan "id" como clave primaria,
+        // así que podemos agregar RETURNING id automáticamente a cada INSERT
+        // para poder devolver this.lastID como antes.
+        if (esInsert && !/returning/i.test(consulta)) {
+            consulta += ' RETURNING id';
+        }
+
+        pool.query(consulta, params)
+            .then((resultado) => {
+                const contexto = {
+                    lastID: esInsert && resultado.rows[0] ? resultado.rows[0].id : undefined,
+                    changes: resultado.rowCount
+                };
+                if (callback) callback.call(contexto, null);
+            })
+            .catch((err) => {
+                if (callback) callback.call({}, err);
+                else console.error('Error en db.run:', err.message);
+            });
+    },
+
+    // Para SELECT que devuelven una sola fila (o ninguna)
+    get(sql, params, callback) {
+        if (typeof params === 'function') { callback = params; params = []; }
+        params = params || [];
+        pool.query(aPlaceholdersPg(sql), params)
+            .then((resultado) => callback(null, resultado.rows[0]))
+            .catch((err) => callback(err));
+    },
+
+    // Para SELECT que devuelven varias filas
+    all(sql, params, callback) {
+        if (typeof params === 'function') { callback = params; params = []; }
+        params = params || [];
+        pool.query(aPlaceholdersPg(sql), params)
+            .then((resultado) => callback(null, resultado.rows))
+            .catch((err) => callback(err));
     }
-});
+};
 
-// crear tablas, si no existen
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        pais TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+// --- CREACIÓN DE TABLAS (equivalente al db.serialize(...) de antes) ---
+async function crearTablas() {
+    try {
+        await pool.query(`CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            pais TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+        // migracion: si la tabla ya existia de antes (sin estas columnas), las agregamos
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pais TEXT`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP`);
+        await pool.query(`UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL`);
 
-    // migracion: si la tabla ya existia de antes (sin estas columnas), las agregamos
-    // si ya existen, SQLite devuelve error "duplicate column" y simplemente lo ignoramos
-    db.run(`ALTER TABLE users ADD COLUMN pais TEXT`, (err) => {
-        console.log('[DEBUG] ALTER pais:', err ? err.message : 'OK, columna agregada');
-    });
-    // no se le puede poner "DEFAULT CURRENT_TIMESTAMP" a una columna agregada
-    // con ALTER TABLE si la tabla ya tiene filas (SQLite lo prohibe). Por eso se
-    // agrega sin default, y las filas existentes se rellenan aparte con UPDATE
-    db.run(`ALTER TABLE users ADD COLUMN created_at DATETIME`, (err) => {
-        console.log('[DEBUG] ALTER created_at:', err ? err.message : 'OK, columna agregada');
-    });
-    db.run(`UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL`, (err) => {
-        console.log('[DEBUG] Backfill created_at:', err ? err.message : 'OK');
-    });
+        await pool.query(`CREATE TABLE IF NOT EXISTS posts (
+            id SERIAL PRIMARY KEY,
+            username TEXT NOT NULL,
+            content TEXT NOT NULL,
+            tag TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+        // user_id: ligamos cada post a la CUENTA (id fijo), no al nombre de usuario
+        await pool.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS user_id INTEGER`);
+        await pool.query(`UPDATE posts SET user_id = (SELECT id FROM users WHERE users.username = posts.username) WHERE user_id IS NULL`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
-        content TEXT NOT NULL,
-        tag TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+        // Comentarios, likes y reposteos de cada publicación
+        await pool.query(`CREATE TABLE IF NOT EXISTS comments (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER NOT NULL,
+            user_id INTEGER,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    // user_id: ligamos cada post a la CUENTA (id fijo), no al nombre de usuario
-    // (que puede cambiar). Así, aunque cambie el username, tus posts te siguen
-    // perteneciendo. "username" se sigue guardando como respaldo, pero al leer
-    // los posts se prioriza el nombre ACTUAL de la cuenta vía este id.
-    db.run(`ALTER TABLE posts ADD COLUMN user_id INTEGER`, (err) => {
-        console.log('[DEBUG] ALTER posts.user_id:', err ? err.message : 'OK, columna agregada');
-    });
-    // Enlazamos lo que se pueda: posts cuyo "username" guardado coincide con el
-    // username ACTUAL de alguna cuenta. Los posts publicados con un nombre que
-    // ya cambiaste antes de este arreglo no se pueden enlazar automáticamente
-    // (no queda registro de tus nombres anteriores) y quedarán con user_id vacío.
-    db.run(`UPDATE posts SET user_id = (SELECT id FROM users WHERE users.username = posts.username) WHERE user_id IS NULL`, (err) => {
-        console.log('[DEBUG] Backfill posts.user_id:', err ? err.message : 'OK');
-    });
+        await pool.query(`CREATE TABLE IF NOT EXISTS likes (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(post_id, user_id)
+        )`);
 
-    // Comentarios, likes y reposteos de cada publicación
-    db.run(`CREATE TABLE IF NOT EXISTS comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        post_id INTEGER NOT NULL,
-        user_id INTEGER,
-        content TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS reposts (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(post_id, user_id)
+        )`);
 
-    // UNIQUE(post_id, user_id): cada cuenta solo puede dar un like / repostear una vez por post
-    db.run(`CREATE TABLE IF NOT EXISTS likes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        post_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(post_id, user_id)
-    )`);
+        // Reseñas: funcionalidad separada de los posts
+        await pool.query(`CREATE TABLE IF NOT EXISTS reviews (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            username TEXT NOT NULL,
+            libro_titulo TEXT NOT NULL,
+            autor TEXT NOT NULL,
+            portada_url TEXT,
+            valoracion INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS reposts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        post_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(post_id, user_id)
-    )`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS review_reactions (
+            id SERIAL PRIMARY KEY,
+            review_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            tipo TEXT NOT NULL CHECK(tipo IN ('like','dislike')),
+            UNIQUE(review_id, user_id)
+        )`);
 
-    // Reseñas: funcionalidad TOTALMENTE separada de los posts (libro, autor,
-    // portada y valoración — sin texto de opinión, según lo pedido).
-    db.run(`CREATE TABLE IF NOT EXISTS reviews (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        username TEXT NOT NULL,
-        libro_titulo TEXT NOT NULL,
-        autor TEXT NOT NULL,
-        portada_url TEXT,
-        valoracion INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+        // Seguir: asimétrico y sin permiso
+        await pool.query(`CREATE TABLE IF NOT EXISTS follows (
+            id SERIAL PRIMARY KEY,
+            follower_id INTEGER NOT NULL,
+            followed_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(follower_id, followed_id)
+        )`);
 
-    // Reacciones a una reseña: like O dislike (una sola por persona, se puede cambiar)
-    db.run(`CREATE TABLE IF NOT EXISTS review_reactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        review_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        tipo TEXT NOT NULL CHECK(tipo IN ('like','dislike')),
-        UNIQUE(review_id, user_id)
-    )`);
+        // Amigos: simétrico, con solicitud + aceptación
+        await pool.query(`CREATE TABLE IF NOT EXISTS friend_requests (
+            id SERIAL PRIMARY KEY,
+            from_user_id INTEGER NOT NULL,
+            to_user_id INTEGER NOT NULL,
+            estado TEXT NOT NULL DEFAULT 'pendiente' CHECK(estado IN ('pendiente','aceptada')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(from_user_id, to_user_id)
+        )`);
 
-    // Seguir: asimétrico y sin permiso (como Twitter/X). Totalmente separado de amigos.
-    db.run(`CREATE TABLE IF NOT EXISTS follows (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        follower_id INTEGER NOT NULL,
-        followed_id INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(follower_id, followed_id)
-    )`);
+        // Estanterías / colecciones de libros
+        await pool.query(`CREATE TABLE IF NOT EXISTS shelves (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            nombre TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    // Amigos: simétrico, requiere solicitud + aceptación (como Facebook).
-    // estado: 'pendiente' | 'aceptada'. Rechazar/cancelar simplemente borra la fila.
-    db.run(`CREATE TABLE IF NOT EXISTS friend_requests (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        from_user_id INTEGER NOT NULL,
-        to_user_id INTEGER NOT NULL,
-        estado TEXT NOT NULL DEFAULT 'pendiente' CHECK(estado IN ('pendiente','aceptada')),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(from_user_id, to_user_id)
-    )`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS shelf_items (
+            id SERIAL PRIMARY KEY,
+            shelf_id INTEGER NOT NULL,
+            libro_titulo TEXT NOT NULL,
+            autor TEXT NOT NULL,
+            portada_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    // Estanterías / colecciones de libros: cada usuario arma sus propias estanterías
-    // con nombre (ej: "Leídos", "Quiero leer", "Favoritos", o una personalizada),
-    // y en cada una va agregando libros (título/autor/portada — sin depender de un
-    // catálogo formal, igual que las reseñas).
-    db.run(`CREATE TABLE IF NOT EXISTS shelves (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        nombre TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+        // Notificaciones
+        await pool.query(`CREATE TABLE IF NOT EXISTS notifications (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            actor_username TEXT NOT NULL,
+            mensaje TEXT NOT NULL,
+            leida INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS shelf_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        shelf_id INTEGER NOT NULL,
-        libro_titulo TEXT NOT NULL,
-        autor TEXT NOT NULL,
-        portada_url TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+        // Progreso de lectura
+        await pool.query(`CREATE TABLE IF NOT EXISTS lecturas_en_curso (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            libro_titulo TEXT NOT NULL,
+            autor TEXT NOT NULL,
+            portada_url TEXT,
+            pagina_actual INTEGER NOT NULL DEFAULT 0,
+            paginas_totales INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    // Notificaciones: le avisan a un usuario que alguien hizo algo relacionado con
-    // él (le dieron like, comentaron, lo siguieron, le mandaron solicitud, etc).
-    db.run(`CREATE TABLE IF NOT EXISTS notifications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        actor_username TEXT NOT NULL,
-        mensaje TEXT NOT NULL,
-        leida INTEGER NOT NULL DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS books (
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            author TEXT NOT NULL,
+            price REAL NOT NULL,
+            stock INTEGER NOT NULL
+        )`);
 
-    // Progreso de lectura: libros que estás leyendo AHORA, con página actual.
-    // Separado de las estanterías (esas son colecciones fijas, esto es algo vivo
-    // que cambia mientras vas leyendo).
-    db.run(`CREATE TABLE IF NOT EXISTS lecturas_en_curso (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        libro_titulo TEXT NOT NULL,
-        autor TEXT NOT NULL,
-        portada_url TEXT,
-        pagina_actual INTEGER NOT NULL DEFAULT 0,
-        paginas_totales INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+        console.log('Tablas verificadas/creadas correctamente en PostgreSQL.');
+    } catch (err) {
+        console.error('Error creando las tablas:', err.message);
+    }
+}
 
-    db.run(`CREATE TABLE IF NOT EXISTS books (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        author TEXT NOT NULL,
-        price REAL NOT NULL,
-        stock INTEGER NOT NULL
-    )`);
-});
+crearTablas();
 
 // --- RUTAS DE AUTENTICACIÓN ---
 
@@ -1141,7 +1190,7 @@ app.get('/api/search', (req, res) => {
 
     if (tipo === 'usuarios') {
         db.all(
-            `SELECT username, name FROM users WHERE username LIKE ? OR name LIKE ? LIMIT 10`,
+            `SELECT username, name FROM users WHERE username ILIKE ? OR name ILIKE ? LIMIT 10`,
             [`%${q}%`, `%${q}%`],
             (err, rows) => {
                 if (err) return res.status(500).json({ error: err.message });
@@ -1153,7 +1202,7 @@ app.get('/api/search', (req, res) => {
         );
     } else if (tipo === 'libros') {
         db.all(
-            `SELECT title, author FROM books WHERE title LIKE ? OR author LIKE ? LIMIT 10`,
+            `SELECT title, author FROM books WHERE title ILIKE ? OR author ILIKE ? LIMIT 10`,
             [`%${q}%`, `%${q}%`],
             (err, rows) => {
                 if (err) return res.status(500).json({ error: err.message });
