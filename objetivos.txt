@@ -12,7 +12,7 @@ cambiar estanterias a:
 
 agregar cuadro de foto de perfil al centro (encima de la palabra mi muro), quitar la opcion de posterar dentro del muro y reducirla a un boton desplegable
 
-eliminar la info personal del recuadro de la izquierda y dejar un boton con info que lleve a una nueva pestaña
+--eliminar la info personal del recuadro de la izquierda y dejar un boton con info que lleve a una nueva pestaña
 
 dejar solo una barra de insignias (caen 4) con un boton de mas, que lleve solo a una pagina de los diferentes tipos de medallas o insignias
 
@@ -32,11 +32,9 @@ agregar signo zodiacal al muro de informacion, sol luna y ascendente
 
 agregar extras de informacion random
 
-no sirve el boton de registrar
-el volver al header
 boton para borrar comentarios
 
-al terminar las paginas de un libro en los "leyendo ahora" actualizarlo a Leídos
+--al terminar las paginas de un libro en los "leyendo ahora" actualizarlo a Leídos
 
 al poner enter, publicar
 
@@ -44,4 +42,8 @@ porcentaje de insignias que tiene (por ejemplo, esta insignia la tiene el 0,0% d
 
 en estanterias (dentro del perfil) solo notar libros (portadas), crear html de estanterias
 
-separar muro izq en 2, parte social y avances o weas de libros
+--separar muro izq en 2, parte social y avances o weas de libros
+
+--crear nueva pagina que muestre las estanterias y permita modificar dentro de ellas
+
+--al buscar y pinchar el nombre, ir al perfil del usuario
