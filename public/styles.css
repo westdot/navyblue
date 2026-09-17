@@ -154,9 +154,15 @@ header .header-title p {
 /* CONTENEDOR TRES COLUMNAS (GRILLA) */
 .contenedor-principal {
     display: grid;
-    grid-template-columns: 240px 1fr 280px;
+    /* La derecha (Reseñas Recientes + Trending, en el inicio) es más ancha
+       que antes para que las portadas entren parejas y quepan las 3
+       reseñas sin verse apretadas. La izquierda y el centro miden exactamente
+       lo mismo que siempre (240px y el mismo 1fr), y el espacio entre el
+       centro y la derecha sigue siendo el mismo gap de 20px: solo crece el
+       ancho total del contenedor para darle el espacio extra a la derecha. */
+    grid-template-columns: 240px 1fr 380px;
     gap: 20px;
-    max-width: 1200px;
+    max-width: 1300px;
     margin: 20px auto;
     padding: 0 15px;
 }

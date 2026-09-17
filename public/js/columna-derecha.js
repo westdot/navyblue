@@ -9,13 +9,16 @@ function crearEstrellas(valoracion) {
     return '★'.repeat(val) + '☆'.repeat(5 - val);
 }
 
-function crearResenaCard(resena, completo) {
+function crearResenaCard(resena, completo, limiteTexto) {
     const div = document.createElement('div');
     div.className = 'resena-card';
 
     const img = document.createElement('img');
     img.src = resena.portada_url || 'https://via.placeholder.com/100x140';
     img.alt = `Portada de ${resena.libro_titulo}`;
+    // Tamaño fijo: antes cada portada se veía del tamaño natural de la
+    // imagen (algunas gigantes, otras chicas). Así todas quedan iguales.
+    img.style.cssText = 'width: 72px; height: 104px; object-fit: cover; flex-shrink: 0;';
     div.appendChild(img);
 
     const info = document.createElement('div');
@@ -95,7 +98,7 @@ function crearResenaCard(resena, completo) {
     // alcanza en el espacio chico de la tarjeta, se corta y se ofrece un link
     // a la página dedicada de esa reseña con el texto completo.
     if (resena.texto && resena.texto.trim()) {
-        const LIMITE = 220;
+        const LIMITE = limiteTexto || 220;
         const textoCompleto = resena.texto.trim();
         const textoP = document.createElement('p');
         textoP.style.cssText = 'font-size: 0.85rem; color: #333; margin: 8px 0 0 0; white-space: pre-wrap;';
@@ -128,7 +131,10 @@ async function cargarResenasRecientes(contenedor) {
             contenedor.appendChild(crearEstadoVacio('Todavía no hay reseñas.'));
             return;
         }
-        data.reviews.forEach(r => contenedor.appendChild(crearResenaCard(r)));
+        // Solo las 3 más recientes acá (con extracto corto), para que el
+        // Trending de más abajo se vea sin tener que scrollear. Las demás
+        // siguen accesibles reseña por reseña desde resena.html.
+        data.reviews.slice(0, 3).forEach(r => contenedor.appendChild(crearResenaCard(r, false, 90)));
     } catch (error) {
         contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">No se pudieron cargar las reseñas.</p>';
     }
