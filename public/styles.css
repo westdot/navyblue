@@ -375,9 +375,16 @@ h2 {
     background-color: var(--color-dislike-fondo);
     color: var(--color-dislike);
 }
-/* COLUMNA DERECHA: RESEÑAS RECIENTES */
+/* COLUMNA DERECHA: RESEÑAS RECIENTES
+   Sin límite de alto: son solo 3 tarjetas (top 3 más reseñados), así que
+   siempre se ven completas sin tener que hacer scroll. El que baja de
+   altura y hace scroll interno si hace falta es el Trending de más abajo,
+   que ocupa menos espacio y no necesita verse siempre completo. */
 .lista-resenas {
-    max-height: 310px;
+    padding-right: 2px;
+}
+.lista-trending {
+    max-height: 150px;
     overflow-y: auto;
     padding-right: 2px;
 }

@@ -48,7 +48,12 @@ function crearResenaCard(resena, miUsername, compacta) {
     const img = document.createElement('img');
     img.src = resena.portada_url || 'https://via.placeholder.com/100x140';
     img.alt = `Portada de ${resena.libro_titulo}`;
-    if (compacta) img.style.cssText = 'width: 52px; height: 74px; flex-shrink: 0;';
+    // Todas las portadas de reseñas en el muro (posteadas) mantienen la misma
+    // proporción (100x140, formato típico de tapa de libro), recortadas con
+    // object-fit: cover para que no se vean estiradas ni de tamaños distintos.
+    img.style.cssText = compacta
+        ? 'width: 52px; height: 74px; flex-shrink: 0; object-fit: cover;'
+        : 'width: 100px; height: 140px; flex-shrink: 0; object-fit: cover;';
     div.appendChild(img);
 
     const info = document.createElement('div');

@@ -265,6 +265,16 @@ async function crearTablas() {
             stock INTEGER NOT NULL
         )`);
 
+        // Meta de libros a leer en el año (una por usuario y año)
+        await pool.query(`CREATE TABLE IF NOT EXISTS metas_lectura (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            anio INTEGER NOT NULL,
+            meta INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, anio)
+        )`);
+
         console.log('Tablas verificadas/creadas correctamente en PostgreSQL.');
     } catch (err) {
         console.error('Error creando las tablas:', err.message);
@@ -1027,29 +1037,56 @@ app.delete('/api/lecturas/:id', requiereSesion, (req, res) => {
 // --- RUTA DE INSIGNIAS / LOGROS ---
 // Se calculan al vuelo según tu actividad real (no se guardan aparte, así
 // siempre reflejan el estado actual sin desincronizarse).
-// Cantidad de libros marcados como "Leídos" durante el año en curso (se
-// muestra en el muro, entre "Leyendo ahora" e "Insignias")
-app.get('/api/users/:username/libros-leidos-anio', (req, res) => {
+// Cantidad de libros marcados como "Leídos" durante un año + la meta que el
+// usuario se puso para ese año (si existe). Se muestra en el muro, entre
+// "Leyendo ahora" e "Insignias". Por defecto usa el año actual.
+app.get('/api/users/:username/meta-lectura', (req, res) => {
     const { username } = req.params;
+    const anio = parseInt(req.query.anio, 10) || new Date().getFullYear();
 
     db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
         if (err) return res.status(500).json({ error: 'Error en el servidor' });
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-        db.get(
-            `SELECT COUNT(*) AS n
-             FROM shelf_items
-             JOIN shelves ON shelves.id = shelf_items.shelf_id
-             WHERE shelves.user_id = ?
-               AND LOWER(shelves.nombre) = LOWER('Leídos')
-               AND EXTRACT(YEAR FROM shelf_items.created_at) = EXTRACT(YEAR FROM CURRENT_DATE)`,
-            [user.id],
-            (err, row) => {
-                if (err) return res.status(500).json({ error: 'Error en el servidor' });
-                res.json({ cantidad: row.n, anio: new Date().getFullYear() });
-            }
-        );
+        db.get(`SELECT meta FROM metas_lectura WHERE user_id = ? AND anio = ?`, [user.id, anio], (err, metaRow) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+
+            db.get(
+                `SELECT COUNT(*) AS n
+                 FROM shelf_items
+                 JOIN shelves ON shelves.id = shelf_items.shelf_id
+                 WHERE shelves.user_id = ?
+                   AND LOWER(shelves.nombre) = LOWER('Leídos')
+                   AND EXTRACT(YEAR FROM shelf_items.created_at) = ?`,
+                [user.id, anio],
+                (err, row) => {
+                    if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                    res.json({ anio, meta: metaRow ? metaRow.meta : null, leidos: row.n });
+                }
+            );
+        });
     });
+});
+
+// Poner/actualizar tu propia meta de libros para un año (por defecto, el actual)
+app.post('/api/meta-lectura', requiereSesion, (req, res) => {
+    const userId = req.session.user.id;
+    const anio = parseInt(req.body.anio, 10) || new Date().getFullYear();
+    const meta = parseInt(req.body.meta, 10);
+
+    if (!meta || meta < 1) {
+        return res.status(400).json({ error: 'Ingresa una meta válida (un número entero mayor a 0).' });
+    }
+
+    db.run(
+        `INSERT INTO metas_lectura (user_id, anio, meta) VALUES (?, ?, ?)
+         ON CONFLICT (user_id, anio) DO UPDATE SET meta = EXCLUDED.meta`,
+        [userId, anio, meta],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Meta guardada con éxito', anio, meta });
+        }
+    );
 });
 
 app.get('/api/users/:username/badges', (req, res) => {
@@ -1063,6 +1100,42 @@ app.get('/api/users/:username/badges', (req, res) => {
             db.get(sql, params, (err, row) => resolve(err ? 0 : row.n));
         });
 
+        // Revisa, para cada año YA TERMINADO en que el usuario se puso una
+        // meta de lectura, si la cumplió o no. Si cumplió al menos un año,
+        // desbloquea "yhlqmdlg"; si no cumplió al menos un año, desbloquea
+        // "dlml" (un usuario podría tener ambas, de años distintos).
+        const metasCumplimiento = () => new Promise((resolve) => {
+            const anioActual = new Date().getFullYear();
+            db.all(
+                `SELECT anio, meta FROM metas_lectura WHERE user_id = ? AND anio < ?`,
+                [user.id, anioActual],
+                (err, metas) => {
+                    if (err || !metas || metas.length === 0) return resolve({ cumplida: false, noCumplida: false });
+
+                    let pendientes = metas.length;
+                    let cumplida = false;
+                    let noCumplida = false;
+                    metas.forEach(m => {
+                        db.get(
+                            `SELECT COUNT(*) AS n
+                             FROM shelf_items
+                             JOIN shelves ON shelves.id = shelf_items.shelf_id
+                             WHERE shelves.user_id = ?
+                               AND LOWER(shelves.nombre) = LOWER('Leídos')
+                               AND EXTRACT(YEAR FROM shelf_items.created_at) = ?`,
+                            [user.id, m.anio],
+                            (err, row) => {
+                                const leidos = err ? 0 : row.n;
+                                if (leidos >= m.meta) cumplida = true; else noCumplida = true;
+                                pendientes--;
+                                if (pendientes === 0) resolve({ cumplida, noCumplida });
+                            }
+                        );
+                    });
+                }
+            );
+        });
+
         Promise.all([
             contar(`SELECT COUNT(*) AS n FROM posts WHERE user_id = ?`, [user.id]),
             contar(`SELECT COUNT(*) AS n FROM reviews WHERE user_id = ?`, [user.id]),
@@ -1074,8 +1147,9 @@ app.get('/api/users/:username/badges', (req, res) => {
             contar(
                 `SELECT COUNT(*) AS n FROM shelf_items JOIN shelves ON shelves.id = shelf_items.shelf_id WHERE shelves.user_id = ?`,
                 [user.id]
-            )
-        ]).then(([posts, reviews, amigos, seguidores, librosEnEstantes]) => {
+            ),
+            metasCumplimiento()
+        ]).then(([posts, reviews, amigos, seguidores, librosEnEstantes, metas]) => {
             const badges = [
                 { nombre: 'Primera Publicación', icono: '1', desbloqueada: posts >= 1, descripcion: 'Publica tu primer post' },
                 { nombre: 'Publicador Activo', icono: '2', desbloqueada: posts >= 10, descripcion: 'Publica 10 posts' },
@@ -1084,7 +1158,9 @@ app.get('/api/users/:username/badges', (req, res) => {
                 { nombre: 'Primer Amigo', icono: '5', desbloqueada: amigos >= 1, descripcion: 'Agrega tu primer amigo' },
                 { nombre: 'Sociable', icono: '6', desbloqueada: amigos >= 5, descripcion: 'Ten 5 amigos' },
                 { nombre: 'Popular', icono: '7', desbloqueada: seguidores >= 10, descripcion: 'Consigue 10 seguidores' },
-                { nombre: 'Lector', icono: '8', desbloqueada: librosEnEstantes >= 1, descripcion: 'Agrega un libro a una estanteria' }
+                { nombre: 'Lector', icono: '8', desbloqueada: librosEnEstantes >= 1, descripcion: 'Agrega un libro a una estanteria' },
+                { nombre: 'yhlqmdlg', icono: '🏆', desbloqueada: metas.cumplida, descripcion: 'Cumple tu meta de libros de un año' },
+                { nombre: 'dlml', icono: '💔', desbloqueada: metas.noCumplida, descripcion: 'No cumplas tu meta de libros de un año' }
             ];
             res.json({ badges });
         });

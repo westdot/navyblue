@@ -949,18 +949,62 @@
         }
     }
 
-    // --- LIBROS LEÍDOS EN EL AÑO (entre "Leyendo ahora" e "Insignias") ---
+    // --- META DE LECTURA DEL AÑO (entre "Leyendo ahora" e "Insignias") ---
 
-    async function cargarLibrosAnio(usuarioObjetivo) {
+    async function cargarLibrosAnio(usuarioObjetivo, esMiMuro) {
         const contenedor = document.getElementById('libros-anio-contenedor');
         try {
-            const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}/libros-leidos-anio`);
+            const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}/meta-lectura`);
             const data = await resp.json();
-            const cantidad = data.cantidad || 0;
-            contenedor.innerHTML = `
-                <p style="font-size: 1.8rem; font-weight: bold; color: var(--color-navy); margin: 0; line-height: 1;">${cantidad}</p>
-                <p style="font-size: 0.75rem; color: #666; margin: 2px 0 0 0;">libro${cantidad === 1 ? '' : 's'} leído${cantidad === 1 ? '' : 's'} en ${data.anio}</p>
-            `;
+            const leidos = data.leidos || 0;
+            const meta = data.meta;
+
+            contenedor.innerHTML = '';
+
+            const numeroP = document.createElement('p');
+            numeroP.style.cssText = 'font-size: 1.8rem; font-weight: bold; color: var(--color-navy); margin: 0; line-height: 1;';
+            numeroP.textContent = meta ? `${leidos} / ${meta}` : `${leidos}`;
+            contenedor.appendChild(numeroP);
+
+            const etiquetaP = document.createElement('p');
+            etiquetaP.style.cssText = 'font-size: 0.75rem; color: #666; margin: 2px 0 0 0;';
+            etiquetaP.textContent = meta
+                ? `libros leídos en ${data.anio} (tu meta: ${meta})`
+                : `libro${leidos === 1 ? '' : 's'} leído${leidos === 1 ? '' : 's'} en ${data.anio}`;
+            contenedor.appendChild(etiquetaP);
+
+            // Solo el dueño del muro puede poner/cambiar su propia meta
+            if (esMiMuro) {
+                const btnMeta = document.createElement('button');
+                btnMeta.type = 'button';
+                btnMeta.textContent = meta ? 'Cambiar meta' : '+ Poner una meta';
+                btnMeta.style.cssText = 'margin-top: 6px; font-size: 0.7rem; background: none; border: none; color: var(--color-navy); text-decoration: underline; cursor: pointer;';
+                btnMeta.addEventListener('click', async () => {
+                    const respuesta = prompt(`¿Cuántos libros quieres leer en ${data.anio}?`, meta || '');
+                    if (respuesta === null) return;
+                    const nuevaMeta = parseInt(respuesta, 10);
+                    if (!nuevaMeta || nuevaMeta < 1) {
+                        mostrarAviso('Ingresa un número válido mayor a 0.');
+                        return;
+                    }
+                    try {
+                        const respGuardar = await fetch('/api/meta-lectura', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ anio: data.anio, meta: nuevaMeta })
+                        });
+                        if (!respGuardar.ok) {
+                            const err = await respGuardar.json().catch(() => ({}));
+                            mostrarAviso(err.error || 'No se pudo guardar la meta.');
+                            return;
+                        }
+                        cargarLibrosAnio(usuarioObjetivo, esMiMuro);
+                    } catch (error) {
+                        mostrarAviso('No se pudo conectar con el servidor.');
+                    }
+                });
+                contenedor.appendChild(btnMeta);
+            }
         } catch (error) {
             contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudo cargar.</p>';
         }
@@ -1117,7 +1161,7 @@
             cargarSeguirInfo(usuarioObjetivo, esMiMuro);
             cargarEstanterias(usuarioObjetivo, esMiMuro);
             cargarLecturas(usuarioObjetivo, esMiMuro);
-            cargarLibrosAnio(usuarioObjetivo);
+            cargarLibrosAnio(usuarioObjetivo, esMiMuro);
             cargarInsignias(usuarioObjetivo);
             cargarAmigosInfo(usuarioObjetivo, esMiMuro);
             activarTab('posts', usuarioObjetivo, esMiMuro);
