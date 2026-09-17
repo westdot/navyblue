@@ -437,7 +437,7 @@ function renderDetalleResena(resena, comentarios, contenedor, usuarioActual) {
 
     const valoracionP = document.createElement('p');
     valoracionP.className = 'valoracion';
-    valoracionP.textContent = crearEstrellas(resena.valoracion);
+    valoracionP.appendChild(crearEstrellas(resena.valoracion));
     info.appendChild(valoracionP);
 
     const porP = document.createElement('p');

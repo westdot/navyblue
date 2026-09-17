@@ -755,3 +755,47 @@ body.modo-compacto .resena-card {
         display: block;
     }
 }
+
+/* --- Estrellas con soporte de medias estrellas (0.5, 1, 1.5 ... 5) ---
+   Técnica: una fila de estrellas vacías de fondo + una fila de estrellas
+   llenas superpuesta, recortada (overflow:hidden) al porcentaje exacto de
+   la valoración. Así "3.5 de 5" se ve como 70% de la fila llena visible. */
+.estrellas-rating {
+    position: relative;
+    display: inline-block;
+    white-space: nowrap;
+    line-height: 1;
+    vertical-align: middle;
+}
+.estrellas-base {
+    color: #ccc;
+}
+.estrellas-llenas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    color: #c08a4e;
+}
+
+/* Selector de estrellas al publicar una reseña: cada estrella se divide en
+   mitad izquierda / mitad derecha para poder elegir medias estrellas. */
+.selector-estrella {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    margin-right: 2px;
+}
+.selector-estrella .estrella-vacia {
+    color: #ccc;
+}
+.selector-estrella .estrella-llena {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    overflow: hidden;
+    white-space: nowrap;
+    color: #c08a4e;
+}

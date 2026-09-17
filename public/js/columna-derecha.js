@@ -4,9 +4,30 @@
 // que además deja guardada una forma de "volver" a este estado después de ver
 // el detalle de un post (ver posts-comunes.js).
 
+// Devuelve un elemento con las 5 estrellas, admitiendo medias estrellas
+// (1, 1.5, 2, 2.5 ... 5). Se dibuja superponiendo una fila de estrellas
+// llenas sobre una fila de estrellas vacías, recortando la fila llena al
+// porcentaje que corresponda (ej: 3.5 de 5 -> 70% de ancho visible).
 function crearEstrellas(valoracion) {
-    const val = Number(valoracion) || 0;
-    return '★'.repeat(val) + '☆'.repeat(5 - val);
+    const val = Math.max(0, Math.min(5, Number(valoracion) || 0));
+    const porcentaje = (val / 5) * 100;
+
+    const contenedor = document.createElement('span');
+    contenedor.className = 'estrellas-rating';
+    contenedor.title = `${val} de 5 estrellas`;
+
+    const vacias = document.createElement('span');
+    vacias.className = 'estrellas-base';
+    vacias.textContent = '☆☆☆☆☆';
+
+    const llenas = document.createElement('span');
+    llenas.className = 'estrellas-llenas';
+    llenas.style.width = porcentaje + '%';
+    llenas.textContent = '★★★★★';
+
+    contenedor.appendChild(vacias);
+    contenedor.appendChild(llenas);
+    return contenedor;
 }
 
 // Cuánto texto de la reseña mostramos en la tarjeta completa (perfil/detalle)
@@ -49,8 +70,21 @@ function crearResenaCard(resena, miUsername, compacta) {
     const valoracionP = document.createElement('p');
     valoracionP.className = 'valoracion';
     if (compacta) valoracionP.style.cssText = 'font-size: 0.78rem; margin: 0;';
-    valoracionP.textContent = compacta ? crearEstrellas(resena.valoracion) : `Valoración: ${crearEstrellas(resena.valoracion)}`;
+    if (!compacta) valoracionP.append('Valoración: ');
+    valoracionP.appendChild(crearEstrellas(resena.valoracion));
     info.appendChild(valoracionP);
+
+    // Cuando la tarjeta viene de "Reseñas Recientes" agrupada por libro
+    // (ver /api/reviews/top), mostramos cuántas reseñas tiene ese libro en
+    // total en vez de que aparezca repetido varias veces.
+    if (resena.total_resenas && resena.total_resenas > 1) {
+        const totalP = document.createElement('p');
+        totalP.style.cssText = compacta
+            ? 'font-size: 0.68rem; color: #888; margin: 1px 0 0 0; font-weight: bold;'
+            : 'font-size: 0.75rem; color: #888; margin: 2px 0; font-weight: bold;';
+        totalP.textContent = `${resena.total_resenas} reseñas`;
+        info.appendChild(totalP);
+    }
 
     const porP = document.createElement('p');
     porP.style.cssText = compacta
@@ -178,8 +212,9 @@ function crearResenaCard(resena, miUsername, compacta) {
 async function cargarResenasRecientes(contenedor) {
     contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">Cargando...</p>';
     try {
+        // Top 3 de libros con más reseñas (agrupado, no reseñas sueltas)
         const [resp, miUsername] = await Promise.all([
-            fetch('/api/reviews'),
+            fetch('/api/reviews/top'),
             obtenerUsuarioSesion()
         ]);
         const data = await resp.json();

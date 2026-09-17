@@ -141,16 +141,45 @@ function crearComposer({ onPost, onResena } = {}) {
     selectorEstrellas.style.cssText = 'margin-bottom: 10px; font-size: 1.4rem;';
     let valoracionElegida = 0;
     const estrellasSpans = [];
-    for (let i = 1; i <= 5; i++) {
-        const span = document.createElement('span');
-        span.textContent = '☆';
-        span.style.cssText = 'cursor: pointer; margin-right: 2px;';
-        span.addEventListener('click', () => {
-            valoracionElegida = i;
-            estrellasSpans.forEach((s, idx) => { s.textContent = idx < valoracionElegida ? '★' : '☆'; });
+
+    // Refleja valoracionElegida en las 5 estrellas, admitiendo medias
+    // estrellas (ej: 3.5 deja la 4ta estrella llena a la mitad).
+    function actualizarSelectorEstrellas() {
+        estrellasSpans.forEach(({ llena }, idx) => {
+            const posicion = idx + 1;
+            let porcentaje = 0;
+            if (valoracionElegida >= posicion) porcentaje = 100;
+            else if (valoracionElegida >= posicion - 0.5) porcentaje = 50;
+            llena.style.width = porcentaje + '%';
         });
-        estrellasSpans.push(span);
-        selectorEstrellas.appendChild(span);
+    }
+
+    for (let i = 1; i <= 5; i++) {
+        const contenedorEstrella = document.createElement('span');
+        contenedorEstrella.className = 'selector-estrella';
+
+        const vacia = document.createElement('span');
+        vacia.className = 'estrella-vacia';
+        vacia.textContent = '☆';
+
+        const llena = document.createElement('span');
+        llena.className = 'estrella-llena';
+        llena.textContent = '★';
+
+        contenedorEstrella.appendChild(vacia);
+        contenedorEstrella.appendChild(llena);
+
+        // Clic en la mitad izquierda de la estrella = media estrella,
+        // clic en la mitad derecha = estrella completa.
+        contenedorEstrella.addEventListener('click', (e) => {
+            const rect = contenedorEstrella.getBoundingClientRect();
+            const esMitadIzquierda = (e.clientX - rect.left) < rect.width / 2;
+            valoracionElegida = esMitadIzquierda ? i - 0.5 : i;
+            actualizarSelectorEstrellas();
+        });
+
+        estrellasSpans.push({ contenedor: contenedorEstrella, llena });
+        selectorEstrellas.appendChild(contenedorEstrella);
     }
 
     const btnPublicarResena = document.createElement('button');
@@ -217,7 +246,7 @@ function crearComposer({ onPost, onResena } = {}) {
             inputPortada.value = '';
             textareaResena.value = '';
             valoracionElegida = 0;
-            estrellasSpans.forEach(s => { s.textContent = '☆'; });
+            actualizarSelectorEstrellas();
             mensajeResena.style.color = 'green';
             mensajeResena.textContent = '¡Reseña publicada con éxito!';
             if (onResena) onResena();

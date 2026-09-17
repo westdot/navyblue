@@ -18,8 +18,29 @@
         </div>
     </header>
 
-    <!-- ESPACIO RESERVADO PARA EL FONDO DEL MURO (sin gestor de imágenes todavía) -->
-    <div id="fondo-muro" style="height: 180px; background: linear-gradient(135deg, var(--color-navy-oscuro), var(--color-navy));"></div>
+    <!-- ESPACIO RESERVADO PARA EL FONDO DEL MURO (sin gestor de imágenes todavía).
+         La foto de perfil vive DENTRO de esta franja azul (sobresaliendo un poco
+         por debajo, como una portada + avatar), en vez de estar metida en la
+         columna de "Mi Muro". -->
+    <div id="fondo-muro" style="position: relative; height: 180px; background: linear-gradient(135deg, var(--color-navy-oscuro), var(--color-navy));">
+        <div id="foto-perfil-contenedor" style="position: absolute; left: 50%; bottom: -48px; transform: translateX(-50%); margin: 0;">
+            <div id="foto-perfil-caja" style="
+                position: relative; width: 96px; height: 96px; border-radius: 10px;
+                border: 3px solid var(--color-acento); background: var(--color-navy-claro);
+                overflow: hidden; display: flex; align-items: center; justify-content: center;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            ">
+                <img id="foto-perfil-img" alt="Foto de perfil" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+                <span id="foto-perfil-icono" style="font-size: 2rem;">👤</span>
+                <label id="foto-perfil-editar" for="foto-perfil-input" title="Cambiar foto de perfil (máx. 2MB)" style="
+                    display: none; position: absolute; bottom: 0; left: 0; right: 0;
+                    background: rgba(63,79,104,0.85); color: white; text-align: center;
+                    font-size: 0.65rem; padding: 3px 0; cursor: pointer;
+                ">Cambiar</label>
+                <input type="file" id="foto-perfil-input" accept="image/*" style="display: none;">
+            </div>
+        </div>
+    </div>
 
     <!-- ESTRUCTURA EN 4 COLUMNAS: SOCIAL + LECTOR (antes una sola izquierda) + CENTRO + DERECHA -->
     <main class="contenedor-principal cuatro-columnas">
@@ -63,30 +84,21 @@
 
             <div class="divisor-lomo"></div>
 
+            <div id="libros-anio-contenedor" style="text-align: center; padding: 4px 0;">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
+
+            <div class="divisor-lomo"></div>
+
             <h2>Insignias</h2>
             <div id="insignias-contenedor" style="display: flex; flex-wrap: wrap; gap: 8px;">
                 <p style="font-size: 14px; color: #666;">Cargando...</p>
             </div>
         </aside>
 
-        <!-- COLUMNA CENTRO: MURO -->
-        <section class="columna-centro">
-            <div id="foto-perfil-contenedor" style="display: flex; justify-content: center; margin-bottom: 12px;">
-                <div id="foto-perfil-caja" style="
-                    position: relative; width: 96px; height: 96px; border-radius: 10px;
-                    border: 3px solid var(--color-acento); background: var(--color-navy-claro);
-                    overflow: hidden; display: flex; align-items: center; justify-content: center;
-                ">
-                    <img id="foto-perfil-img" alt="Foto de perfil" style="display: none; width: 100%; height: 100%; object-fit: cover;">
-                    <span id="foto-perfil-icono" style="font-size: 2rem;">👤</span>
-                    <label id="foto-perfil-editar" for="foto-perfil-input" title="Cambiar foto de perfil (máx. 2MB)" style="
-                        display: none; position: absolute; bottom: 0; left: 0; right: 0;
-                        background: rgba(63,79,104,0.85); color: white; text-align: center;
-                        font-size: 0.65rem; padding: 3px 0; cursor: pointer;
-                    ">Cambiar</label>
-                    <input type="file" id="foto-perfil-input" accept="image/*" style="display: none;">
-                </div>
-            </div>
+        <!-- COLUMNA CENTRO: MURO. padding-top extra para dejar espacio a la
+             foto de perfil, que ahora sobresale desde la franja azul de arriba. -->
+        <section class="columna-centro" style="padding-top: 56px;">
             <p id="foto-perfil-mensaje" style="text-align: center; font-size: 0.75rem; margin-bottom: 10px;"></p>
             <h2>Muro</h2>
 
@@ -937,6 +949,23 @@
         }
     }
 
+    // --- LIBROS LEÍDOS EN EL AÑO (entre "Leyendo ahora" e "Insignias") ---
+
+    async function cargarLibrosAnio(usuarioObjetivo) {
+        const contenedor = document.getElementById('libros-anio-contenedor');
+        try {
+            const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}/libros-leidos-anio`);
+            const data = await resp.json();
+            const cantidad = data.cantidad || 0;
+            contenedor.innerHTML = `
+                <p style="font-size: 1.8rem; font-weight: bold; color: var(--color-navy); margin: 0; line-height: 1;">${cantidad}</p>
+                <p style="font-size: 0.75rem; color: #666; margin: 2px 0 0 0;">libro${cantidad === 1 ? '' : 's'} leído${cantidad === 1 ? '' : 's'} en ${data.anio}</p>
+            `;
+        } catch (error) {
+            contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudo cargar.</p>';
+        }
+    }
+
     // --- INSIGNIAS / LOGROS ---
 
     async function cargarInsignias(usuarioObjetivo) {
@@ -1088,6 +1117,7 @@
             cargarSeguirInfo(usuarioObjetivo, esMiMuro);
             cargarEstanterias(usuarioObjetivo, esMiMuro);
             cargarLecturas(usuarioObjetivo, esMiMuro);
+            cargarLibrosAnio(usuarioObjetivo);
             cargarInsignias(usuarioObjetivo);
             cargarAmigosInfo(usuarioObjetivo, esMiMuro);
             activarTab('posts', usuarioObjetivo, esMiMuro);

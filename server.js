@@ -178,6 +178,8 @@ async function crearTablas() {
         )`);
         // migracion: texto de opinión de la reseña (antes las reseñas solo tenían estrellas)
         await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS texto TEXT`);
+        // migracion: la valoración ahora admite medias estrellas (1, 1.5, 2, 2.5... 5)
+        await pool.query(`ALTER TABLE reviews ALTER COLUMN valoracion TYPE NUMERIC(2,1)`);
 
         await pool.query(`CREATE TABLE IF NOT EXISTS review_reactions (
             id SERIAL PRIMARY KEY,
@@ -1025,6 +1027,31 @@ app.delete('/api/lecturas/:id', requiereSesion, (req, res) => {
 // --- RUTA DE INSIGNIAS / LOGROS ---
 // Se calculan al vuelo según tu actividad real (no se guardan aparte, así
 // siempre reflejan el estado actual sin desincronizarse).
+// Cantidad de libros marcados como "Leídos" durante el año en curso (se
+// muestra en el muro, entre "Leyendo ahora" e "Insignias")
+app.get('/api/users/:username/libros-leidos-anio', (req, res) => {
+    const { username } = req.params;
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        db.get(
+            `SELECT COUNT(*) AS n
+             FROM shelf_items
+             JOIN shelves ON shelves.id = shelf_items.shelf_id
+             WHERE shelves.user_id = ?
+               AND LOWER(shelves.nombre) = LOWER('Leídos')
+               AND EXTRACT(YEAR FROM shelf_items.created_at) = EXTRACT(YEAR FROM CURRENT_DATE)`,
+            [user.id],
+            (err, row) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                res.json({ cantidad: row.n, anio: new Date().getFullYear() });
+            }
+        );
+    });
+});
+
 app.get('/api/users/:username/badges', (req, res) => {
     const { username } = req.params;
 
@@ -1388,6 +1415,44 @@ app.get('/api/reviews', (req, res) => {
     }
 });
 
+// "Reseñas Recientes" de la barra lateral: en vez de listar reseñas sueltas
+// (donde un mismo libro con 2 reseñas aparecería 2 veces), agrupamos por
+// libro (título + autor, sin importar mayúsculas) y mostramos el TOP 3 de
+// libros con más reseñas. De cada libro se muestra como representante su
+// reseña más reciente, junto con el total de reseñas que tiene ese libro.
+app.get('/api/reviews/top', (req, res) => {
+    const miId = req.session.user ? req.session.user.id : null;
+
+    const query = `
+        SELECT
+            reviews.id, reviews.user_id, reviews.libro_titulo, reviews.autor,
+            reviews.portada_url, reviews.valoracion, reviews.texto, reviews.created_at,
+            COALESCE(users.username, reviews.username) AS username,
+            (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'like') AS likes_count,
+            (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'dislike') AS dislikes_count,
+            (SELECT tipo FROM review_reactions WHERE review_id = reviews.id AND user_id = ?) AS mi_reaccion,
+            conteo.total_resenas
+        FROM reviews
+        LEFT JOIN users ON reviews.user_id = users.id
+        JOIN (
+            SELECT LOWER(libro_titulo) AS libro_key, LOWER(autor) AS autor_key,
+                   COUNT(*) AS total_resenas, MAX(id) AS id_representativo
+            FROM reviews
+            GROUP BY LOWER(libro_titulo), LOWER(autor)
+        ) AS conteo
+            ON LOWER(reviews.libro_titulo) = conteo.libro_key
+            AND LOWER(reviews.autor) = conteo.autor_key
+            AND reviews.id = conteo.id_representativo
+        ORDER BY conteo.total_resenas DESC, reviews.id DESC
+        LIMIT 3
+    `;
+
+    db.all(query, [miId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ reviews: rows });
+    });
+});
+
 // Obtener el detalle de UNA reseña (para abrirla en su propia página cuando
 // el texto no alcanza en el espacio reducido de la tarjeta)
 app.get('/api/reviews/:id', (req, res) => {
@@ -1420,10 +1485,12 @@ app.get('/api/reviews/:id', (req, res) => {
 app.post('/api/reviews', requiereSesion, (req, res) => {
     const { id: userId, username } = req.session.user;
     const { libro_titulo, autor, portada_url, valoracion, texto } = req.body;
-    const val = parseInt(valoracion, 10);
+    const val = parseFloat(valoracion);
+    // La valoración admite medias estrellas: 0.5, 1, 1.5, 2 ... 5
+    const esValoracionValida = !isNaN(val) && val >= 0.5 && val <= 5 && Math.round(val * 2) === val * 2;
 
-    if (!libro_titulo || !autor || !val || val < 1 || val > 5) {
-        return res.status(400).json({ error: 'Completa título, autor y una valoración entre 1 y 5.' });
+    if (!libro_titulo || !autor || !esValoracionValida) {
+        return res.status(400).json({ error: 'Completa título, autor y una valoración entre 0,5 y 5 (se permiten medias estrellas).' });
     }
 
     // Agrega el libro reseñado a la estantería "Leídos" del usuario, creándola
