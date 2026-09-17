@@ -154,15 +154,9 @@ header .header-title p {
 /* CONTENEDOR TRES COLUMNAS (GRILLA) */
 .contenedor-principal {
     display: grid;
-    /* La derecha (Reseñas Recientes + Trending, en el inicio) es más ancha
-       que antes para que las portadas entren parejas y quepan las 3
-       reseñas sin verse apretadas. La izquierda y el centro miden exactamente
-       lo mismo que siempre (240px y el mismo 1fr), y el espacio entre el
-       centro y la derecha sigue siendo el mismo gap de 20px: solo crece el
-       ancho total del contenedor para darle el espacio extra a la derecha. */
-    grid-template-columns: 240px 1fr 380px;
+    grid-template-columns: 240px 1fr 280px;
     gap: 20px;
-    max-width: 1300px;
+    max-width: 1200px;
     margin: 20px auto;
     padding: 0 15px;
 }
@@ -382,6 +376,11 @@ h2 {
     color: var(--color-dislike);
 }
 /* COLUMNA DERECHA: RESEÑAS RECIENTES */
+.lista-resenas {
+    max-height: 310px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
 .resena-card {
     display: flex;
     gap: 12px;
@@ -409,6 +408,18 @@ h2 {
 .resena-card img {
     border-radius: 4px;
     object-fit: cover;
+}
+
+/* Versión compacta: solo en "Reseñas Recientes" del index, para que 3
+   tarjetas midan siempre lo mismo y quepan sin empujar el Trending. */
+.resena-card-compacta {
+    padding: 8px;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+.resena-card-compacta img {
+    width: 52px;
+    height: 74px;
 }
 
 .resena-info h3 {

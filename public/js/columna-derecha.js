@@ -9,62 +9,77 @@ function crearEstrellas(valoracion) {
     return '★'.repeat(val) + '☆'.repeat(5 - val);
 }
 
-// Cuánto texto de la reseña mostramos en la tarjeta chica antes de recortarlo
-// y mandar a la página completa de la reseña.
+// Cuánto texto de la reseña mostramos en la tarjeta completa (perfil/detalle)
+// antes de recortarlo y mandar a la página propia de la reseña.
 const LARGO_MAX_RESENA_CARD = 140;
 
-function crearResenaCard(resena, miUsername) {
+// `compacta`: se usa solo en "Reseñas Recientes" del index (la barra lateral),
+// donde necesitamos que las tarjetas midan siempre lo mismo (portada chica,
+// título de una sola línea, sin el texto de la reseña) para que entren 3 y
+// el Trending quede visible debajo sin tener que scrollear.
+function crearResenaCard(resena, miUsername, compacta) {
     const div = document.createElement('div');
     div.className = 'resena-card';
+    if (compacta) div.classList.add('resena-card-compacta');
     div.style.cursor = 'pointer';
     div.title = 'Abrir esta reseña';
 
     const img = document.createElement('img');
     img.src = resena.portada_url || 'https://via.placeholder.com/100x140';
     img.alt = `Portada de ${resena.libro_titulo}`;
+    if (compacta) img.style.cssText = 'width: 52px; height: 74px; flex-shrink: 0;';
     div.appendChild(img);
 
     const info = document.createElement('div');
     info.className = 'resena-info';
+    if (compacta) info.style.cssText = 'min-width: 0;';
 
     const h3 = document.createElement('h3');
     h3.textContent = resena.libro_titulo;
+    if (compacta) h3.style.cssText = 'font-size: 0.85rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
     info.appendChild(h3);
 
     const autorP = document.createElement('p');
-    autorP.style.cssText = 'font-size: 0.8rem; color: #666; margin: 2px 0;';
+    autorP.style.cssText = compacta
+        ? 'font-size: 0.72rem; color: #666; margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'
+        : 'font-size: 0.8rem; color: #666; margin: 2px 0;';
     autorP.textContent = resena.autor;
     info.appendChild(autorP);
 
     const valoracionP = document.createElement('p');
     valoracionP.className = 'valoracion';
-    valoracionP.textContent = `Valoración: ${crearEstrellas(resena.valoracion)}`;
+    if (compacta) valoracionP.style.cssText = 'font-size: 0.78rem; margin: 0;';
+    valoracionP.textContent = compacta ? crearEstrellas(resena.valoracion) : `Valoración: ${crearEstrellas(resena.valoracion)}`;
     info.appendChild(valoracionP);
 
     const porP = document.createElement('p');
-    porP.style.cssText = 'font-size: 0.75rem; color: #888; margin: 2px 0 6px 0;';
+    porP.style.cssText = compacta
+        ? 'font-size: 0.7rem; color: #888; margin: 2px 0 4px 0;'
+        : 'font-size: 0.75rem; color: #888; margin: 2px 0 6px 0;';
     const linkUsuario = document.createElement('a');
     linkUsuario.href = `muro.html?usuario=${encodeURIComponent(resena.username)}`;
     linkUsuario.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
     linkUsuario.textContent = resena.username;
     linkUsuario.addEventListener('click', (e) => e.stopPropagation());
-    porP.append('Reseñado por ', linkUsuario);
+    porP.append(compacta ? '' : 'Reseñado por ', linkUsuario);
     info.appendChild(porP);
 
     // Botones de like / dislike (una sola reacción por persona, se puede cambiar)
     const acciones = document.createElement('div');
-    acciones.style.cssText = 'display: flex; gap: 10px; align-items: center;';
+    acciones.style.cssText = compacta
+        ? 'display: flex; gap: 8px; align-items: center;'
+        : 'display: flex; gap: 10px; align-items: center;';
 
     const btnLike = document.createElement('button');
     btnLike.type = 'button';
     btnLike.textContent = `👍 ${resena.likes_count || 0}`;
-    btnLike.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 0.8rem;';
+    btnLike.style.cssText = `background: none; border: none; cursor: pointer; font-size: ${compacta ? '0.72rem' : '0.8rem'};`;
     if (resena.mi_reaccion === 'like') btnLike.style.color = '#198754';
 
     const btnDislike = document.createElement('button');
     btnDislike.type = 'button';
     btnDislike.textContent = `👎 ${resena.dislikes_count || 0}`;
-    btnDislike.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 0.8rem;';
+    btnDislike.style.cssText = `background: none; border: none; cursor: pointer; font-size: ${compacta ? '0.72rem' : '0.8rem'};`;
     if (resena.mi_reaccion === 'dislike') btnDislike.style.color = '#e63946';
 
     async function reaccionar(tipo) {
@@ -103,7 +118,7 @@ function crearResenaCard(resena, miUsername) {
         btnEliminar.type = 'button';
         btnEliminar.title = 'Eliminar reseña';
         btnEliminar.textContent = '🗑️';
-        btnEliminar.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 0.8rem; margin-left: auto;';
+        btnEliminar.style.cssText = `background: none; border: none; cursor: pointer; font-size: ${compacta ? '0.72rem' : '0.8rem'}; margin-left: auto;`;
         btnEliminar.addEventListener('click', async (e) => {
             e.stopPropagation();
             if (!(await confirmarAccion('¿Eliminar esta reseña?'))) return;
@@ -124,10 +139,13 @@ function crearResenaCard(resena, miUsername) {
 
     info.appendChild(acciones);
 
-    // Debajo de los likes: el texto escrito de la reseña (si tiene). Si no
-    // cabe en el espacio de la tarjeta, se recorta y se ofrece un link a la
-    // página completa de la reseña, donde además se puede comentar.
-    if (resena.texto && resena.texto.trim()) {
+    // Debajo de los likes: el texto escrito de la reseña (si tiene). En la
+    // versión compacta (barra lateral del index) lo omitimos por completo
+    // para que las 3 tarjetas midan siempre lo mismo; el texto completo se
+    // lee entrando a la reseña. En la versión normal, si no cabe en el
+    // espacio de la tarjeta, se recorta y se ofrece un link a la página
+    // completa de la reseña, donde además se puede comentar.
+    if (!compacta && resena.texto && resena.texto.trim()) {
         const textoP = document.createElement('p');
         textoP.style.cssText = 'font-size: 0.82rem; margin-top: 6px; white-space: pre-wrap;';
         const textoCompleto = resena.texto.trim();
@@ -171,7 +189,7 @@ async function cargarResenasRecientes(contenedor) {
             contenedor.appendChild(crearEstadoVacio('Todavía no hay reseñas.'));
             return;
         }
-        data.reviews.forEach(r => contenedor.appendChild(crearResenaCard(r, miUsername)));
+        data.reviews.forEach(r => contenedor.appendChild(crearResenaCard(r, miUsername, true)));
     } catch (error) {
         contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">No se pudieron cargar las reseñas.</p>';
     }
