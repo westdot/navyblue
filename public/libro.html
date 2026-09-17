@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Libro - NAVYBLUE</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%233f4f68'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23f5efe1'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%23c08a4e'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Ficha del libro: portada + datos a la izquierda, título/valoración/
+           sinopsis a la derecha. Nada de precio, stock, compra ni "compartir
+           y gana dinero" — solo la parte informativa, como pidió el usuario. */
+        .libro-layout {
+            display: flex;
+            gap: 26px;
+            flex-wrap: wrap;
+        }
+        .libro-portada-col {
+            width: 190px;
+            flex-shrink: 0;
+        }
+        .libro-portada-col img {
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+            border-radius: 8px;
+            background: var(--color-navy-claro);
+            box-shadow: 0 2px 10px rgba(58, 50, 38, 0.25);
+            display: block;
+        }
+        .libro-ficha {
+            list-style: none;
+            margin: 16px 0 0 0;
+            padding: 0;
+            font-size: 0.82rem;
+        }
+        .libro-ficha li {
+            margin-bottom: 9px;
+        }
+        .libro-ficha .etiqueta {
+            display: block;
+            color: var(--color-texto-suave);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-bottom: 1px;
+        }
+        .libro-info-col {
+            flex: 1;
+            min-width: 260px;
+        }
+        .libro-info-col h1 {
+            font-size: 1.55rem;
+            border: none;
+            padding: 0;
+            margin-bottom: 4px;
+        }
+        .libro-autor {
+            color: var(--color-acento-oscuro);
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .libro-valoracion-fila {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            font-size: 1.1rem;
+        }
+        .libro-valoracion-texto {
+            font-size: 0.82rem;
+            color: var(--color-texto-suave);
+        }
+        .libro-sinopsis h2 {
+            font-size: 1.02rem;
+            border: none;
+            padding: 0;
+            margin-bottom: 8px;
+        }
+        .libro-sinopsis p {
+            font-size: 0.9rem;
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <header id="inicio-header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>NAVYBLUE</h1>
+            </div>
+            <div class="header-acciones"></div>
+        </div>
+    </header>
+
+    <main class="contenedor-principal" style="grid-template-columns: 1fr; max-width: 900px;">
+        <section class="columna-centro">
+            <div id="libro-contenido">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
+
+            <div class="divisor-lomo"></div>
+
+            <h2>Comentarios</h2>
+            <div id="libro-comentarios-contenedor">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Desarrollado por: mis dos cojones</p>
+    </footer>
+
+    <script src="js/ui-comunes.js"></script>
+    <script src="js/header-comun.js"></script>
+    <script src="js/columna-derecha.js"></script>
+    <script src="js/posts-comunes.js"></script>
+    <script>
+        montarHeaderComun();
+
+        const params = new URLSearchParams(window.location.search);
+        const titulo = params.get('titulo') || '';
+        const autor = params.get('autor') || '';
+        const portada = params.get('portada') || '';
+
+        const contenido = document.getElementById('libro-contenido');
+        const comentariosContenedor = document.getElementById('libro-comentarios-contenedor');
+
+        // Un renglón de la ficha técnica (Editorial, Idioma, etc). Si no hay
+        // dato (Open Library no lo tenía), directamente no se muestra la fila.
+        function crearFichaItem(etiqueta, valor) {
+            if (!valor) return null;
+            const li = document.createElement('li');
+            const spanEtiqueta = document.createElement('span');
+            spanEtiqueta.className = 'etiqueta';
+            spanEtiqueta.textContent = etiqueta;
+            li.appendChild(spanEtiqueta);
+            li.append(String(valor));
+            return li;
+        }
+
+        async function cargarLibro() {
+            if (!titulo) {
+                contenido.innerHTML = '<p>No se indicó qué libro mostrar.</p>';
+                return;
+            }
+            document.title = `${titulo} - NAVYBLUE`;
+
+            try {
+                const resp = await fetch(`/api/libros/detalle?titulo=${encodeURIComponent(titulo)}&autor=${encodeURIComponent(autor)}`);
+                const data = await resp.json();
+                if (!resp.ok) {
+                    contenido.innerHTML = `<p>${data.error || 'No se pudo cargar la información del libro.'}</p>`;
+                    return;
+                }
+
+                contenido.innerHTML = '';
+                const layout = document.createElement('div');
+                layout.className = 'libro-layout';
+
+                // --- Columna izquierda: portada + ficha técnica ---
+                const colPortada = document.createElement('div');
+                colPortada.className = 'libro-portada-col';
+
+                const img = document.createElement('img');
+                img.src = portada || 'https://via.placeholder.com/190x285';
+                img.alt = `Portada de ${titulo}`;
+                colPortada.appendChild(img);
+
+                const ficha = document.createElement('ul');
+                ficha.className = 'libro-ficha';
+                [
+                    crearFichaItem('Editorial', data.editorial),
+                    crearFichaItem('Categoría', data.categoria),
+                    crearFichaItem('Idioma', data.idioma),
+                    crearFichaItem('N.º de páginas', data.paginas),
+                    crearFichaItem('Año de publicación', data.anio),
+                    crearFichaItem('ISBN', data.isbn)
+                ].forEach(item => { if (item) ficha.appendChild(item); });
+                if (ficha.children.length > 0) colPortada.appendChild(ficha);
+
+                layout.appendChild(colPortada);
+
+                // --- Columna derecha: título, autor, valoración, sinopsis ---
+                const colInfo = document.createElement('div');
+                colInfo.className = 'libro-info-col';
+
+                const h1 = document.createElement('h1');
+                h1.textContent = titulo;
+                colInfo.appendChild(h1);
+
+                const autorP = document.createElement('p');
+                autorP.className = 'libro-autor';
+                autorP.textContent = autor || 'Autor desconocido';
+                colInfo.appendChild(autorP);
+
+                const valoracionFila = document.createElement('div');
+                valoracionFila.className = 'libro-valoracion-fila';
+                if (data.total_opiniones > 0) {
+                    valoracionFila.appendChild(crearEstrellas(data.valoracion_promedio));
+                    const textoValoracion = document.createElement('span');
+                    textoValoracion.className = 'libro-valoracion-texto';
+                    textoValoracion.textContent = `${Number(data.valoracion_promedio).toFixed(1)} · ${data.total_opiniones} opinion${data.total_opiniones === 1 ? '' : 'es'} en NAVYBLUE`;
+                    valoracionFila.appendChild(textoValoracion);
+                } else {
+                    const sinOpiniones = document.createElement('span');
+                    sinOpiniones.className = 'libro-valoracion-texto';
+                    sinOpiniones.textContent = 'Todavía no tiene reseñas en NAVYBLUE.';
+                    valoracionFila.appendChild(sinOpiniones);
+                }
+                colInfo.appendChild(valoracionFila);
+
+                if (data.sinopsis) {
+                    const sinopsisDiv = document.createElement('div');
+                    sinopsisDiv.className = 'libro-sinopsis';
+                    const h2 = document.createElement('h2');
+                    h2.textContent = 'Sinopsis';
+                    sinopsisDiv.appendChild(h2);
+                    const p = document.createElement('p');
+                    p.textContent = data.sinopsis;
+                    sinopsisDiv.appendChild(p);
+                    colInfo.appendChild(sinopsisDiv);
+                }
+
+                layout.appendChild(colInfo);
+                contenido.appendChild(layout);
+            } catch (error) {
+                contenido.innerHTML = '<p>No se pudo conectar con el servidor.</p>';
+            }
+        }
+
+        // Comentarios del libro (como si fuera un post): reutiliza el mismo
+        // bloque de comentarios que usan los posts y las reseñas.
+        async function cargarComentarios() {
+            if (!titulo) return;
+            try {
+                const [respComentarios, miUsername] = await Promise.all([
+                    fetch(`/api/libros/comments?titulo=${encodeURIComponent(titulo)}&autor=${encodeURIComponent(autor)}`),
+                    obtenerUsuarioSesion()
+                ]);
+                const data = await respComentarios.json();
+                comentariosContenedor.innerHTML = '';
+                comentariosContenedor.appendChild(crearBloqueComentarios(data.comments || [], miUsername, {
+                    enviarComentario: async (content) => {
+                        const resp = await fetch('/api/libros/comments', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ titulo, autor, content })
+                        });
+                        const dataResp = await resp.json().catch(() => ({}));
+                        return { ok: resp.ok, error: dataResp.error };
+                    },
+                    eliminarComentario: async (id) => {
+                        const resp = await fetch(`/api/libros/comments/${id}`, { method: 'DELETE' });
+                        const dataResp = await resp.json().catch(() => ({}));
+                        return { ok: resp.ok, error: dataResp.error };
+                    },
+                    alCambiar: () => cargarComentarios()
+                }));
+            } catch (error) {
+                comentariosContenedor.innerHTML = '<p>No se pudieron cargar los comentarios.</p>';
+            }
+        }
+
+        cargarLibro();
+        cargarComentarios();
+    </script>
+</body>
+</html>

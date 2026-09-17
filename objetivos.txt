@@ -14,7 +14,7 @@ agregar cuadro de foto de perfil al centro (encima de la palabra mi muro), quita
 
 --eliminar la info personal del recuadro de la izquierda y dejar un boton con info que lleve a una nueva pestaña
 
-dejar solo una barra de insignias (caen 4) con un boton de mas, que lleve solo a una pagina de los diferentes tipos de medallas o insignias
+--dejar solo una barra de insignias (caen 4) con un boton de mas, que lleve solo a una pagina de los diferentes tipos de medallas o insignias
 
 que quede la barra de leyendo ahora y se añada una barra de 'escritos'.
 
@@ -48,12 +48,12 @@ porcentaje de insignias que tiene (por ejemplo, esta insignia la tiene el 0,0% d
 
 --al buscar y pinchar el nombre, ir al perfil del usuario
 
-abajo de los likes en las reseñas, que aparezca la reseña escrita (añadir boton de escribir en la reseña)
+--abajo de los likes en las reseñas, que aparezca la reseña escrita (añadir boton de escribir en la reseña)
 
-al hacer reseña del libro que se agregue a leidos, igual que al terminar la hoja de leyendo ahora aparezca automaticamente el libro en reseñar y darle los datos necesarios para que se reseñe
+--al hacer reseña del libro que se agregue a leidos, igual que al terminar la hoja de leyendo ahora aparezca automaticamente el libro en reseñar y darle los datos necesarios para que se reseñe
 
-el etiquetar con arroba para responder un comentario directo 
+--el etiquetar con arroba para responder un comentario directo 
 
-achicar portadas de las reseñas recientes, para que calce
+--achicar portadas de las reseñas recientes, para que calce
 
-boton para eliminar reseñas
+--boton para eliminar reseñas

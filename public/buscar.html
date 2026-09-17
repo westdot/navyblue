@@ -115,13 +115,17 @@
 
             data.resultados.forEach(item => {
                 const esUsuario = tipoActual === 'usuarios';
+                const esLibro = tipoActual === 'libros';
 
                 // Para usuarios, todo el bloque es un link que lleva a su perfil (muro.html).
-                // Para libros (que vienen de Open Library) se muestra la portada real.
-                const div = document.createElement(esUsuario ? 'a' : 'div');
+                // Para libros, un link a la ficha del libro (libro.html).
+                const div = document.createElement((esUsuario || esLibro) ? 'a' : 'div');
                 div.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee; text-decoration: none; color: inherit;';
                 if (esUsuario) {
                     div.href = `muro.html?usuario=${encodeURIComponent(item.titulo)}`;
+                    div.style.cursor = 'pointer';
+                } else if (esLibro) {
+                    div.href = `libro.html?titulo=${encodeURIComponent(item.titulo)}&autor=${encodeURIComponent(item.autor || '')}&portada=${encodeURIComponent(item.portada_url || '')}`;
                     div.style.cursor = 'pointer';
                 }
 

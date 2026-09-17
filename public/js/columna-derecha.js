@@ -61,7 +61,7 @@ function crearResenaCard(resena, miUsername, compacta) {
     if (compacta) info.style.cssText = 'min-width: 0;';
 
     const h3 = document.createElement('h3');
-    h3.textContent = resena.libro_titulo;
+    h3.appendChild(crearLinkLibro(resena.libro_titulo, resena.autor, resena.portada_url));
     if (compacta) h3.style.cssText = 'font-size: 0.85rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
     info.appendChild(h3);
 

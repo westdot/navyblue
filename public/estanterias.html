@@ -217,7 +217,7 @@
         info.style.cssText = 'flex: 1; min-width: 0;';
         const titulo = document.createElement('div');
         titulo.style.cssText = 'font-size: 0.9rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
-        titulo.textContent = libro.libro_titulo;
+        titulo.appendChild(crearLinkLibro(libro.libro_titulo, libro.autor, libro.portada_url));
         const autor = document.createElement('div');
         autor.style.cssText = 'font-size: 0.8rem; color: #888;';
         autor.textContent = libro.autor;

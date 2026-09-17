@@ -75,3 +75,23 @@ function crearEstadoVacio(mensaje) {
     div.querySelector('p').textContent = mensaje;
     return div;
 }
+
+// Convierte el título de un libro en un link a su página de detalle
+// (libro.html), manteniendo el mismo look que si fuera texto plano. Se usa
+// en todas partes donde aparece un título de libro (reseñas, estanterías,
+// lecturas en curso) — EXCEPTO en los resultados del buscador/autocompletado
+// de libros (libro-buscador.js), donde pinchar el título selecciona el libro
+// para el formulario en vez de abrir su ficha.
+// `elemento`: la etiqueta a crear (por defecto 'a', pero puede envolver un h2/h3 pasándole un texto).
+function crearLinkLibro(titulo, autor, portada_url) {
+    const link = document.createElement('a');
+    link.href = `libro.html?titulo=${encodeURIComponent(titulo || '')}&autor=${encodeURIComponent(autor || '')}&portada=${encodeURIComponent(portada_url || '')}`;
+    link.textContent = titulo;
+    link.style.cssText = 'color: inherit; text-decoration: none;';
+    link.addEventListener('mouseenter', () => { link.style.textDecoration = 'underline'; });
+    link.addEventListener('mouseleave', () => { link.style.textDecoration = 'none'; });
+    // Si el link vive dentro de una tarjeta que también abre algo al hacer
+    // click (ej: la reseña completa), que pinchar el título no dispare eso.
+    link.addEventListener('click', (e) => e.stopPropagation());
+    return link;
+}

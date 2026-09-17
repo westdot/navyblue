@@ -487,7 +487,7 @@
         info.style.cssText = 'flex: 1; min-width: 0;';
         const titulo = document.createElement('div');
         titulo.style.cssText = 'font-size: 0.82rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
-        titulo.textContent = libro.libro_titulo;
+        titulo.appendChild(crearLinkLibro(libro.libro_titulo, libro.autor, libro.portada_url));
         const autor = document.createElement('div');
         autor.style.cssText = 'font-size: 0.75rem; color: #888;';
         autor.textContent = libro.autor;
@@ -762,7 +762,7 @@
 
         const titulo = document.createElement('div');
         titulo.style.cssText = 'font-size: 0.82rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
-        titulo.textContent = lectura.libro_titulo;
+        titulo.appendChild(crearLinkLibro(lectura.libro_titulo, lectura.autor, lectura.portada_url));
         info.appendChild(titulo);
 
         info.appendChild(crearBarraProgreso(lectura.pagina_actual, lectura.paginas_totales));

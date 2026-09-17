@@ -427,7 +427,7 @@ function renderDetalleResena(resena, comentarios, contenedor, usuarioActual) {
 
     const h2 = document.createElement('h2');
     h2.style.cssText = 'font-size: 1.15rem; margin-bottom: 4px; border: none; padding: 0;';
-    h2.textContent = resena.libro_titulo;
+    h2.appendChild(crearLinkLibro(resena.libro_titulo, resena.autor, resena.portada_url));
     info.appendChild(h2);
 
     const autorP = document.createElement('p');

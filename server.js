@@ -275,6 +275,17 @@ async function crearTablas() {
             UNIQUE(user_id, anio)
         )`);
 
+        // Comentarios en la página de detalle de un libro (no van ligados a
+        // una reseña puntual, sino al libro en general: título + autor)
+        await pool.query(`CREATE TABLE IF NOT EXISTS book_comments (
+            id SERIAL PRIMARY KEY,
+            libro_titulo TEXT NOT NULL,
+            autor TEXT NOT NULL,
+            user_id INTEGER,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+
         console.log('Tablas verificadas/creadas correctamente en PostgreSQL.');
     } catch (err) {
         console.error('Error creando las tablas:', err.message);
@@ -1410,6 +1421,144 @@ app.get('/api/libros/buscar', async (req, res) => {
     }
 });
 
+// Mapa de códigos de idioma de Open Library (ISO 639-2) a nombres en español
+const NOMBRES_IDIOMA = {
+    eng: 'Inglés', spa: 'Español', fre: 'Francés', fra: 'Francés', ger: 'Alemán',
+    ita: 'Italiano', por: 'Portugués', jpn: 'Japonés', chi: 'Chino', kor: 'Coreano'
+};
+
+// Trae datos "de ficha" de un libro puntual (editorial, idioma, páginas,
+// categoría, ISBN y sinopsis) buscándolo por título + autor en Open Library.
+// Es "best effort": si el libro no aparece o Open Library falla, se devuelve
+// null y la página de detalle simplemente no muestra esos campos.
+async function buscarDetalleEnOpenLibrary(titulo, autor) {
+    const q = autor ? `${titulo} ${autor}` : titulo;
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=1&fields=key,title,author_name,cover_i,first_publish_year,number_of_pages_median,publisher,language,isbn,subject`;
+    const resp = await fetch(url, { headers: { 'User-Agent': 'NavyBlue (proyecto personal)' } });
+    if (!resp.ok) throw new Error(`Open Library respondió ${resp.status}`);
+    const data = await resp.json();
+    const doc = (data.docs || [])[0];
+    if (!doc) return null;
+
+    // La sinopsis vive en la ficha de la "obra" (work), un segundo llamado
+    // usando la key que devuelve la búsqueda (ej: "/works/OL12345W")
+    let sinopsis = null;
+    if (doc.key) {
+        try {
+            const respObra = await fetch(`https://openlibrary.org${doc.key}.json`, { headers: { 'User-Agent': 'NavyBlue (proyecto personal)' } });
+            if (respObra.ok) {
+                const obra = await respObra.json();
+                if (obra.description) {
+                    sinopsis = typeof obra.description === 'string' ? obra.description : obra.description.value;
+                }
+            }
+        } catch (error) {
+            // sin sinopsis, no es grave
+        }
+    }
+
+    return {
+        editorial: (doc.publisher && doc.publisher[0]) || null,
+        idioma: (doc.language && (NOMBRES_IDIOMA[doc.language[0]] || doc.language[0])) || null,
+        paginas: doc.number_of_pages_median || null,
+        categoria: (doc.subject && doc.subject.slice(0, 3).join(', ')) || null,
+        isbn: (doc.isbn && doc.isbn[0]) || null,
+        anio: doc.first_publish_year || null,
+        sinopsis
+    };
+}
+
+// --- PÁGINA DE DETALLE DE UN LIBRO (libro.html) ---
+// Se abre al pinchar el título de un libro en cualquier parte del sitio
+// (reseñas, estanterías, leyendo ahora). Junta: ficha del libro (Open
+// Library, best-effort), la valoración promedio calculada con las reseñas
+// que existen en NAVYBLUE, y permite comentar el libro como si fuera un post.
+
+app.get('/api/libros/detalle', async (req, res) => {
+    const titulo = (req.query.titulo || '').trim();
+    const autor = (req.query.autor || '').trim();
+    if (!titulo) return res.status(400).json({ error: 'Falta el título del libro' });
+
+    const traerValoracion = () => new Promise((resolve) => {
+        db.get(
+            `SELECT AVG(valoracion) AS promedio, COUNT(*) AS total
+             FROM reviews
+             WHERE LOWER(libro_titulo) = LOWER(?) AND LOWER(autor) = LOWER(?)`,
+            [titulo, autor],
+            (err, row) => resolve(err || !row ? { promedio: null, total: 0 } : { promedio: row.promedio, total: row.total })
+        );
+    });
+
+    const [valoracion, detalleExterno] = await Promise.all([
+        traerValoracion(),
+        buscarDetalleEnOpenLibrary(titulo, autor).catch(() => null)
+    ]);
+
+    res.json({
+        titulo,
+        autor,
+        valoracion_promedio: valoracion.promedio !== null ? Number(valoracion.promedio) : null,
+        total_opiniones: valoracion.total,
+        editorial: null, idioma: null, paginas: null, categoria: null, isbn: null, anio: null, sinopsis: null,
+        ...(detalleExterno || {})
+    });
+});
+
+// Comentarios de la página de un libro (distintos de los comentarios de UNA
+// reseña puntual: estos van ligados al libro completo, título + autor)
+app.get('/api/libros/comments', (req, res) => {
+    const titulo = (req.query.titulo || '').trim();
+    const autor = (req.query.autor || '').trim();
+    if (!titulo) return res.status(400).json({ error: 'Falta el título del libro' });
+
+    db.all(
+        `SELECT book_comments.id, book_comments.content, book_comments.created_at,
+                COALESCE(users.username, 'usuario-eliminado') AS username
+         FROM book_comments
+         LEFT JOIN users ON users.id = book_comments.user_id
+         WHERE LOWER(book_comments.libro_titulo) = LOWER(?) AND LOWER(book_comments.autor) = LOWER(?)
+         ORDER BY book_comments.id ASC`,
+        [titulo, autor],
+        (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ comments: rows });
+        }
+    );
+});
+
+app.post('/api/libros/comments', requiereSesion, (req, res) => {
+    const { titulo, autor, content } = req.body;
+    if (!titulo || !autor || !content || !content.trim()) {
+        return res.status(400).json({ error: 'Escribe un comentario.' });
+    }
+    db.run(
+        `INSERT INTO book_comments (libro_titulo, autor, user_id, content) VALUES (?, ?, ?, ?)`,
+        [titulo, autor, req.session.user.id, content.trim()],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            notificarMenciones(content.trim(), req.session.user.username, 'un comentario en un libro');
+            res.status(201).json({ message: 'Comentario publicado con éxito', id: this.lastID });
+        }
+    );
+});
+
+app.delete('/api/libros/comments/:id', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const userId = req.session.user.id;
+
+    db.get(`SELECT user_id FROM book_comments WHERE id = ?`, [id], (err, comentario) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!comentario) return res.status(404).json({ error: 'Comentario no encontrado' });
+        if (comentario.user_id !== userId) {
+            return res.status(403).json({ error: 'No puedes eliminar comentarios de otros usuarios' });
+        }
+        db.run(`DELETE FROM book_comments WHERE id = ?`, [id], (err) => {
+            if (err) return res.status(500).json({ error: 'Error al eliminar el comentario' });
+            res.json({ message: 'Comentario eliminado con éxito' });
+        });
+    });
+});
+
 // --- RUTA DE BÚSQUEDA ---
 
 app.get('/api/search', (req, res) => {
@@ -1439,6 +1588,7 @@ app.get('/api/search', (req, res) => {
                     implementado: true,
                     resultados: resultados.map(r => ({
                         titulo: r.titulo,
+                        autor: r.autor,
                         subtitulo: r.anio ? `${r.autor} · ${r.anio}` : r.autor,
                         portada_url: r.portada_url
                     }))
