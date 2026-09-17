@@ -169,8 +169,11 @@ async function crearTablas() {
             autor TEXT NOT NULL,
             portada_url TEXT,
             valoracion INTEGER NOT NULL,
+            texto TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
+        // migracion: reseña escrita (opcional), para las reseñas creadas antes de esto
+        await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS texto TEXT`);
 
         await pool.query(`CREATE TABLE IF NOT EXISTS review_reactions (
             id SERIAL PRIMARY KEY,
@@ -1323,7 +1326,7 @@ app.get('/api/reviews', (req, res) => {
     const baseQuery = `
         SELECT
             reviews.id, reviews.user_id, reviews.libro_titulo, reviews.autor,
-            reviews.portada_url, reviews.valoracion, reviews.created_at,
+            reviews.portada_url, reviews.valoracion, reviews.texto, reviews.created_at,
             COALESCE(users.username, reviews.username) AS username,
             (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'like') AS likes_count,
             (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'dislike') AS dislikes_count,
@@ -1350,12 +1353,37 @@ app.get('/api/reviews', (req, res) => {
     }
 });
 
-// Crear una reseña: título, autor, portada (opcional) y valoración 1-5. Sin texto de opinión.
+// Trae UNA reseña completa (para la página dedicada de reseña, cuando el
+// texto escrito no alcanza en el espacio chico de la tarjeta)
+app.get('/api/reviews/:id', (req, res) => {
+    const { id } = req.params;
+    const miId = req.session.user ? req.session.user.id : null;
+
+    db.get(`
+        SELECT
+            reviews.id, reviews.user_id, reviews.libro_titulo, reviews.autor,
+            reviews.portada_url, reviews.valoracion, reviews.texto, reviews.created_at,
+            COALESCE(users.username, reviews.username) AS username,
+            (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'like') AS likes_count,
+            (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'dislike') AS dislikes_count,
+            (SELECT tipo FROM review_reactions WHERE review_id = reviews.id AND user_id = ?) AS mi_reaccion
+        FROM reviews
+        LEFT JOIN users ON reviews.user_id = users.id
+        WHERE reviews.id = ?
+    `, [miId, id], (err, review) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!review) return res.status(404).json({ error: 'Reseña no encontrada' });
+        res.json({ review });
+    });
+});
+
+// Crear una reseña: título, autor, portada (opcional), valoración 1-5 y un
+// texto de opinión (opcional, sin él la reseña queda solo con estrellas).
 // Además, la reseña reciente se agrega automáticamente a la estantería "Leídos"
 // (se crea si el usuario todavía no la tiene, y no se duplica si el libro ya estaba ahí).
 app.post('/api/reviews', requiereSesion, (req, res) => {
     const { id: userId, username } = req.session.user;
-    const { libro_titulo, autor, portada_url, valoracion } = req.body;
+    const { libro_titulo, autor, portada_url, valoracion, texto } = req.body;
     const val = parseInt(valoracion, 10);
 
     if (!libro_titulo || !autor || !val || val < 1 || val > 5) {
@@ -1395,8 +1423,8 @@ app.post('/api/reviews', requiereSesion, (req, res) => {
     }
 
     db.run(
-        `INSERT INTO reviews (user_id, username, libro_titulo, autor, portada_url, valoracion) VALUES (?, ?, ?, ?, ?, ?)`,
-        [userId, username, libro_titulo, autor, portada_url || null, val],
+        `INSERT INTO reviews (user_id, username, libro_titulo, autor, portada_url, valoracion, texto) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [userId, username, libro_titulo, autor, portada_url || null, val, (texto && texto.trim()) || null],
         function(err) {
             if (err) return res.status(500).json({ error: err.message });
             const reviewId = this.lastID;

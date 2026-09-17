@@ -303,11 +303,15 @@
         infoIzquierda.appendChild(autor);
         infoIzquierda.appendChild(userTag);
 
-        const tiempo = document.createElement('span');
+        const tiempo = document.createElement('a');
         tiempo.className = 'post-tiempo';
+        tiempo.href = `post.html?id=${post.id}`;
+        tiempo.style.cssText = 'text-decoration: none; color: inherit;';
+        tiempo.title = 'Ver esta publicación en su propia página';
         // Le pasamos la fecha que viene de tu base de datos. 
         // Normalmente se llama 'createdat', 'fecha' o 'timestamp'
         tiempo.textContent = obtenerTiempoRelativo(post.created_at);
+        tiempo.addEventListener('click', (e) => e.stopPropagation()); // abre la página del post, no el detalle en línea
 
         header.appendChild(infoIzquierda);
         header.appendChild(tiempo);
@@ -340,7 +344,16 @@
 
         const texto = document.createElement('p');
         texto.className = 'post-texto';
-        texto.appendChild(renderizarTextoConMenciones(post.content));
+        const respuestaPost = extraerRespuestaInicial(post.content);
+        let lineaRespuestaPost = null;
+        if (respuestaPost) {
+            lineaRespuestaPost = respuestaPost.lineaRespuesta;
+            lineaRespuestaPost.style.margin = '0 0 4px 0';
+            lineaRespuestaPost.addEventListener('click', (e) => e.stopPropagation());
+            texto.appendChild(renderizarTextoConMenciones(respuestaPost.restante));
+        } else {
+            texto.appendChild(renderizarTextoConMenciones(post.content));
+        }
 
         const badge = document.createElement('div');
         badge.className = 'post-libro-badge';
@@ -350,6 +363,7 @@
 
         // Ensamblaje final
         contenido.appendChild(header);
+        if (lineaRespuestaPost) contenido.appendChild(lineaRespuestaPost);
         contenido.appendChild(texto);
         contenido.appendChild(badge);
         contenido.appendChild(crearBarraAcciones(post, () => {

@@ -161,6 +161,84 @@ function cerrarDetallePost(contenedor) {
     }
 }
 
+// Si un texto (post o comentario) empieza con "@alguien", arma una línea
+// "↪ Respondiendo a @alguien" y devuelve el texto SIN esa mención inicial
+// (ya con menciones internas convertidas en links). Si no empieza con una
+// mención, devuelve null y hay que renderizar el texto tal cual.
+function extraerRespuestaInicial(texto) {
+    const match = texto.match(/^\s*@(\w+)[\s,:]*/);
+    if (!match) return null;
+    const enRespuestaA = document.createElement('p');
+    enRespuestaA.style.cssText = 'margin: 0 0 3px 0; font-size: 0.78rem; color: #5b6f8f;';
+    const linkRespuesta = document.createElement('a');
+    linkRespuesta.href = `muro.html?usuario=${encodeURIComponent(match[1])}`;
+    linkRespuesta.style.cssText = 'color: inherit; font-weight: bold; text-decoration: none;';
+    linkRespuesta.textContent = '@' + match[1];
+    linkRespuesta.addEventListener('click', (e) => e.stopPropagation());
+    enRespuestaA.append('↪ Respondiendo a ', linkRespuesta);
+    return { lineaRespuesta: enRespuestaA, restante: texto.slice(match[0].length) };
+}
+
+// Arma un comentario (autor, texto con menciones y botón de borrar si es
+// tuyo). Se usa tanto en el detalle "en línea" (columna derecha) como en la
+// página dedicada de un post (post.html).
+function crearComentarioCard(c, post, usuarioActual) {
+    const div = document.createElement('div');
+    div.style.cssText = 'border-top: 1px solid #eee; padding: 8px 0;';
+
+    const cabeceraC = document.createElement('div');
+    cabeceraC.style.cssText = 'display: flex; align-items: center;';
+
+    const autorC = document.createElement('a');
+    autorC.style.cssText = 'font-size: 0.85rem; font-weight: bold; text-decoration: none; color: inherit;';
+    autorC.href = `muro.html?usuario=${encodeURIComponent(c.username)}`;
+    autorC.textContent = c.username;
+    cabeceraC.appendChild(autorC);
+
+    // El botón de eliminar solo aparece en TUS PROPIOS comentarios
+    if (usuarioActual && c.username === usuarioActual) {
+        const btnBorrarComentario = document.createElement('button');
+        btnBorrarComentario.type = 'button';
+        btnBorrarComentario.title = 'Eliminar comentario';
+        btnBorrarComentario.textContent = '🗑️';
+        btnBorrarComentario.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.8rem;';
+        btnBorrarComentario.addEventListener('click', async () => {
+            if (!(await confirmarAccion('¿Eliminar este comentario?'))) return;
+            try {
+                const resp = await fetch(`/api/comments/${c.id}`, { method: 'DELETE' });
+                if (resp.ok) {
+                    div.remove();
+                    if (post.comments_count) post.comments_count--;
+                } else {
+                    const data = await resp.json().catch(() => ({}));
+                    mostrarAviso(data.error || 'No se pudo eliminar el comentario.');
+                }
+            } catch (error) {
+                mostrarAviso('No se pudo conectar con el servidor.');
+            }
+        });
+        cabeceraC.appendChild(btnBorrarComentario);
+    }
+
+    const textoC = document.createElement('p');
+    textoC.style.cssText = 'margin: 4px 0 0 0; font-size: 0.85rem;';
+
+    // Si el comentario empieza con "@alguien", se muestra como una respuesta
+    // a esa persona (como en Twitter/X) en vez de dejar la mención mezclada
+    // con el resto del texto.
+    const respuesta = extraerRespuestaInicial(c.content);
+    if (respuesta) {
+        div.appendChild(respuesta.lineaRespuesta);
+        textoC.appendChild(renderizarTextoConMenciones(respuesta.restante));
+    } else {
+        textoC.appendChild(renderizarTextoConMenciones(c.content));
+    }
+
+    div.appendChild(cabeceraC);
+    div.appendChild(textoC);
+    return div;
+}
+
 function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
     contenedor.innerHTML = '';
 
@@ -193,13 +271,20 @@ function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
 
     const texto = document.createElement('p');
     texto.className = 'post-texto';
-    texto.appendChild(renderizarTextoConMenciones(post.content));
+    const respuestaPost = extraerRespuestaInicial(post.content);
+    if (respuestaPost) {
+        respuestaPost.lineaRespuesta.style.margin = '0 0 4px 0';
+        texto.appendChild(renderizarTextoConMenciones(respuestaPost.restante));
+    } else {
+        texto.appendChild(renderizarTextoConMenciones(post.content));
+    }
 
     const fecha = document.createElement('p');
     fecha.style.cssText = 'font-size: 0.75rem; color: #888; margin: 4px 0 8px 0;';
     fecha.textContent = formatearFechaCompleta(post.created_at);
 
     contenido.appendChild(header);
+    if (respuestaPost) contenido.appendChild(respuestaPost.lineaRespuesta);
     contenido.appendChild(texto);
     contenido.appendChild(fecha);
     contenido.appendChild(crearBarraAcciones(post, () => {})); // ya estamos viendo el detalle
@@ -219,49 +304,7 @@ function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
         listaComentarios.appendChild(p);
     } else {
         comentarios.forEach(c => {
-            const div = document.createElement('div');
-            div.style.cssText = 'border-top: 1px solid #eee; padding: 8px 0;';
-
-            const cabeceraC = document.createElement('div');
-            cabeceraC.style.cssText = 'display: flex; align-items: center;';
-
-            const autorC = document.createElement('a');
-            autorC.style.cssText = 'font-size: 0.85rem; font-weight: bold; text-decoration: none; color: inherit;';
-            autorC.href = `muro.html?usuario=${encodeURIComponent(c.username)}`;
-            autorC.textContent = c.username;
-            cabeceraC.appendChild(autorC);
-
-            // El botón de eliminar solo aparece en TUS PROPIOS comentarios
-            if (usuarioActual && c.username === usuarioActual) {
-                const btnBorrarComentario = document.createElement('button');
-                btnBorrarComentario.type = 'button';
-                btnBorrarComentario.title = 'Eliminar comentario';
-                btnBorrarComentario.textContent = '🗑️';
-                btnBorrarComentario.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.8rem;';
-                btnBorrarComentario.addEventListener('click', async () => {
-                    if (!(await confirmarAccion('¿Eliminar este comentario?'))) return;
-                    try {
-                        const resp = await fetch(`/api/comments/${c.id}`, { method: 'DELETE' });
-                        if (resp.ok) {
-                            div.remove();
-                            if (post.comments_count) post.comments_count--;
-                        } else {
-                            const data = await resp.json().catch(() => ({}));
-                            mostrarAviso(data.error || 'No se pudo eliminar el comentario.');
-                        }
-                    } catch (error) {
-                        mostrarAviso('No se pudo conectar con el servidor.');
-                    }
-                });
-                cabeceraC.appendChild(btnBorrarComentario);
-            }
-
-            const textoC = document.createElement('p');
-            textoC.style.cssText = 'margin: 4px 0 0 0; font-size: 0.85rem;';
-            textoC.appendChild(renderizarTextoConMenciones(c.content));
-            div.appendChild(cabeceraC);
-            div.appendChild(textoC);
-            listaComentarios.appendChild(div);
+            listaComentarios.appendChild(crearComentarioCard(c, post, usuarioActual));
         });
     }
     contenedor.appendChild(listaComentarios);

@@ -129,6 +129,10 @@ function crearComposer({ onPost, onResena } = {}) {
     const inputAutor = campoTexto('Autor');
     const inputPortada = campoTexto('URL de la portada (opcional)');
 
+    const textareaResena = document.createElement('textarea');
+    textareaResena.placeholder = 'Escribe tu reseña (opcional)...';
+    textareaResena.style.cssText = 'width: 100%; min-height: 70px; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; font-size: 14px; resize: vertical;';
+
     const labelEstrellas = document.createElement('p');
     labelEstrellas.style.cssText = 'font-size: 0.8rem; color: #666; margin: 0 0 4px 0;';
     labelEstrellas.textContent = 'Tu valoración:';
@@ -161,6 +165,7 @@ function crearComposer({ onPost, onResena } = {}) {
     formResena.appendChild(inputTitulo);
     formResena.appendChild(inputAutor);
     formResena.appendChild(inputPortada);
+    formResena.appendChild(textareaResena);
     formResena.appendChild(labelEstrellas);
     formResena.appendChild(selectorEstrellas);
     formResena.appendChild(btnPublicarResena);
@@ -170,6 +175,16 @@ function crearComposer({ onPost, onResena } = {}) {
     if (typeof activarBuscadorLibro === 'function') {
         activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada });
     }
+
+    // Enter en título/autor/portada también publica la reseña. En el textarea
+    // de la reseña, Enter publica y Shift+Enter hace un salto de línea (igual
+    // que en el post), porque ahí sí se puede escribir bastante texto.
+    textareaResena.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            btnPublicarResena.click();
+        }
+    });
 
     // Enter en cualquiera de los 3 campos también publica la reseña
     [inputTitulo, inputAutor, inputPortada].forEach(input => {
@@ -185,6 +200,7 @@ function crearComposer({ onPost, onResena } = {}) {
         const libro_titulo = inputTitulo.value.trim();
         const autor = inputAutor.value.trim();
         const portada_url = inputPortada.value.trim();
+        const texto = textareaResena.value.trim();
 
         if (!libro_titulo || !autor || valoracionElegida === 0) {
             mensajeResena.style.color = 'red';
@@ -196,7 +212,7 @@ function crearComposer({ onPost, onResena } = {}) {
             const resp = await fetch('/api/reviews', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ libro_titulo, autor, portada_url, valoracion: valoracionElegida })
+                body: JSON.stringify({ libro_titulo, autor, portada_url, valoracion: valoracionElegida, texto })
             });
             const data = await resp.json().catch(() => ({}));
 
@@ -209,6 +225,7 @@ function crearComposer({ onPost, onResena } = {}) {
             inputTitulo.value = '';
             inputAutor.value = '';
             inputPortada.value = '';
+            textareaResena.value = '';
             valoracionElegida = 0;
             estrellasSpans.forEach(s => { s.textContent = '☆'; });
             mensajeResena.style.color = 'green';
@@ -249,6 +266,7 @@ function crearComposer({ onPost, onResena } = {}) {
         inputTitulo.value = titulo || '';
         inputAutor.value = autor || '';
         inputPortada.value = portada || '';
+        textareaResena.value = '';
         mensajeResena.textContent = '';
         contenedor.scrollIntoView({ behavior: 'smooth', block: 'center' });
         inputTitulo.focus();

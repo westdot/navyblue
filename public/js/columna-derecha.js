@@ -9,7 +9,7 @@ function crearEstrellas(valoracion) {
     return '★'.repeat(val) + '☆'.repeat(5 - val);
 }
 
-function crearResenaCard(resena) {
+function crearResenaCard(resena, completo) {
     const div = document.createElement('div');
     div.className = 'resena-card';
 
@@ -90,6 +90,28 @@ function crearResenaCard(resena) {
     acciones.appendChild(btnLike);
     acciones.appendChild(btnDislike);
     info.appendChild(acciones);
+
+    // Texto de la reseña (opcional): va DEBAJO de los likes/dislikes. Si no
+    // alcanza en el espacio chico de la tarjeta, se corta y se ofrece un link
+    // a la página dedicada de esa reseña con el texto completo.
+    if (resena.texto && resena.texto.trim()) {
+        const LIMITE = 220;
+        const textoCompleto = resena.texto.trim();
+        const textoP = document.createElement('p');
+        textoP.style.cssText = 'font-size: 0.85rem; color: #333; margin: 8px 0 0 0; white-space: pre-wrap;';
+
+        if (!completo && textoCompleto.length > LIMITE) {
+            textoP.textContent = textoCompleto.slice(0, LIMITE).trim() + '… ';
+            const link = document.createElement('a');
+            link.href = `resena.html?id=${resena.id}`;
+            link.textContent = 'Leer reseña completa';
+            link.style.cssText = 'color: #34517c; font-weight: bold; text-decoration: none; white-space: nowrap;';
+            textoP.appendChild(link);
+        } else {
+            textoP.textContent = textoCompleto;
+        }
+        info.appendChild(textoP);
+    }
 
     div.appendChild(info);
     return div;

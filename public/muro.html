@@ -180,10 +180,13 @@
         autor.addEventListener('click', (e) => e.stopPropagation()); // no abrir el detalle del post
         header.appendChild(autor);
 
-        const tiempo = document.createElement('span');
+        const tiempo = document.createElement('a');
         tiempo.className = 'post-tiempo';
-        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: #888;';
+        tiempo.href = `post.html?id=${post.id}`;
+        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: #888; text-decoration: none;';
         tiempo.textContent = obtenerTiempoRelativo(post.created_at);
+        tiempo.title = 'Ver esta publicación en su propia página';
+        tiempo.addEventListener('click', (e) => e.stopPropagation()); // abre la página del post, no el detalle en línea
         header.appendChild(tiempo);
 
         // el boton de eliminar solo aparece si estss viendo TU PROPIO muro
@@ -213,7 +216,16 @@
 
         const texto = document.createElement('p');
         texto.className = 'post-texto';
-        texto.appendChild(renderizarTextoConMenciones(post.content));
+        const respuestaPost = extraerRespuestaInicial(post.content);
+        let lineaRespuestaPost = null;
+        if (respuestaPost) {
+            lineaRespuestaPost = respuestaPost.lineaRespuesta;
+            lineaRespuestaPost.style.margin = '0 0 4px 0';
+            lineaRespuestaPost.addEventListener('click', (e) => e.stopPropagation());
+            texto.appendChild(renderizarTextoConMenciones(respuestaPost.restante));
+        } else {
+            texto.appendChild(renderizarTextoConMenciones(post.content));
+        }
 
         const badge = document.createElement('div');
         badge.className = 'post-libro-badge';
@@ -222,6 +234,7 @@
         badge.append('📚 ', em);
 
         contenido.appendChild(header);
+        if (lineaRespuestaPost) contenido.appendChild(lineaRespuestaPost);
         contenido.appendChild(texto);
         contenido.appendChild(badge);
         contenido.appendChild(crearBarraAcciones(post, () => {
@@ -922,7 +935,9 @@
             const data = await resp.json();
             contenedor.innerHTML = '';
 
-            data.badges.forEach(badge => {
+            // En la barra lateral solo se muestran 4 insignias; el resto
+            // (obtenidas y por obtener) vive en su propia página.
+            data.badges.slice(0, 4).forEach(badge => {
                 const chip = document.createElement('div');
                 chip.title = `${badge.nombre}: ${badge.descripcion}`;
                 chip.style.cssText = `
@@ -937,6 +952,12 @@
                 chip.textContent = badge.icono;
                 contenedor.appendChild(chip);
             });
+
+            const linkVerTodas = document.createElement('a');
+            linkVerTodas.href = `insignias.html?usuario=${encodeURIComponent(usuarioObjetivo)}`;
+            linkVerTodas.textContent = 'Ver todas →';
+            linkVerTodas.style.cssText = 'display: block; width: 100%; margin-top: 6px; font-size: 0.75rem; color: #34517c; font-weight: bold; text-decoration: none;';
+            contenedor.appendChild(linkVerTodas);
         } catch (error) {
             contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar las insignias.</p>';
         }
