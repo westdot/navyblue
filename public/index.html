@@ -205,6 +205,7 @@
             const dataReviews = await respReviews.json();
             const sesion = await respSesion.json();
             const miId = sesion.loggedIn ? sesion.user.id : null;
+            const miUsername = sesion.loggedIn ? sesion.user.username : null;
 
             // Mezclamos posts y reseñas en un solo feed, ordenados por fecha
             const items = [
@@ -220,7 +221,7 @@
                     } else {
                         const envoltorio = document.createElement('div');
                         envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
-                        envoltorio.appendChild(crearResenaCard(item));
+                        envoltorio.appendChild(crearResenaCard(item, miUsername));
                         feedPosts.appendChild(envoltorio);
                     }
                 });
@@ -303,15 +304,19 @@
         infoIzquierda.appendChild(autor);
         infoIzquierda.appendChild(userTag);
 
-        const tiempo = document.createElement('a');
+        const tiempo = document.createElement('span');
         tiempo.className = 'post-tiempo';
-        tiempo.href = `post.html?id=${post.id}`;
-        tiempo.style.cssText = 'text-decoration: none; color: inherit;';
-        tiempo.title = 'Ver esta publicación en su propia página';
         // Le pasamos la fecha que viene de tu base de datos. 
         // Normalmente se llama 'createdat', 'fecha' o 'timestamp'
         tiempo.textContent = obtenerTiempoRelativo(post.created_at);
-        tiempo.addEventListener('click', (e) => e.stopPropagation()); // abre la página del post, no el detalle en línea
+        tiempo.style.cursor = 'pointer';
+        tiempo.title = 'Abrir esta publicación';
+        // Clic en la hora: abre el post en su propia página (a diferencia del
+        // resto de la tarjeta, que abre el detalle acá mismo en la columna derecha)
+        tiempo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.location.href = `post.html?id=${post.id}`;
+        });
 
         header.appendChild(infoIzquierda);
         header.appendChild(tiempo);
@@ -344,16 +349,7 @@
 
         const texto = document.createElement('p');
         texto.className = 'post-texto';
-        const respuestaPost = extraerRespuestaInicial(post.content);
-        let lineaRespuestaPost = null;
-        if (respuestaPost) {
-            lineaRespuestaPost = respuestaPost.lineaRespuesta;
-            lineaRespuestaPost.style.margin = '0 0 4px 0';
-            lineaRespuestaPost.addEventListener('click', (e) => e.stopPropagation());
-            texto.appendChild(renderizarTextoConMenciones(respuestaPost.restante));
-        } else {
-            texto.appendChild(renderizarTextoConMenciones(post.content));
-        }
+        texto.appendChild(renderizarTextoConMenciones(post.content));
 
         const badge = document.createElement('div');
         badge.className = 'post-libro-badge';
@@ -363,7 +359,6 @@
 
         // Ensamblaje final
         contenido.appendChild(header);
-        if (lineaRespuestaPost) contenido.appendChild(lineaRespuestaPost);
         contenido.appendChild(texto);
         contenido.appendChild(badge);
         contenido.appendChild(crearBarraAcciones(post, () => {

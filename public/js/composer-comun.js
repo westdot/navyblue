@@ -131,7 +131,7 @@ function crearComposer({ onPost, onResena } = {}) {
 
     const textareaResena = document.createElement('textarea');
     textareaResena.placeholder = 'Escribe tu reseña (opcional)...';
-    textareaResena.style.cssText = 'width: 100%; min-height: 70px; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; font-size: 14px; resize: vertical;';
+    textareaResena.style.cssText = 'width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; min-height: 70px; resize: vertical; font-family: inherit; font-size: inherit;';
 
     const labelEstrellas = document.createElement('p');
     labelEstrellas.style.cssText = 'font-size: 0.8rem; color: #666; margin: 0 0 4px 0;';
@@ -175,16 +175,6 @@ function crearComposer({ onPost, onResena } = {}) {
     if (typeof activarBuscadorLibro === 'function') {
         activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada });
     }
-
-    // Enter en título/autor/portada también publica la reseña. En el textarea
-    // de la reseña, Enter publica y Shift+Enter hace un salto de línea (igual
-    // que en el post), porque ahí sí se puede escribir bastante texto.
-    textareaResena.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            btnPublicarResena.click();
-        }
-    });
 
     // Enter en cualquiera de los 3 campos también publica la reseña
     [inputTitulo, inputAutor, inputPortada].forEach(input => {
@@ -266,7 +256,6 @@ function crearComposer({ onPost, onResena } = {}) {
         inputTitulo.value = titulo || '';
         inputAutor.value = autor || '';
         inputPortada.value = portada || '';
-        textareaResena.value = '';
         mensajeResena.textContent = '';
         contenedor.scrollIntoView({ behavior: 'smooth', block: 'center' });
         inputTitulo.focus();

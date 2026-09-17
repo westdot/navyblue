@@ -13,19 +13,14 @@
         <div class="header-content">
             <div class="header-title">
                 <h1>NAVYBLUE</h1>
-                <p>MI MUJERL DE 17 AÑOS</p>
             </div>
             <div class="header-acciones"></div>
         </div>
     </header>
 
-    <main class="contenedor-principal" style="justify-content: center; display: flex;">
-        <section class="columna-centro" style="max-width: 700px; width: 100%;">
-            <a href="javascript:void(0)" id="link-volver" style="display: inline-block; margin-bottom: 12px; color: #34517c; font-weight: bold; text-decoration: none; font-size: 0.9rem;">← Volver</a>
-
-            <div id="post-detalle">
-                <p style="color: #888;">Cargando...</p>
-            </div>
+    <main class="contenedor-principal" style="grid-template-columns: 1fr; max-width: 650px;">
+        <section class="columna-centro" id="detalle-post">
+            <p>Cargando publicación...</p>
         </section>
     </main>
 
@@ -37,40 +32,20 @@
     <script src="js/header-comun.js"></script>
     <script src="js/posts-comunes.js"></script>
     <script>
-        // "← Volver": si venimos de otra página del sitio, volvemos a esa
-        // página; si el post se abrió directo (link compartido, pestaña
-        // nueva), no hay historial de este sitio, así que vamos al inicio.
-        document.getElementById('link-volver').addEventListener('click', () => {
-            if (document.referrer && document.referrer.includes(location.host)) {
-                history.back();
-            } else {
-                window.location.href = 'index.html';
-            }
-        });
+        montarHeaderComun();
 
-        (async () => {
-            await montarHeaderComun({ reemplazarBotonesInvitado: true });
+        const params = new URLSearchParams(window.location.search);
+        const postId = params.get('id');
+        const contenedor = document.getElementById('detalle-post');
 
-            const params = new URLSearchParams(location.search);
-            const postId = params.get('id');
-            const contenedor = document.getElementById('post-detalle');
-
-            if (!postId) {
-                contenedor.innerHTML = '<p>No se indicó qué publicación mostrar.</p>';
-                return;
-            }
-
-            // Reutilizamos exactamente la misma lógica de detalle (con
-            // comentarios, borrar comentario propio, "respondiendo a", etc.)
-            // que usa el panel en línea del muro/inicio, pero en su propia
-            // página. El botón "← Volver" de adentro de renderDetallePost no
-            // se usa acá (dejamos el de arriba, que sabe volver de verdad).
-            await abrirDetallePost(postId, contenedor);
-            const btnVolverInterno = contenedor.querySelector('button');
-            if (btnVolverInterno && btnVolverInterno.textContent.includes('Volver')) {
-                btnVolverInterno.remove();
-            }
-        })();
+        if (!postId) {
+            contenedor.innerHTML = '<p>No se indicó qué publicación mostrar.</p>';
+        } else {
+            // Al volver, mandamos al muro en vez de intentar reconstruir un feed
+            // que nunca existió en esta página (que solo muestra un post).
+            contenedor._volverCallback = () => { window.location.href = 'muro.html'; };
+            abrirDetallePost(postId, contenedor);
+        }
     </script>
 </body>
 </html>

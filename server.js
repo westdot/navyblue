@@ -9,7 +9,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // middleware para parsear JSON y servir archivos estaticos
-app.use(express.json());
+// límite subido de 100kb a 3mb: necesario para poder guardar la foto de
+// perfil como data URL (base64) directo en la base de datos, sin depender
+// de un servicio externo de almacenamiento de archivos.
+app.use(express.json({ limit: '3mb' }));
 app.use(express.static(path.join(__dirname, 'public'))); // se asume que los archivos HTML/CSS estan en una carpeta 'public'
 
 // middleware de sesión: el servidor recuerda quién inicio sesion mediante una cookie firmada
@@ -123,6 +126,8 @@ async function crearTablas() {
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pais TEXT`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP`);
         await pool.query(`UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL`);
+        // foto de perfil: se guarda como data URL (base64), no como archivo en disco
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS foto_url TEXT`);
 
         await pool.query(`CREATE TABLE IF NOT EXISTS posts (
             id SERIAL PRIMARY KEY,
@@ -169,10 +174,9 @@ async function crearTablas() {
             autor TEXT NOT NULL,
             portada_url TEXT,
             valoracion INTEGER NOT NULL,
-            texto TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
-        // migracion: reseña escrita (opcional), para las reseñas creadas antes de esto
+        // migracion: texto de opinión de la reseña (antes las reseñas solo tenían estrellas)
         await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS texto TEXT`);
 
         await pool.query(`CREATE TABLE IF NOT EXISTS review_reactions (
@@ -181,6 +185,15 @@ async function crearTablas() {
             user_id INTEGER NOT NULL,
             tipo TEXT NOT NULL CHECK(tipo IN ('like','dislike')),
             UNIQUE(review_id, user_id)
+        )`);
+
+        // Comentarios en reseñas (separado de los comentarios de posts)
+        await pool.query(`CREATE TABLE IF NOT EXISTS review_comments (
+            id SERIAL PRIMARY KEY,
+            review_id INTEGER NOT NULL,
+            user_id INTEGER,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
 
         // Seguir: asimétrico y sin permiso
@@ -623,10 +636,32 @@ function notificarMenciones(texto, actorUsername, tipoLugar) {
 // Perfil PÚBLICO de cualquier usuario (nombre, país, fecha de registro) — para
 // poder mostrar el muro de otras personas, sin exponer correo ni datos privados
 app.get('/api/users/:username', (req, res) => {
-    db.get(`SELECT name, username, pais, created_at FROM users WHERE username = ?`, [req.params.username], (err, user) => {
+    db.get(`SELECT name, username, pais, created_at, foto_url FROM users WHERE username = ?`, [req.params.username], (err, user) => {
         if (err) return res.status(500).json({ error: 'Error en el servidor' });
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
         res.json({ user });
+    });
+});
+
+// Subir/actualizar la foto de perfil (cuadrada, máx. 2MB). Se guarda como
+// data URL directo en la base de datos, así que aceptamos strings algo más
+// grandes que 2MB (el base64 infla el tamaño ~33%) pero seguimos poniendo un
+// techo razonable acá también, por si alguien se salta la validación del navegador.
+const LARGO_MAX_FOTO_PERFIL = 2.9 * 1024 * 1024; // ~2.9M caracteres ≈ 2.1MB reales
+app.put('/api/profile/foto', requiereSesion, (req, res) => {
+    const { foto_url } = req.body;
+    const { id: userId } = req.session.user;
+
+    if (!foto_url || typeof foto_url !== 'string' || !foto_url.startsWith('data:image/')) {
+        return res.status(400).json({ error: 'La imagen no es válida.' });
+    }
+    if (foto_url.length > LARGO_MAX_FOTO_PERFIL) {
+        return res.status(400).json({ error: 'La imagen pesa más de 2MB.' });
+    }
+
+    db.run(`UPDATE users SET foto_url = ? WHERE id = ?`, [foto_url, userId], (err) => {
+        if (err) return res.status(500).json({ error: 'No se pudo guardar la foto.' });
+        res.json({ message: 'Foto de perfil actualizada', foto_url });
     });
 });
 
@@ -1353,13 +1388,13 @@ app.get('/api/reviews', (req, res) => {
     }
 });
 
-// Trae UNA reseña completa (para la página dedicada de reseña, cuando el
-// texto escrito no alcanza en el espacio chico de la tarjeta)
+// Obtener el detalle de UNA reseña (para abrirla en su propia página cuando
+// el texto no alcanza en el espacio reducido de la tarjeta)
 app.get('/api/reviews/:id', (req, res) => {
     const { id } = req.params;
     const miId = req.session.user ? req.session.user.id : null;
 
-    db.get(`
+    const query = `
         SELECT
             reviews.id, reviews.user_id, reviews.libro_titulo, reviews.autor,
             reviews.portada_url, reviews.valoracion, reviews.texto, reviews.created_at,
@@ -1370,17 +1405,18 @@ app.get('/api/reviews/:id', (req, res) => {
         FROM reviews
         LEFT JOIN users ON reviews.user_id = users.id
         WHERE reviews.id = ?
-    `, [miId, id], (err, review) => {
+    `;
+    db.get(query, [miId, id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (!review) return res.status(404).json({ error: 'Reseña no encontrada' });
-        res.json({ review });
+        if (!row) return res.status(404).json({ error: 'Reseña no encontrada' });
+        res.json({ review: row });
     });
 });
 
-// Crear una reseña: título, autor, portada (opcional), valoración 1-5 y un
-// texto de opinión (opcional, sin él la reseña queda solo con estrellas).
-// Además, la reseña reciente se agrega automáticamente a la estantería "Leídos"
-// (se crea si el usuario todavía no la tiene, y no se duplica si el libro ya estaba ahí).
+// Crear una reseña: título, autor, portada (opcional), valoración 1-5 y un texto
+// de opinión opcional. Además, la reseña reciente se agrega automáticamente a
+// la estantería "Leídos" (se crea si el usuario todavía no la tiene, y no se
+// duplica si el libro ya estaba ahí).
 app.post('/api/reviews', requiereSesion, (req, res) => {
     const { id: userId, username } = req.session.user;
     const { libro_titulo, autor, portada_url, valoracion, texto } = req.body;
@@ -1424,10 +1460,11 @@ app.post('/api/reviews', requiereSesion, (req, res) => {
 
     db.run(
         `INSERT INTO reviews (user_id, username, libro_titulo, autor, portada_url, valoracion, texto) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [userId, username, libro_titulo, autor, portada_url || null, val, (texto && texto.trim()) || null],
+        [userId, username, libro_titulo, autor, portada_url || null, val, (texto || '').trim() || null],
         function(err) {
             if (err) return res.status(500).json({ error: err.message });
             const reviewId = this.lastID;
+            if (texto && texto.trim()) notificarMenciones(texto.trim(), username, 'una reseña');
             agregarALeidos(() => {
                 res.status(201).json({ message: 'Reseña publicada con éxito', reviewId });
             });
@@ -1449,7 +1486,64 @@ app.delete('/api/reviews/:id', requiereSesion, (req, res) => {
         db.run(`DELETE FROM reviews WHERE id = ?`, [id], (err) => {
             if (err) return res.status(500).json({ error: 'Error al eliminar la reseña' });
             db.run(`DELETE FROM review_reactions WHERE review_id = ?`, [id]);
+            db.run(`DELETE FROM review_comments WHERE review_id = ?`, [id]);
             res.json({ message: 'Reseña eliminada con éxito' });
+        });
+    });
+});
+
+// --- COMENTARIOS EN RESEÑAS ---
+
+app.get('/api/reviews/:id/comments', (req, res) => {
+    const { id } = req.params;
+    db.all(`
+        SELECT review_comments.id, review_comments.user_id, review_comments.content, review_comments.created_at,
+               COALESCE(users.username, 'usuario') AS username
+        FROM review_comments
+        LEFT JOIN users ON review_comments.user_id = users.id
+        WHERE review_comments.review_id = ?
+        ORDER BY review_comments.id ASC
+    `, [id], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ comments: rows });
+    });
+});
+
+app.post('/api/reviews/:id/comments', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+        return res.status(400).json({ error: 'El comentario no puede estar vacío' });
+    }
+
+    db.run(
+        `INSERT INTO review_comments (review_id, user_id, content) VALUES (?, ?, ?)`,
+        [id, req.session.user.id, content.trim()],
+        function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            db.get(`SELECT user_id FROM reviews WHERE id = ?`, [id], (err, review) => {
+                if (review) crearNotificacion(review.user_id, req.session.user.username, `${req.session.user.username} comentó tu reseña`);
+            });
+            notificarMenciones(content.trim(), req.session.user.username, 'un comentario de reseña');
+            res.status(201).json({ message: 'Comentario agregado', commentId: this.lastID });
+        }
+    );
+});
+
+app.delete('/api/review-comments/:id', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const userId = req.session.user.id;
+
+    db.get(`SELECT user_id FROM review_comments WHERE id = ?`, [id], (err, comment) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!comment) return res.status(404).json({ error: 'Comentario no encontrado' });
+        if (comment.user_id !== userId) {
+            return res.status(403).json({ error: 'No puedes eliminar comentarios de otros usuarios' });
+        }
+        db.run(`DELETE FROM review_comments WHERE id = ?`, [id], (err) => {
+            if (err) return res.status(500).json({ error: 'Error al eliminar el comentario' });
+            res.json({ message: 'Comentario eliminado' });
         });
     });
 });

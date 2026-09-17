@@ -6,6 +6,46 @@
     <title>Insignias - NAVYBLUE</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%233f4f68'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23f5efe1'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%23c08a4e'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .insignia-card {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            padding: 14px;
+            border: 1px solid var(--color-borde);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: var(--color-papel);
+        }
+        .insignia-icono {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+        .insignia-icono.desbloqueada {
+            background: #e7ecf3;
+            border: 1px solid var(--color-acento);
+        }
+        .insignia-icono.bloqueada {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            filter: grayscale(100%);
+            opacity: 0.5;
+        }
+        .insignia-info h3 {
+            font-size: 1rem;
+            margin-bottom: 3px;
+        }
+        .insignia-info p {
+            font-size: 0.85rem;
+            color: var(--color-texto-suave);
+        }
+    </style>
 </head>
 <body>
 
@@ -13,21 +53,22 @@
         <div class="header-content">
             <div class="header-title">
                 <h1>NAVYBLUE</h1>
-                <p>PENAL PARA HOGWARTSS</p>
             </div>
             <div class="header-acciones"></div>
         </div>
     </header>
 
-    <main class="contenedor-principal" style="justify-content: center; display: flex;">
-        <section class="columna-centro" style="max-width: 700px; width: 100%;">
-            <a href="javascript:void(0)" id="link-volver" style="display: inline-block; margin-bottom: 12px; color: #34517c; font-weight: bold; text-decoration: none; font-size: 0.9rem;">← Volver</a>
-
+    <main class="contenedor-principal" style="grid-template-columns: 1fr; max-width: 650px;">
+        <section class="columna-centro">
             <h2 id="titulo-insignias">Insignias</h2>
 
-            <div id="insignias-detalle">
-                <p style="color: #888;">Cargando...</p>
-            </div>
+            <h3 style="font-size: 1rem; margin-bottom: 10px;">Obtenidas</h3>
+            <div id="lista-obtenidas"><p style="font-size: 14px; color: #666;">Cargando...</p></div>
+
+            <div class="divisor-lomo"></div>
+
+            <h3 style="font-size: 1rem; margin-bottom: 10px;">Por obtener</h3>
+            <div id="lista-por-obtener"></div>
         </section>
     </main>
 
@@ -38,100 +79,73 @@
     <script src="js/ui-comunes.js"></script>
     <script src="js/header-comun.js"></script>
     <script>
-        document.getElementById('link-volver').addEventListener('click', () => {
-            if (document.referrer && document.referrer.includes(location.host)) {
-                history.back();
-            } else {
-                window.location.href = 'index.html';
-            }
-        });
+        montarHeaderComun();
 
-        function crearFilaInsignia(badge) {
-            const fila = document.createElement('div');
-            fila.style.cssText = `
-                display: flex; align-items: center; gap: 14px; padding: 12px;
-                border: 1px solid ${badge.desbloqueada ? '#c08a4e' : '#ddd'};
-                border-radius: 10px; margin-bottom: 10px;
-                background: ${badge.desbloqueada ? '#e7ecf3' : '#f7f7f7'};
-            `;
+        function crearTarjetaInsignia(badge) {
+            const div = document.createElement('div');
+            div.className = 'insignia-card';
 
             const icono = document.createElement('div');
-            icono.style.cssText = `
-                width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
-                display: flex; align-items: center; justify-content: center;
-                font-size: 1.4rem; background: white;
-                filter: ${badge.desbloqueada ? 'none' : 'grayscale(100%)'};
-                opacity: ${badge.desbloqueada ? '1' : '0.5'};
-                border: 1px solid ${badge.desbloqueada ? '#c08a4e' : '#ccc'};
-            `;
+            icono.className = 'insignia-icono ' + (badge.desbloqueada ? 'desbloqueada' : 'bloqueada');
             icono.textContent = badge.icono;
 
-            const texto = document.createElement('div');
-            const nombre = document.createElement('p');
-            nombre.style.cssText = 'margin: 0; font-weight: bold; color: #333;';
-            nombre.textContent = badge.nombre;
-            const descripcion = document.createElement('p');
-            descripcion.style.cssText = 'margin: 2px 0 0 0; font-size: 0.82rem; color: #666;';
-            descripcion.textContent = badge.desbloqueada ? badge.descripcion : `Necesitas: ${badge.descripcion}`;
-            texto.appendChild(nombre);
-            texto.appendChild(descripcion);
+            const info = document.createElement('div');
+            info.className = 'insignia-info';
+            const h3 = document.createElement('h3');
+            h3.textContent = badge.nombre;
+            const p = document.createElement('p');
+            p.textContent = badge.desbloqueada ? badge.descripcion : `Cómo conseguirla: ${badge.descripcion}`;
+            info.appendChild(h3);
+            info.appendChild(p);
 
-            fila.appendChild(icono);
-            fila.appendChild(texto);
-            return fila;
+            div.appendChild(icono);
+            div.appendChild(info);
+            return div;
         }
 
-        (async () => {
-            const sesion = await montarHeaderComun({ reemplazarBotonesInvitado: true });
+        async function cargar() {
+            const params = new URLSearchParams(window.location.search);
+            const usuarioObjetivo = params.get('usuario');
+            const listaObtenidas = document.getElementById('lista-obtenidas');
+            const listaPorObtener = document.getElementById('lista-por-obtener');
 
-            const params = new URLSearchParams(location.search);
-            let usuario = params.get('usuario');
-            if (!usuario && sesion.loggedIn) usuario = sesion.user.username;
-
-            const contenedor = document.getElementById('insignias-detalle');
-            const titulo = document.getElementById('titulo-insignias');
-
-            if (!usuario) {
-                contenedor.innerHTML = '<p>No se indicó de qué usuario mostrar las insignias.</p>';
+            if (!usuarioObjetivo) {
+                listaObtenidas.innerHTML = '<p>No se indicó de qué perfil mostrar las insignias.</p>';
                 return;
             }
 
-            titulo.textContent = `Insignias de ${usuario}`;
+            document.getElementById('titulo-insignias').textContent = `Insignias de ${usuarioObjetivo}`;
 
             try {
-                const resp = await fetch(`/api/users/${encodeURIComponent(usuario)}/badges`);
-                const data = await resp.json().catch(() => ({}));
+                const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}/badges`);
+                const data = await resp.json();
                 if (!resp.ok) {
-                    contenedor.innerHTML = `<p>${data.error || 'No se pudieron cargar las insignias.'}</p>`;
+                    listaObtenidas.innerHTML = `<p>${data.error || 'No se pudo cargar.'}</p>`;
                     return;
                 }
 
-                contenedor.innerHTML = '';
                 const obtenidas = data.badges.filter(b => b.desbloqueada);
                 const porObtener = data.badges.filter(b => !b.desbloqueada);
 
-                const h3Obtenidas = document.createElement('h3');
-                h3Obtenidas.textContent = `Obtenidas (${obtenidas.length}/${data.badges.length})`;
-                contenedor.appendChild(h3Obtenidas);
+                listaObtenidas.innerHTML = '';
                 if (obtenidas.length === 0) {
-                    contenedor.appendChild(crearEstadoVacio('Todavía no ha desbloqueado ninguna.'));
+                    listaObtenidas.appendChild(crearEstadoVacio('Todavía no ha desbloqueado ninguna insignia.'));
                 } else {
-                    obtenidas.forEach(b => contenedor.appendChild(crearFilaInsignia(b)));
+                    obtenidas.forEach(b => listaObtenidas.appendChild(crearTarjetaInsignia(b)));
                 }
 
-                const h3Pendientes = document.createElement('h3');
-                h3Pendientes.style.marginTop = '20px';
-                h3Pendientes.textContent = 'Por obtener';
-                contenedor.appendChild(h3Pendientes);
+                listaPorObtener.innerHTML = '';
                 if (porObtener.length === 0) {
-                    contenedor.appendChild(crearEstadoVacio('¡Ya las desbloqueó todas!'));
+                    listaPorObtener.appendChild(crearEstadoVacio('¡Ya las tiene todas!'));
                 } else {
-                    porObtener.forEach(b => contenedor.appendChild(crearFilaInsignia(b)));
+                    porObtener.forEach(b => listaPorObtener.appendChild(crearTarjetaInsignia(b)));
                 }
             } catch (error) {
-                contenedor.innerHTML = '<p>No se pudo conectar con el servidor.</p>';
+                listaObtenidas.innerHTML = '<p>No se pudo conectar con el servidor.</p>';
             }
-        })();
+        }
+
+        cargar();
     </script>
 </body>
 </html>

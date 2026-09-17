@@ -9,16 +9,19 @@ function crearEstrellas(valoracion) {
     return '★'.repeat(val) + '☆'.repeat(5 - val);
 }
 
-function crearResenaCard(resena, completo, limiteTexto) {
+// Cuánto texto de la reseña mostramos en la tarjeta chica antes de recortarlo
+// y mandar a la página completa de la reseña.
+const LARGO_MAX_RESENA_CARD = 140;
+
+function crearResenaCard(resena, miUsername) {
     const div = document.createElement('div');
     div.className = 'resena-card';
+    div.style.cursor = 'pointer';
+    div.title = 'Abrir esta reseña';
 
     const img = document.createElement('img');
     img.src = resena.portada_url || 'https://via.placeholder.com/100x140';
     img.alt = `Portada de ${resena.libro_titulo}`;
-    // Tamaño fijo: antes cada portada se veía del tamaño natural de la
-    // imagen (algunas gigantes, otras chicas). Así todas quedan iguales.
-    img.style.cssText = 'width: 72px; height: 104px; object-fit: cover; flex-shrink: 0;';
     div.appendChild(img);
 
     const info = document.createElement('div');
@@ -44,12 +47,13 @@ function crearResenaCard(resena, completo, limiteTexto) {
     linkUsuario.href = `muro.html?usuario=${encodeURIComponent(resena.username)}`;
     linkUsuario.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
     linkUsuario.textContent = resena.username;
+    linkUsuario.addEventListener('click', (e) => e.stopPropagation());
     porP.append('Reseñado por ', linkUsuario);
     info.appendChild(porP);
 
     // Botones de like / dislike (una sola reacción por persona, se puede cambiar)
     const acciones = document.createElement('div');
-    acciones.style.cssText = 'display: flex; gap: 10px;';
+    acciones.style.cssText = 'display: flex; gap: 10px; align-items: center;';
 
     const btnLike = document.createElement('button');
     btnLike.type = 'button';
@@ -87,29 +91,55 @@ function crearResenaCard(resena, completo, limiteTexto) {
         }
     }
 
-    btnLike.addEventListener('click', () => reaccionar('like'));
-    btnDislike.addEventListener('click', () => reaccionar('dislike'));
+    btnLike.addEventListener('click', (e) => { e.stopPropagation(); reaccionar('like'); });
+    btnDislike.addEventListener('click', (e) => { e.stopPropagation(); reaccionar('dislike'); });
 
     acciones.appendChild(btnLike);
     acciones.appendChild(btnDislike);
+
+    // Botón de eliminar: solo aparece en tus propias reseñas
+    if (miUsername && miUsername === resena.username) {
+        const btnEliminar = document.createElement('button');
+        btnEliminar.type = 'button';
+        btnEliminar.title = 'Eliminar reseña';
+        btnEliminar.textContent = '🗑️';
+        btnEliminar.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 0.8rem; margin-left: auto;';
+        btnEliminar.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!(await confirmarAccion('¿Eliminar esta reseña?'))) return;
+            try {
+                const resp = await fetch(`/api/reviews/${resena.id}`, { method: 'DELETE' });
+                if (resp.ok) {
+                    div.remove();
+                } else {
+                    const data = await resp.json().catch(() => ({}));
+                    mostrarAviso(data.error || 'No se pudo eliminar la reseña.');
+                }
+            } catch (error) {
+                mostrarAviso('No se pudo conectar con el servidor.');
+            }
+        });
+        acciones.appendChild(btnEliminar);
+    }
+
     info.appendChild(acciones);
 
-    // Texto de la reseña (opcional): va DEBAJO de los likes/dislikes. Si no
-    // alcanza en el espacio chico de la tarjeta, se corta y se ofrece un link
-    // a la página dedicada de esa reseña con el texto completo.
+    // Debajo de los likes: el texto escrito de la reseña (si tiene). Si no
+    // cabe en el espacio de la tarjeta, se recorta y se ofrece un link a la
+    // página completa de la reseña, donde además se puede comentar.
     if (resena.texto && resena.texto.trim()) {
-        const LIMITE = limiteTexto || 220;
-        const textoCompleto = resena.texto.trim();
         const textoP = document.createElement('p');
-        textoP.style.cssText = 'font-size: 0.85rem; color: #333; margin: 8px 0 0 0; white-space: pre-wrap;';
+        textoP.style.cssText = 'font-size: 0.82rem; margin-top: 6px; white-space: pre-wrap;';
+        const textoCompleto = resena.texto.trim();
 
-        if (!completo && textoCompleto.length > LIMITE) {
-            textoP.textContent = textoCompleto.slice(0, LIMITE).trim() + '… ';
-            const link = document.createElement('a');
-            link.href = `resena.html?id=${resena.id}`;
-            link.textContent = 'Leer reseña completa';
-            link.style.cssText = 'color: #34517c; font-weight: bold; text-decoration: none; white-space: nowrap;';
-            textoP.appendChild(link);
+        if (textoCompleto.length > LARGO_MAX_RESENA_CARD) {
+            textoP.textContent = textoCompleto.slice(0, LARGO_MAX_RESENA_CARD).trim() + '… ';
+            const linkCompleta = document.createElement('a');
+            linkCompleta.href = `resena.html?id=${resena.id}`;
+            linkCompleta.textContent = 'Leer reseña completa';
+            linkCompleta.style.cssText = 'color: #5b6f8f; font-weight: bold; text-decoration: none; font-size: 0.8rem;';
+            linkCompleta.addEventListener('click', (e) => e.stopPropagation());
+            textoP.appendChild(linkCompleta);
         } else {
             textoP.textContent = textoCompleto;
         }
@@ -117,13 +147,23 @@ function crearResenaCard(resena, completo, limiteTexto) {
     }
 
     div.appendChild(info);
+
+    // Clic en cualquier parte de la tarjeta abre la reseña en su propia página
+    // (los botones de arriba ya cortan la propagación, así que no interfieren).
+    div.addEventListener('click', () => {
+        window.location.href = `resena.html?id=${resena.id}`;
+    });
+
     return div;
 }
 
 async function cargarResenasRecientes(contenedor) {
     contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">Cargando...</p>';
     try {
-        const resp = await fetch('/api/reviews');
+        const [resp, miUsername] = await Promise.all([
+            fetch('/api/reviews'),
+            obtenerUsuarioSesion()
+        ]);
         const data = await resp.json();
         contenedor.innerHTML = '';
         if (!data.reviews || data.reviews.length === 0) {
@@ -131,10 +171,7 @@ async function cargarResenasRecientes(contenedor) {
             contenedor.appendChild(crearEstadoVacio('Todavía no hay reseñas.'));
             return;
         }
-        // Solo las 3 más recientes acá (con extracto corto), para que el
-        // Trending de más abajo se vea sin tener que scrollear. Las demás
-        // siguen accesibles reseña por reseña desde resena.html.
-        data.reviews.slice(0, 3).forEach(r => contenedor.appendChild(crearResenaCard(r, false, 90)));
+        data.reviews.forEach(r => contenedor.appendChild(crearResenaCard(r, miUsername)));
     } catch (error) {
         contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">No se pudieron cargar las reseñas.</p>';
     }

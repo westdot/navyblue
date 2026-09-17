@@ -13,19 +13,14 @@
         <div class="header-content">
             <div class="header-title">
                 <h1>NAVYBLUE</h1>
-                <p>putas harry putas</p>
             </div>
             <div class="header-acciones"></div>
         </div>
     </header>
 
-    <main class="contenedor-principal" style="justify-content: center; display: flex;">
-        <section class="columna-centro" style="max-width: 600px; width: 100%;">
-            <a href="javascript:void(0)" id="link-volver" style="display: inline-block; margin-bottom: 12px; color: #34517c; font-weight: bold; text-decoration: none; font-size: 0.9rem;">← Volver</a>
-
-            <div id="resena-detalle">
-                <p style="color: #888;">Cargando...</p>
-            </div>
+    <main class="contenedor-principal" style="grid-template-columns: 1fr; max-width: 650px;">
+        <section class="columna-centro" id="detalle-resena">
+            <p>Cargando reseña...</p>
         </section>
     </main>
 
@@ -35,41 +30,23 @@
 
     <script src="js/ui-comunes.js"></script>
     <script src="js/header-comun.js"></script>
+    <script src="js/posts-comunes.js"></script>
     <script src="js/columna-derecha.js"></script>
     <script>
-        document.getElementById('link-volver').addEventListener('click', () => {
-            if (document.referrer && document.referrer.includes(location.host)) {
-                history.back();
-            } else {
-                window.location.href = 'index.html';
-            }
-        });
+        montarHeaderComun();
 
-        (async () => {
-            await montarHeaderComun({ reemplazarBotonesInvitado: true });
+        const params = new URLSearchParams(window.location.search);
+        const resenaId = params.get('id');
+        const contenedor = document.getElementById('detalle-resena');
 
-            const params = new URLSearchParams(location.search);
-            const resenaId = params.get('id');
-            const contenedor = document.getElementById('resena-detalle');
-
-            if (!resenaId) {
-                contenedor.innerHTML = '<p>No se indicó qué reseña mostrar.</p>';
-                return;
-            }
-
-            try {
-                const resp = await fetch(`/api/reviews/${resenaId}`);
-                const data = await resp.json().catch(() => ({}));
-                if (!resp.ok) {
-                    contenedor.innerHTML = `<p>${data.error || 'No se pudo cargar la reseña.'}</p>`;
-                    return;
-                }
-                contenedor.innerHTML = '';
-                contenedor.appendChild(crearResenaCard(data.review, true)); // true = mostrar el texto completo, sin cortar
-            } catch (error) {
-                contenedor.innerHTML = '<p>No se pudo conectar con el servidor.</p>';
-            }
-        })();
+        if (!resenaId) {
+            contenedor.innerHTML = '<p>No se indicó qué reseña mostrar.</p>';
+        } else {
+            // Al volver, mandamos al inicio en vez de intentar reconstruir un
+            // estado que nunca existió en esta página (que solo muestra una reseña).
+            contenedor._volverCallback = () => { window.location.href = 'index.html'; };
+            abrirDetalleResena(resenaId, contenedor);
+        }
     </script>
 </body>
 </html>

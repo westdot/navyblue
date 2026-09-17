@@ -122,6 +122,148 @@ function formatearFechaCompleta(fechaBD) {
     });
 }
 
+// Bloque reusable de comentarios: lista + formulario para agregar uno nuevo.
+// Sirve tanto para comentarios de posts como de reseñas; quien lo use decide
+// cómo se envían/eliminan los comentarios y qué pasa después (normalmente,
+// recargar todo el detalle para que cuenten y lista queden al día).
+// opciones = { enviarComentario(content) => Promise<{ok,error}>,
+//              eliminarComentario(id) => Promise<{ok,error}>,
+//              alCambiar: () => void }
+function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
+    const contenedor = document.createElement('div');
+
+    // El campo de comentario se declara acá arriba para que el botón "Responder"
+    // de cada comentario (más abajo) pueda precargarlo con el @usuario correcto.
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Escribe un comentario...';
+    input.style.cssText = 'flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #ccc; min-width: 0;';
+
+    const listaComentarios = document.createElement('div');
+    listaComentarios.style.cssText = 'margin-top: 15px;';
+
+    if (comentarios.length === 0) {
+        const p = document.createElement('p');
+        p.style.cssText = 'font-size: 0.85rem; color: #888;';
+        p.textContent = 'Todavía no hay comentarios.';
+        listaComentarios.appendChild(p);
+    } else {
+        comentarios.forEach(c => {
+            const div = document.createElement('div');
+            div.style.cssText = 'border-top: 1px solid #eee; padding: 8px 0;';
+
+            const cabeceraC = document.createElement('div');
+            cabeceraC.style.cssText = 'display: flex; align-items: center;';
+
+            const autorC = document.createElement('a');
+            autorC.style.cssText = 'font-size: 0.85rem; font-weight: bold; text-decoration: none; color: inherit;';
+            autorC.href = `muro.html?usuario=${encodeURIComponent(c.username)}`;
+            autorC.textContent = c.username;
+            cabeceraC.appendChild(autorC);
+
+            // El botón de eliminar solo aparece en TUS PROPIOS comentarios
+            if (usuarioActual && c.username === usuarioActual) {
+                const btnBorrarComentario = document.createElement('button');
+                btnBorrarComentario.type = 'button';
+                btnBorrarComentario.title = 'Eliminar comentario';
+                btnBorrarComentario.textContent = '🗑️';
+                btnBorrarComentario.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.8rem;';
+                btnBorrarComentario.addEventListener('click', async () => {
+                    if (!(await confirmarAccion('¿Eliminar este comentario?'))) return;
+                    try {
+                        const resultado = await opciones.eliminarComentario(c.id);
+                        if (resultado && resultado.ok) {
+                            if (opciones.alCambiar) opciones.alCambiar();
+                            else div.remove();
+                        } else {
+                            mostrarAviso((resultado && resultado.error) || 'No se pudo eliminar el comentario.');
+                        }
+                    } catch (error) {
+                        mostrarAviso('No se pudo conectar con el servidor.');
+                    }
+                });
+                cabeceraC.appendChild(btnBorrarComentario);
+            }
+
+            // Botón para responder directo a quien hizo este comentario: precarga
+            // "@usuario " en el campo de abajo, así se muestra como respuesta.
+            if (usuarioActual) {
+                const btnResponder = document.createElement('button');
+                btnResponder.type = 'button';
+                btnResponder.textContent = 'Responder';
+                btnResponder.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.75rem; color: #5b6f8f; font-weight: bold;';
+                btnResponder.addEventListener('click', () => {
+                    input.value = `@${c.username} `;
+                    input.focus();
+                });
+                cabeceraC.appendChild(btnResponder);
+            }
+
+            // Si el comentario arranca arrobando a alguien (ej: "@takato genial!"),
+            // lo mostramos como una respuesta directa a esa persona (estilo Twitter),
+            // en vez de dejar la mención mezclada con el resto del texto.
+            const matchRespuesta = c.content.match(/^@(\w+)[,:]?\s*/);
+            let textoRestante = c.content;
+            if (matchRespuesta) {
+                const nombreMencionado = matchRespuesta[1];
+                textoRestante = c.content.slice(matchRespuesta[0].length);
+
+                const lineaRespuesta = document.createElement('p');
+                lineaRespuesta.style.cssText = 'margin: 4px 0 0 0; font-size: 0.78rem; color: #7a7061;';
+                const linkMencion = document.createElement('a');
+                linkMencion.href = `muro.html?usuario=${encodeURIComponent(nombreMencionado)}`;
+                linkMencion.style.cssText = 'color: #5b6f8f; font-weight: bold; text-decoration: none;';
+                linkMencion.textContent = '@' + nombreMencionado;
+                linkMencion.addEventListener('click', (e) => e.stopPropagation());
+                lineaRespuesta.append('Respondiendo a ', linkMencion);
+                div.appendChild(cabeceraC);
+                div.appendChild(lineaRespuesta);
+            } else {
+                div.appendChild(cabeceraC);
+            }
+
+            const textoC = document.createElement('p');
+            textoC.style.cssText = 'margin: 4px 0 0 0; font-size: 0.85rem;';
+            textoC.appendChild(renderizarTextoConMenciones(textoRestante));
+            div.appendChild(textoC);
+            listaComentarios.appendChild(div);
+        });
+    }
+    contenedor.appendChild(listaComentarios);
+
+    // Formulario para agregar un comentario (el campo `input` ya se declaró
+    // más arriba, así los botones "Responder" de cada comentario pueden usarlo)
+    const form = document.createElement('form');
+    form.style.cssText = 'margin-top: 12px; display: flex; gap: 6px;';
+    const btnEnviar = document.createElement('button');
+    btnEnviar.type = 'submit';
+    btnEnviar.textContent = 'Comentar';
+    btnEnviar.style.cssText = 'padding: 8px 12px; border-radius: 6px; border: none; background: #34517c; color: white; cursor: pointer; white-space: nowrap;';
+
+    form.appendChild(input);
+    form.appendChild(btnEnviar);
+    contenedor.appendChild(form);
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const content = input.value.trim();
+        if (!content) return;
+        try {
+            const resultado = await opciones.enviarComentario(content);
+            if (resultado && resultado.ok) {
+                input.value = '';
+                if (opciones.alCambiar) opciones.alCambiar();
+            } else {
+                mostrarAviso((resultado && resultado.error) || 'No se pudo comentar (¿iniciaste sesión?).');
+            }
+        } catch (error) {
+            mostrarAviso('No se pudo conectar con el servidor.');
+        }
+    });
+
+    return contenedor;
+}
+
 // Abre el detalle de un post (con sus comentarios) dentro de `contenedor`
 // (la columna derecha), guardando lo que había antes para poder volver.
 async function abrirDetallePost(postId, contenedor) {
@@ -161,84 +303,6 @@ function cerrarDetallePost(contenedor) {
     }
 }
 
-// Si un texto (post o comentario) empieza con "@alguien", arma una línea
-// "↪ Respondiendo a @alguien" y devuelve el texto SIN esa mención inicial
-// (ya con menciones internas convertidas en links). Si no empieza con una
-// mención, devuelve null y hay que renderizar el texto tal cual.
-function extraerRespuestaInicial(texto) {
-    const match = texto.match(/^\s*@(\w+)[\s,:]*/);
-    if (!match) return null;
-    const enRespuestaA = document.createElement('p');
-    enRespuestaA.style.cssText = 'margin: 0 0 3px 0; font-size: 0.78rem; color: #5b6f8f;';
-    const linkRespuesta = document.createElement('a');
-    linkRespuesta.href = `muro.html?usuario=${encodeURIComponent(match[1])}`;
-    linkRespuesta.style.cssText = 'color: inherit; font-weight: bold; text-decoration: none;';
-    linkRespuesta.textContent = '@' + match[1];
-    linkRespuesta.addEventListener('click', (e) => e.stopPropagation());
-    enRespuestaA.append('↪ Respondiendo a ', linkRespuesta);
-    return { lineaRespuesta: enRespuestaA, restante: texto.slice(match[0].length) };
-}
-
-// Arma un comentario (autor, texto con menciones y botón de borrar si es
-// tuyo). Se usa tanto en el detalle "en línea" (columna derecha) como en la
-// página dedicada de un post (post.html).
-function crearComentarioCard(c, post, usuarioActual) {
-    const div = document.createElement('div');
-    div.style.cssText = 'border-top: 1px solid #eee; padding: 8px 0;';
-
-    const cabeceraC = document.createElement('div');
-    cabeceraC.style.cssText = 'display: flex; align-items: center;';
-
-    const autorC = document.createElement('a');
-    autorC.style.cssText = 'font-size: 0.85rem; font-weight: bold; text-decoration: none; color: inherit;';
-    autorC.href = `muro.html?usuario=${encodeURIComponent(c.username)}`;
-    autorC.textContent = c.username;
-    cabeceraC.appendChild(autorC);
-
-    // El botón de eliminar solo aparece en TUS PROPIOS comentarios
-    if (usuarioActual && c.username === usuarioActual) {
-        const btnBorrarComentario = document.createElement('button');
-        btnBorrarComentario.type = 'button';
-        btnBorrarComentario.title = 'Eliminar comentario';
-        btnBorrarComentario.textContent = '🗑️';
-        btnBorrarComentario.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.8rem;';
-        btnBorrarComentario.addEventListener('click', async () => {
-            if (!(await confirmarAccion('¿Eliminar este comentario?'))) return;
-            try {
-                const resp = await fetch(`/api/comments/${c.id}`, { method: 'DELETE' });
-                if (resp.ok) {
-                    div.remove();
-                    if (post.comments_count) post.comments_count--;
-                } else {
-                    const data = await resp.json().catch(() => ({}));
-                    mostrarAviso(data.error || 'No se pudo eliminar el comentario.');
-                }
-            } catch (error) {
-                mostrarAviso('No se pudo conectar con el servidor.');
-            }
-        });
-        cabeceraC.appendChild(btnBorrarComentario);
-    }
-
-    const textoC = document.createElement('p');
-    textoC.style.cssText = 'margin: 4px 0 0 0; font-size: 0.85rem;';
-
-    // Si el comentario empieza con "@alguien", se muestra como una respuesta
-    // a esa persona (como en Twitter/X) en vez de dejar la mención mezclada
-    // con el resto del texto.
-    const respuesta = extraerRespuestaInicial(c.content);
-    if (respuesta) {
-        div.appendChild(respuesta.lineaRespuesta);
-        textoC.appendChild(renderizarTextoConMenciones(respuesta.restante));
-    } else {
-        textoC.appendChild(renderizarTextoConMenciones(c.content));
-    }
-
-    div.appendChild(cabeceraC);
-    div.appendChild(textoC);
-    return div;
-}
-
 function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
     contenedor.innerHTML = '';
 
@@ -271,20 +335,13 @@ function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
 
     const texto = document.createElement('p');
     texto.className = 'post-texto';
-    const respuestaPost = extraerRespuestaInicial(post.content);
-    if (respuestaPost) {
-        respuestaPost.lineaRespuesta.style.margin = '0 0 4px 0';
-        texto.appendChild(renderizarTextoConMenciones(respuestaPost.restante));
-    } else {
-        texto.appendChild(renderizarTextoConMenciones(post.content));
-    }
+    texto.appendChild(renderizarTextoConMenciones(post.content));
 
     const fecha = document.createElement('p');
     fecha.style.cssText = 'font-size: 0.75rem; color: #888; margin: 4px 0 8px 0;';
     fecha.textContent = formatearFechaCompleta(post.created_at);
 
     contenido.appendChild(header);
-    if (respuestaPost) contenido.appendChild(respuestaPost.lineaRespuesta);
     contenido.appendChild(texto);
     contenido.appendChild(fecha);
     contenido.appendChild(crearBarraAcciones(post, () => {})); // ya estamos viendo el detalle
@@ -293,57 +350,220 @@ function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
     article.appendChild(contenido);
     contenedor.appendChild(article);
 
-    // Lista de comentarios
-    const listaComentarios = document.createElement('div');
-    listaComentarios.style.cssText = 'margin-top: 15px;';
-
-    if (comentarios.length === 0) {
-        const p = document.createElement('p');
-        p.style.cssText = 'font-size: 0.85rem; color: #888;';
-        p.textContent = 'Todavía no hay comentarios.';
-        listaComentarios.appendChild(p);
-    } else {
-        comentarios.forEach(c => {
-            listaComentarios.appendChild(crearComentarioCard(c, post, usuarioActual));
-        });
-    }
-    contenedor.appendChild(listaComentarios);
-
-    // Formulario para agregar un comentario
-    const form = document.createElement('form');
-    form.style.cssText = 'margin-top: 12px; display: flex; gap: 6px;';
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'Escribe un comentario...';
-    input.style.cssText = 'flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #ccc; min-width: 0;';
-    const btnEnviar = document.createElement('button');
-    btnEnviar.type = 'submit';
-    btnEnviar.textContent = 'Comentar';
-    btnEnviar.style.cssText = 'padding: 8px 12px; border-radius: 6px; border: none; background: #34517c; color: white; cursor: pointer; white-space: nowrap;';
-
-    form.appendChild(input);
-    form.appendChild(btnEnviar);
-    contenedor.appendChild(form);
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const content = input.value.trim();
-        if (!content) return;
-        try {
+    contenedor.appendChild(crearBloqueComentarios(comentarios, usuarioActual, {
+        enviarComentario: async (content) => {
             const resp = await fetch(`/api/posts/${post.id}/comments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content })
             });
             const data = await resp.json().catch(() => ({}));
+            return { ok: resp.ok, error: data.error };
+        },
+        eliminarComentario: async (id) => {
+            const resp = await fetch(`/api/comments/${id}`, { method: 'DELETE' });
+            const data = await resp.json().catch(() => ({}));
+            return { ok: resp.ok, error: data.error };
+        },
+        alCambiar: () => abrirDetallePost(post.id, contenedor)
+    }));
+}
+
+// ==========================================================================
+// DETALLE DE UNA RESEÑA (texto completo + comentarios), en la misma lógica
+// que el detalle de un post: se puede abrir dentro de un contenedor (ej. la
+// columna derecha) o en una página propia (resena.html) seteando antes
+// contenedor._volverCallback.
+// ==========================================================================
+
+async function abrirDetalleResena(resenaId, contenedor) {
+    if (contenedor._contenidoOriginal === undefined) {
+        contenedor._contenidoOriginal = contenedor.innerHTML;
+    }
+
+    contenedor.innerHTML = '<p>Cargando reseña...</p>';
+
+    try {
+        const [respResena, respComentarios, usuarioActual] = await Promise.all([
+            fetch(`/api/reviews/${resenaId}`),
+            fetch(`/api/reviews/${resenaId}/comments`),
+            obtenerUsuarioSesion()
+        ]);
+        const dataResena = await respResena.json();
+        const dataComentarios = await respComentarios.json().catch(() => ({ comments: [] }));
+
+        if (!respResena.ok) {
+            contenedor.innerHTML = `<p>${dataResena.error || 'No se pudo cargar la reseña.'}</p>`;
+            return;
+        }
+
+        renderDetalleResena(dataResena.review, dataComentarios.comments || [], contenedor, usuarioActual);
+    } catch (error) {
+        contenedor.innerHTML = '<p>No se pudo conectar con el servidor.</p>';
+    }
+}
+
+function renderDetalleResena(resena, comentarios, contenedor, usuarioActual) {
+    contenedor.innerHTML = '';
+
+    const btnVolver = document.createElement('button');
+    btnVolver.type = 'button';
+    btnVolver.textContent = '← Volver';
+    btnVolver.style.cssText = 'background: none; border: none; color: #34517c; cursor: pointer; font-weight: bold; margin-bottom: 12px; font-size: 0.9rem;';
+    btnVolver.addEventListener('click', () => cerrarDetallePost(contenedor));
+    contenedor.appendChild(btnVolver);
+
+    const tarjeta = document.createElement('div');
+    tarjeta.style.cssText = 'display: flex; gap: 14px;';
+
+    const img = document.createElement('img');
+    img.src = resena.portada_url || 'https://via.placeholder.com/120x170';
+    img.alt = `Portada de ${resena.libro_titulo}`;
+    img.style.cssText = 'width: 110px; height: 156px; object-fit: cover; border-radius: 6px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(58,50,38,0.25);';
+    tarjeta.appendChild(img);
+
+    const info = document.createElement('div');
+    info.style.cssText = 'flex: 1; min-width: 0;';
+
+    const h2 = document.createElement('h2');
+    h2.style.cssText = 'font-size: 1.15rem; margin-bottom: 4px; border: none; padding: 0;';
+    h2.textContent = resena.libro_titulo;
+    info.appendChild(h2);
+
+    const autorP = document.createElement('p');
+    autorP.style.cssText = 'font-size: 0.85rem; color: #7a7061; margin-bottom: 6px;';
+    autorP.textContent = resena.autor;
+    info.appendChild(autorP);
+
+    const valoracionP = document.createElement('p');
+    valoracionP.className = 'valoracion';
+    valoracionP.textContent = crearEstrellas(resena.valoracion);
+    info.appendChild(valoracionP);
+
+    const porP = document.createElement('p');
+    porP.style.cssText = 'font-size: 0.8rem; color: #888; margin: 4px 0 4px 0;';
+    const linkUsuario = document.createElement('a');
+    linkUsuario.href = `muro.html?usuario=${encodeURIComponent(resena.username)}`;
+    linkUsuario.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
+    linkUsuario.textContent = resena.username;
+    porP.append('Reseñado por ', linkUsuario);
+    info.appendChild(porP);
+
+    const fecha = document.createElement('p');
+    fecha.style.cssText = 'font-size: 0.75rem; color: #999; margin-bottom: 8px;';
+    fecha.textContent = formatearFechaCompleta(resena.created_at);
+    info.appendChild(fecha);
+
+    // Acciones: like / dislike (idénticas a la tarjeta chica) + eliminar si es tuya
+    const acciones = document.createElement('div');
+    acciones.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-bottom: 10px;';
+
+    const btnLike = document.createElement('button');
+    btnLike.type = 'button';
+    btnLike.textContent = `👍 ${resena.likes_count || 0}`;
+    btnLike.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 0.85rem;';
+    if (resena.mi_reaccion === 'like') btnLike.style.color = '#198754';
+
+    const btnDislike = document.createElement('button');
+    btnDislike.type = 'button';
+    btnDislike.textContent = `👎 ${resena.dislikes_count || 0}`;
+    btnDislike.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 0.85rem;';
+    if (resena.mi_reaccion === 'dislike') btnDislike.style.color = '#e63946';
+
+    async function reaccionar(tipo) {
+        try {
+            const resp = await fetch(`/api/reviews/${resena.id}/reaccionar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tipo })
+            });
+            const data = await resp.json().catch(() => ({}));
             if (!resp.ok) {
-                mostrarAviso(data.error || 'No se pudo comentar (¿iniciaste sesión?).');
+                mostrarAviso(data.error || 'Debes iniciar sesión para reaccionar.');
                 return;
             }
-            input.value = '';
-            abrirDetallePost(post.id, contenedor); // recarga el detalle con el comentario nuevo
+            resena.likes_count = data.likes_count;
+            resena.dislikes_count = data.dislikes_count;
+            resena.mi_reaccion = data.mi_reaccion;
+            btnLike.textContent = `👍 ${data.likes_count}`;
+            btnDislike.textContent = `👎 ${data.dislikes_count}`;
+            btnLike.style.color = data.mi_reaccion === 'like' ? '#198754' : '';
+            btnDislike.style.color = data.mi_reaccion === 'dislike' ? '#e63946' : '';
         } catch (error) {
             mostrarAviso('No se pudo conectar con el servidor.');
         }
-    });
+    }
+    btnLike.addEventListener('click', () => reaccionar('like'));
+    btnDislike.addEventListener('click', () => reaccionar('dislike'));
+
+    acciones.appendChild(btnLike);
+    acciones.appendChild(btnDislike);
+
+    if (usuarioActual && usuarioActual === resena.username) {
+        const btnEliminar = document.createElement('button');
+        btnEliminar.type = 'button';
+        btnEliminar.title = 'Eliminar reseña';
+        btnEliminar.textContent = '🗑️ Eliminar reseña';
+        btnEliminar.style.cssText = 'background: none; border: none; cursor: pointer; font-size: 0.8rem; color: #c17b83; margin-left: auto;';
+        btnEliminar.addEventListener('click', async () => {
+            if (!(await confirmarAccion('¿Eliminar esta reseña?'))) return;
+            try {
+                const resp = await fetch(`/api/reviews/${resena.id}`, { method: 'DELETE' });
+                if (resp.ok) {
+                    // Si estamos en la página propia de la reseña, volvemos al muro;
+                    // si es un panel dentro de otra página, simplemente lo cerramos.
+                    if (window.location.pathname.endsWith('resena.html')) {
+                        window.location.href = 'muro.html';
+                    } else {
+                        cerrarDetallePost(contenedor);
+                    }
+                } else {
+                    const data = await resp.json().catch(() => ({}));
+                    mostrarAviso(data.error || 'No se pudo eliminar la reseña.');
+                }
+            } catch (error) {
+                mostrarAviso('No se pudo conectar con el servidor.');
+            }
+        });
+        acciones.appendChild(btnEliminar);
+    }
+    info.appendChild(acciones);
+
+    // Texto completo de la reseña
+    if (resena.texto && resena.texto.trim()) {
+        const textoP = document.createElement('p');
+        textoP.style.cssText = 'font-size: 0.92rem; white-space: pre-wrap; line-height: 1.5; margin-top: 6px;';
+        textoP.appendChild(renderizarTextoConMenciones(resena.texto));
+        info.appendChild(textoP);
+    }
+
+    tarjeta.appendChild(info);
+    contenedor.appendChild(tarjeta);
+
+    const divisor = document.createElement('div');
+    divisor.className = 'divisor-lomo';
+    contenedor.appendChild(divisor);
+
+    const tituloComentarios = document.createElement('h3');
+    tituloComentarios.style.cssText = 'font-size: 1rem; margin-bottom: 6px;';
+    tituloComentarios.textContent = 'Comentarios';
+    contenedor.appendChild(tituloComentarios);
+
+    contenedor.appendChild(crearBloqueComentarios(comentarios, usuarioActual, {
+        enviarComentario: async (content) => {
+            const resp = await fetch(`/api/reviews/${resena.id}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+            const data = await resp.json().catch(() => ({}));
+            return { ok: resp.ok, error: data.error };
+        },
+        eliminarComentario: async (id) => {
+            const resp = await fetch(`/api/review-comments/${id}`, { method: 'DELETE' });
+            const data = await resp.json().catch(() => ({}));
+            return { ok: resp.ok, error: data.error };
+        },
+        alCambiar: () => abrirDetalleResena(resena.id, contenedor)
+    }));
 }

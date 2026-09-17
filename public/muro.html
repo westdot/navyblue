@@ -71,6 +71,23 @@
 
         <!-- COLUMNA CENTRO: MURO -->
         <section class="columna-centro">
+            <div id="foto-perfil-contenedor" style="display: flex; justify-content: center; margin-bottom: 12px;">
+                <div id="foto-perfil-caja" style="
+                    position: relative; width: 96px; height: 96px; border-radius: 10px;
+                    border: 3px solid var(--color-acento); background: var(--color-navy-claro);
+                    overflow: hidden; display: flex; align-items: center; justify-content: center;
+                ">
+                    <img id="foto-perfil-img" alt="Foto de perfil" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+                    <span id="foto-perfil-icono" style="font-size: 2rem;">👤</span>
+                    <label id="foto-perfil-editar" for="foto-perfil-input" title="Cambiar foto de perfil (máx. 2MB)" style="
+                        display: none; position: absolute; bottom: 0; left: 0; right: 0;
+                        background: rgba(63,79,104,0.85); color: white; text-align: center;
+                        font-size: 0.65rem; padding: 3px 0; cursor: pointer;
+                    ">Cambiar</label>
+                    <input type="file" id="foto-perfil-input" accept="image/*" style="display: none;">
+                </div>
+            </div>
+            <p id="foto-perfil-mensaje" style="text-align: center; font-size: 0.75rem; margin-bottom: 10px;"></p>
             <h2>Muro</h2>
 
             <!-- Caja para publicar: solo aparece en tu propio muro -->
@@ -180,13 +197,17 @@
         autor.addEventListener('click', (e) => e.stopPropagation()); // no abrir el detalle del post
         header.appendChild(autor);
 
-        const tiempo = document.createElement('a');
+        const tiempo = document.createElement('span');
         tiempo.className = 'post-tiempo';
-        tiempo.href = `post.html?id=${post.id}`;
-        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: #888; text-decoration: none;';
+        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: #888; cursor: pointer;';
+        tiempo.title = 'Abrir esta publicación';
         tiempo.textContent = obtenerTiempoRelativo(post.created_at);
-        tiempo.title = 'Ver esta publicación en su propia página';
-        tiempo.addEventListener('click', (e) => e.stopPropagation()); // abre la página del post, no el detalle en línea
+        // Clic en la hora: abre el post en su propia página, distinto del resto
+        // de la tarjeta (que abre el detalle acá mismo, en la columna derecha)
+        tiempo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.location.href = `post.html?id=${post.id}`;
+        });
         header.appendChild(tiempo);
 
         // el boton de eliminar solo aparece si estss viendo TU PROPIO muro
@@ -216,16 +237,7 @@
 
         const texto = document.createElement('p');
         texto.className = 'post-texto';
-        const respuestaPost = extraerRespuestaInicial(post.content);
-        let lineaRespuestaPost = null;
-        if (respuestaPost) {
-            lineaRespuestaPost = respuestaPost.lineaRespuesta;
-            lineaRespuestaPost.style.margin = '0 0 4px 0';
-            lineaRespuestaPost.addEventListener('click', (e) => e.stopPropagation());
-            texto.appendChild(renderizarTextoConMenciones(respuestaPost.restante));
-        } else {
-            texto.appendChild(renderizarTextoConMenciones(post.content));
-        }
+        texto.appendChild(renderizarTextoConMenciones(post.content));
 
         const badge = document.createElement('div');
         badge.className = 'post-libro-badge';
@@ -234,7 +246,6 @@
         badge.append('📚 ', em);
 
         contenido.appendChild(header);
-        if (lineaRespuestaPost) contenido.appendChild(lineaRespuestaPost);
         contenido.appendChild(texto);
         contenido.appendChild(badge);
         contenido.appendChild(crearBarraAcciones(post, () => {
@@ -419,7 +430,7 @@
                 } else {
                     const envoltorio = document.createElement('div');
                     envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
-                    envoltorio.appendChild(crearResenaCard(item));
+                    envoltorio.appendChild(crearResenaCard(item, esMiMuro ? username : null));
                     listaMuro.appendChild(envoltorio);
                 }
             });
@@ -935,9 +946,11 @@
             const data = await resp.json();
             contenedor.innerHTML = '';
 
-            // En la barra lateral solo se muestran 4 insignias; el resto
-            // (obtenidas y por obtener) vive en su propia página.
-            data.badges.slice(0, 4).forEach(badge => {
+            // Solo dejamos 4 insignias a la vista en la barra: primero las
+            // desbloqueadas, y de ahí las que faltan. El resto (y el detalle
+            // completo) vive en insignias.html.
+            const ordenadas = [...data.badges].sort((a, b) => (b.desbloqueada ? 1 : 0) - (a.desbloqueada ? 1 : 0));
+            ordenadas.slice(0, 4).forEach(badge => {
                 const chip = document.createElement('div');
                 chip.title = `${badge.nombre}: ${badge.descripcion}`;
                 chip.style.cssText = `
@@ -953,14 +966,92 @@
                 contenedor.appendChild(chip);
             });
 
-            const linkVerTodas = document.createElement('a');
-            linkVerTodas.href = `insignias.html?usuario=${encodeURIComponent(usuarioObjetivo)}`;
-            linkVerTodas.textContent = 'Ver todas →';
-            linkVerTodas.style.cssText = 'display: block; width: 100%; margin-top: 6px; font-size: 0.75rem; color: #34517c; font-weight: bold; text-decoration: none;';
-            contenedor.appendChild(linkVerTodas);
+            const btnMas = document.createElement('a');
+            btnMas.href = `insignias.html?usuario=${encodeURIComponent(usuarioObjetivo)}`;
+            btnMas.title = 'Ver todas las insignias';
+            btnMas.style.cssText = `
+                width: 42px; height: 42px; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 1.1rem; font-weight: bold; text-decoration: none;
+                background: var(--color-navy-claro); color: var(--color-navy-texto);
+                border: 1px solid var(--color-borde);
+            `;
+            btnMas.textContent = '+';
+            contenedor.appendChild(btnMas);
         } catch (error) {
             contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar las insignias.</p>';
         }
+    }
+
+    // --- FOTO DE PERFIL (cuadrada, arriba del muro) ---
+
+    async function cargarFotoPerfil(usuarioObjetivo, esMiMuro) {
+        const img = document.getElementById('foto-perfil-img');
+        const icono = document.getElementById('foto-perfil-icono');
+        const etiquetaEditar = document.getElementById('foto-perfil-editar');
+        const inputFoto = document.getElementById('foto-perfil-input');
+        const mensaje = document.getElementById('foto-perfil-mensaje');
+
+        try {
+            const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}`);
+            const data = await resp.json();
+            if (resp.ok && data.user.foto_url) {
+                img.src = data.user.foto_url;
+                img.style.display = 'block';
+                icono.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                icono.style.display = 'block';
+            }
+        } catch (error) {
+            // si falla, dejamos el ícono por defecto
+        }
+
+        etiquetaEditar.style.display = esMiMuro ? 'block' : 'none';
+        if (!esMiMuro) return;
+
+        inputFoto.onchange = () => {
+            const archivo = inputFoto.files[0];
+            if (!archivo) return;
+
+            if (!archivo.type.startsWith('image/')) {
+                mensaje.style.color = 'red';
+                mensaje.textContent = 'Elige un archivo de imagen.';
+                return;
+            }
+            if (archivo.size > 2 * 1024 * 1024) {
+                mensaje.style.color = 'red';
+                mensaje.textContent = 'La imagen pesa más de 2MB. Elige una más liviana.';
+                inputFoto.value = '';
+                return;
+            }
+
+            const lector = new FileReader();
+            lector.onload = async () => {
+                try {
+                    const resp = await fetch('/api/profile/foto', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ foto_url: lector.result })
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok) {
+                        mensaje.style.color = 'red';
+                        mensaje.textContent = data.error || 'No se pudo guardar la foto.';
+                        return;
+                    }
+                    img.src = lector.result;
+                    img.style.display = 'block';
+                    icono.style.display = 'none';
+                    mensaje.style.color = 'green';
+                    mensaje.textContent = '¡Foto de perfil actualizada!';
+                } catch (error) {
+                    mensaje.style.color = 'red';
+                    mensaje.textContent = 'No se pudo conectar con el servidor.';
+                }
+            };
+            lector.readAsDataURL(archivo);
+        };
     }
 
     // Punto de entrada: confirmamos sesión y cargamos el muro correspondiente
@@ -993,6 +1084,7 @@
             }
 
             cargarPersonal(usuarioObjetivo, esMiMuro);
+            cargarFotoPerfil(usuarioObjetivo, esMiMuro);
             cargarSeguirInfo(usuarioObjetivo, esMiMuro);
             cargarEstanterias(usuarioObjetivo, esMiMuro);
             cargarLecturas(usuarioObjetivo, esMiMuro);
