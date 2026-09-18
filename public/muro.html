@@ -94,6 +94,13 @@
             <div id="insignias-contenedor" style="display: flex; flex-wrap: wrap; gap: 8px;">
                 <p style="font-size: 14px; color: #666;">Cargando...</p>
             </div>
+
+            <div class="divisor-lomo"></div>
+
+            <h2>Preguntas</h2>
+            <div id="preguntar-contenedor">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
         </aside>
 
         <!-- COLUMNA CENTRO: MURO. padding-top extra para dejar espacio a la
@@ -110,6 +117,7 @@
                 <button class="btn-tab-muro tab-activa" data-tab="posts" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #34517c; color: white;">Post</button>
                 <button class="btn-tab-muro" data-tab="comentarios" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #eee;">Comentarios</button>
                 <button class="btn-tab-muro" data-tab="likes" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #eee;">Likes</button>
+                <button class="btn-tab-muro" data-tab="preguntas" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #eee;">Preguntas</button>
             </div>
 
             <h3 id="titulo-lista">Publicaciones</h3>
@@ -468,7 +476,155 @@
         } else if (tab === 'likes') {
             tituloLista.textContent = 'Likes';
             listaMuro.innerHTML = ''; listaMuro.appendChild(crearEstadoVacio('Aún no implementado.'));
+        } else if (tab === 'preguntas') {
+            tituloLista.textContent = 'Preguntas';
+            cargarPreguntasDelMuro(username);
         }
+    }
+
+    // --- PREGUNTAS (pestaña de la columna central: las que le han hecho a esta persona) ---
+
+    function crearPreguntaCardMuro(pregunta) {
+        const article = document.createElement('article');
+        article.className = 'post-card';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'post-avatar';
+        avatar.textContent = '❓';
+
+        const contenido = document.createElement('div');
+        contenido.className = 'post-contenido';
+
+        const header = document.createElement('div');
+        header.className = 'post-header';
+
+        const autor = document.createElement('a');
+        autor.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
+        autor.href = `muro.html?usuario=${encodeURIComponent(pregunta.asker_username)}`;
+        autor.textContent = `${pregunta.asker_username} preguntó:`;
+        header.appendChild(autor);
+
+        const tiempo = document.createElement('span');
+        tiempo.className = 'post-tiempo';
+        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: #888;';
+        tiempo.textContent = obtenerTiempoRelativo(pregunta.created_at);
+        header.appendChild(tiempo);
+
+        const texto = document.createElement('p');
+        texto.className = 'post-texto';
+        texto.textContent = pregunta.content;
+
+        contenido.appendChild(header);
+        contenido.appendChild(texto);
+        article.appendChild(avatar);
+        article.appendChild(contenido);
+        return article;
+    }
+
+    async function cargarPreguntasDelMuro(username) {
+        listaMuro.innerHTML = '<p>Cargando...</p>';
+        try {
+            const resp = await fetch(`/api/questions?username=${encodeURIComponent(username)}`);
+            const data = await resp.json();
+            listaMuro.innerHTML = '';
+
+            if (!data.questions || data.questions.length === 0) {
+                listaMuro.appendChild(crearEstadoVacio('Todavía nadie le ha hecho una pregunta.'));
+                return;
+            }
+            data.questions.forEach(p => listaMuro.appendChild(crearPreguntaCardMuro(p)));
+        } catch (error) {
+            listaMuro.innerHTML = '<p>No se pudieron cargar las preguntas.</p>';
+        }
+    }
+
+    // --- CASILLA DE PREGUNTAS (columna "Lector", debajo de Insignias): para
+    // hacerle una pregunta pública al dueño de este muro (máx. 200 caracteres,
+    // 1 por día por persona). No aparece en tu propio muro (no puedes
+    // preguntarte a ti mismo).
+    async function cargarCasillaPreguntas(usuarioObjetivo, esMiMuro) {
+        const contenedor = document.getElementById('preguntar-contenedor');
+        contenedor.innerHTML = '';
+
+        if (esMiMuro) {
+            const info = document.createElement('p');
+            info.style.cssText = 'font-size: 0.8rem; color: #666;';
+            info.textContent = 'Acá los demás pueden hacerte una pregunta pública. Aparecerá en el feed general y en tu pestaña "Preguntas".';
+            contenedor.appendChild(info);
+            return;
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.maxLength = 200;
+        textarea.placeholder = `Hazle una pregunta a ${usuarioObjetivo}...`;
+        textarea.style.cssText = 'width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; border: 1px solid var(--color-borde); font-family: inherit; font-size: 0.8rem; resize: vertical; min-height: 50px;';
+
+        const contador = document.createElement('div');
+        contador.style.cssText = 'font-size: 0.7rem; color: #999; text-align: right; margin: 3px 0;';
+        contador.textContent = '0 / 200';
+        textarea.addEventListener('input', () => {
+            contador.textContent = `${textarea.value.length} / 200`;
+        });
+
+        const btnPreguntar = document.createElement('button');
+        btnPreguntar.type = 'button';
+        btnPreguntar.textContent = 'Preguntar';
+        btnPreguntar.style.cssText = 'width: 100%; padding: 7px; border-radius: 999px; border: none; background: #5b6f8f; color: white; font-size: 0.8rem; cursor: pointer;';
+
+        const mensaje = document.createElement('p');
+        mensaje.style.cssText = 'font-size: 0.75rem; margin-top: 5px;';
+
+        function deshabilitar(motivo) {
+            textarea.disabled = true;
+            btnPreguntar.disabled = true;
+            btnPreguntar.style.opacity = '0.6';
+            btnPreguntar.style.cursor = 'not-allowed';
+            if (motivo) {
+                mensaje.style.color = '#666';
+                mensaje.textContent = motivo;
+            }
+        }
+
+        btnPreguntar.addEventListener('click', async () => {
+            const content = textarea.value.trim();
+            if (!content) {
+                mensaje.style.color = 'red';
+                mensaje.textContent = 'Escribe una pregunta.';
+                return;
+            }
+            try {
+                const resp = await fetch(`/api/questions/${encodeURIComponent(usuarioObjetivo)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok) {
+                    mensaje.style.color = 'red';
+                    mensaje.textContent = data.error || 'No se pudo enviar la pregunta.';
+                    return;
+                }
+                textarea.value = '';
+                contador.textContent = '0 / 200';
+                deshabilitar('¡Pregunta enviada! Podrás volver a preguntarle mañana.');
+            } catch (error) {
+                mensaje.style.color = 'red';
+                mensaje.textContent = 'No se pudo conectar con el servidor.';
+            }
+        });
+
+        contenedor.appendChild(textarea);
+        contenedor.appendChild(contador);
+        contenedor.appendChild(btnPreguntar);
+        contenedor.appendChild(mensaje);
+
+        try {
+            const resp = await fetch(`/api/questions/${encodeURIComponent(usuarioObjetivo)}/estado`);
+            const data = await resp.json();
+            if (data.yaPreguntoHoy) {
+                deshabilitar('Ya le hiciste una pregunta hoy. Podrás preguntarle de nuevo mañana.');
+            }
+        } catch (error) { /* si falla, igual se descubre al intentar enviar */ }
     }
 
     // --- ESTANTERÍAS / COLECCIONES DE LIBROS ---
@@ -1170,6 +1326,7 @@
             cargarLecturas(usuarioObjetivo, esMiMuro);
             cargarLibrosAnio(usuarioObjetivo, esMiMuro);
             cargarInsignias(usuarioObjetivo);
+            cargarCasillaPreguntas(usuarioObjetivo, esMiMuro);
             cargarAmigosInfo(usuarioObjetivo, esMiMuro);
             activarTab('posts', usuarioObjetivo, esMiMuro);
             montarHeaderComun();

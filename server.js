@@ -286,6 +286,30 @@ async function crearTablas() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
 
+        // Mensajes privados: solo entre amigos. Máximo 1 por día por conversación
+        // (se resetea al pasar la medianoche del servidor, no cada 24h exactas
+        // desde el último mensaje enviado).
+        await pool.query(`CREATE TABLE IF NOT EXISTS messages (
+            id SERIAL PRIMARY KEY,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        // Preguntas públicas: cualquier usuario puede hacerle una pregunta al día
+        // a cada otro usuario. Se muestran en el feed general (index.html) y en
+        // el muro de la persona a la que se le preguntó (pestaña "Preguntas").
+        await pool.query(`CREATE TABLE IF NOT EXISTS questions (
+            id SERIAL PRIMARY KEY,
+            asker_id INTEGER NOT NULL,
+            asker_username TEXT NOT NULL,
+            asked_id INTEGER NOT NULL,
+            asked_username TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+
         console.log('Tablas verificadas/creadas correctamente en PostgreSQL.');
     } catch (err) {
         console.error('Error creando las tablas:', err.message);
@@ -643,6 +667,16 @@ function crearNotificacion(userId, actorUsername, mensaje) {
     });
 }
 
+// Chequea si dos cuentas son amigos (amistad aceptada, en cualquier dirección).
+// Se usa para restringir los mensajes privados a solo amigos.
+function sonAmigos(idA, idB, callback) {
+    db.get(
+        `SELECT id FROM friend_requests WHERE estado = 'aceptada' AND ((from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?))`,
+        [idA, idB, idB, idA],
+        (err, row) => callback(err, !!row)
+    );
+}
+
 // Busca @menciones en un texto (ej: "hola @takato, ¿leíste esto?") y le manda una
 // notificación a cada usuario válido mencionado (si existe, y si no es él mismo).
 function notificarMenciones(texto, actorUsername, tipoLugar) {
@@ -945,6 +979,149 @@ app.get('/api/users/:username/amigos-info', (req, res) => {
                 );
             }
         );
+    });
+});
+
+// --- RUTAS DE MENSAJES (privados, solo entre amigos) ---
+
+const LARGO_MAX_MENSAJE = 1000;
+
+// Lista de conversaciones: una por cada amigo, con el último mensaje (si existe)
+// y si hoy ya le mandé un mensaje a esa persona.
+app.get('/api/messages', requiereSesion, (req, res) => {
+    const miId = req.session.user.id;
+
+    db.all(
+        `SELECT users.id, users.username
+         FROM friend_requests
+         JOIN users ON users.id = CASE WHEN friend_requests.from_user_id = ? THEN friend_requests.to_user_id ELSE friend_requests.from_user_id END
+         WHERE (friend_requests.from_user_id = ? OR friend_requests.to_user_id = ?) AND friend_requests.estado = 'aceptada'
+         ORDER BY users.username ASC`,
+        [miId, miId, miId],
+        (err, amigos) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            if (amigos.length === 0) return res.json({ conversaciones: [] });
+
+            let pendientes = amigos.length;
+            const conversaciones = [];
+
+            amigos.forEach(amigo => {
+                db.get(
+                    `SELECT content, sender_id, created_at FROM messages
+                     WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+                     ORDER BY id DESC LIMIT 1`,
+                    [miId, amigo.id, amigo.id, miId],
+                    (err, ultimo) => {
+                        db.get(
+                            `SELECT id FROM messages WHERE sender_id = ? AND receiver_id = ? AND created_at::date = CURRENT_DATE`,
+                            [miId, amigo.id],
+                            (err2, envioHoy) => {
+                                conversaciones.push({
+                                    username: amigo.username,
+                                    ultimo_mensaje: ultimo ? ultimo.content : null,
+                                    ultimo_es_mio: ultimo ? ultimo.sender_id === miId : null,
+                                    ultimo_created_at: ultimo ? ultimo.created_at : null,
+                                    puedo_enviar_hoy: !envioHoy
+                                });
+                                pendientes--;
+                                if (pendientes === 0) {
+                                    conversaciones.sort((a, b) => new Date(b.ultimo_created_at || 0) - new Date(a.ultimo_created_at || 0));
+                                    res.json({ conversaciones });
+                                }
+                            }
+                        );
+                    }
+                );
+            });
+        }
+    );
+});
+
+// Historial de mensajes con un amigo puntual
+app.get('/api/messages/:username', requiereSesion, (req, res) => {
+    const miId = req.session.user.id;
+    const { username } = req.params;
+
+    if (username === req.session.user.username) {
+        return res.status(400).json({ error: 'No puedes enviarte mensajes a ti mismo' });
+    }
+
+    db.get(`SELECT id, username FROM users WHERE username = ?`, [username], (err, otro) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!otro) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        sonAmigos(miId, otro.id, (err, amigos) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            if (!amigos) return res.status(403).json({ error: 'Solo puedes escribirle a tus amigos' });
+
+            db.all(
+                `SELECT id, sender_id, receiver_id, content, created_at FROM messages
+                 WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+                 ORDER BY id ASC`,
+                [miId, otro.id, otro.id, miId],
+                (err, mensajes) => {
+                    if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                    db.get(
+                        `SELECT id FROM messages WHERE sender_id = ? AND receiver_id = ? AND created_at::date = CURRENT_DATE`,
+                        [miId, otro.id],
+                        (err2, envioHoy) => {
+                            res.json({
+                                mensajes: mensajes.map(m => ({ ...m, es_mio: m.sender_id === miId })),
+                                puedo_enviar_hoy: !envioHoy
+                            });
+                        }
+                    );
+                }
+            );
+        });
+    });
+});
+
+// Enviar un mensaje: solo a amigos, máx. 1000 caracteres, 1 por día por
+// conversación (el límite se resetea a las 00:00 del servidor, no cada 24h
+// exactas desde el último mensaje enviado).
+app.post('/api/messages/:username', requiereSesion, (req, res) => {
+    const miId = req.session.user.id;
+    const { username } = req.params;
+    const { content } = req.body;
+
+    if (username === req.session.user.username) {
+        return res.status(400).json({ error: 'No puedes enviarte mensajes a ti mismo' });
+    }
+    if (!content || !content.trim()) {
+        return res.status(400).json({ error: 'El mensaje no puede estar vacío' });
+    }
+    if (content.trim().length > LARGO_MAX_MENSAJE) {
+        return res.status(400).json({ error: `El mensaje no puede superar los ${LARGO_MAX_MENSAJE} caracteres` });
+    }
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, otro) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!otro) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        sonAmigos(miId, otro.id, (err, amigos) => {
+            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+            if (!amigos) return res.status(403).json({ error: 'Solo puedes escribirle a tus amigos' });
+
+            db.get(
+                `SELECT id FROM messages WHERE sender_id = ? AND receiver_id = ? AND created_at::date = CURRENT_DATE`,
+                [miId, otro.id],
+                (err, envioHoy) => {
+                    if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                    if (envioHoy) return res.status(429).json({ error: 'Ya le enviaste un mensaje hoy. Podrás volver a escribirle cuando empiece el próximo día.' });
+
+                    db.run(
+                        `INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)`,
+                        [miId, otro.id, content.trim()],
+                        function(err) {
+                            if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                            crearNotificacion(otro.id, req.session.user.username, `${req.session.user.username} te envió un mensaje`);
+                            res.status(201).json({ message: 'Mensaje enviado', mensajeId: this.lastID });
+                        }
+                    );
+                }
+            );
+        });
     });
 });
 
@@ -1254,6 +1431,98 @@ app.post('/api/notifications/marcar-leidas', requiereSesion, (req, res) => {
     db.run(`UPDATE notifications SET leida = 1 WHERE user_id = ? AND leida = 0`, [req.session.user.id], (err) => {
         if (err) return res.status(500).json({ error: 'Error en el servidor' });
         res.json({ message: 'Notificaciones marcadas como leídas' });
+    });
+});
+
+// --- RUTAS DE PREGUNTAS (públicas, 1 por día de cada usuario hacia cada otro) ---
+
+const LARGO_MAX_PREGUNTA = 200;
+
+// Feed general de preguntas (todas), o las hechas a un usuario puntual (?username=)
+app.get('/api/questions', (req, res) => {
+    const { username } = req.query;
+
+    if (username) {
+        db.all(
+            `SELECT id, asker_username, asked_username, content, created_at
+             FROM questions WHERE asked_username = ? ORDER BY id DESC`,
+            [username],
+            (err, rows) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ questions: rows });
+            }
+        );
+    } else {
+        db.all(
+            `SELECT id, asker_username, asked_username, content, created_at FROM questions ORDER BY id DESC`,
+            [],
+            (err, rows) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ questions: rows });
+            }
+        );
+    }
+});
+
+// Si hoy ya le hice una pregunta a esta persona (para deshabilitar el botón en el frontend)
+app.get('/api/questions/:username/estado', requiereSesion, (req, res) => {
+    const miId = req.session.user.id;
+    const { username } = req.params;
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, otro) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!otro) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        db.get(
+            `SELECT id FROM questions WHERE asker_id = ? AND asked_id = ? AND created_at::date = CURRENT_DATE`,
+            [miId, otro.id],
+            (err, preguntaHoy) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                res.json({ yaPreguntoHoy: !!preguntaHoy });
+            }
+        );
+    });
+});
+
+// Hacer una pregunta pública a alguien: máx. 200 caracteres, 1 por día por persona
+app.post('/api/questions/:username', requiereSesion, (req, res) => {
+    const miId = req.session.user.id;
+    const miUsername = req.session.user.username;
+    const { username } = req.params;
+    const { content } = req.body;
+
+    if (username === miUsername) {
+        return res.status(400).json({ error: 'No puedes hacerte una pregunta a ti mismo' });
+    }
+    if (!content || !content.trim()) {
+        return res.status(400).json({ error: 'La pregunta no puede estar vacía' });
+    }
+    if (content.trim().length > LARGO_MAX_PREGUNTA) {
+        return res.status(400).json({ error: `La pregunta no puede superar los ${LARGO_MAX_PREGUNTA} caracteres` });
+    }
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, otro) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!otro) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        db.get(
+            `SELECT id FROM questions WHERE asker_id = ? AND asked_id = ? AND created_at::date = CURRENT_DATE`,
+            [miId, otro.id],
+            (err, preguntaHoy) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                if (preguntaHoy) return res.status(429).json({ error: 'Ya le hiciste una pregunta hoy a esta persona. Podrás preguntarle de nuevo mañana.' });
+
+                db.run(
+                    `INSERT INTO questions (asker_id, asker_username, asked_id, asked_username, content) VALUES (?, ?, ?, ?, ?)`,
+                    [miId, miUsername, otro.id, username, content.trim()],
+                    function(err) {
+                        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                        crearNotificacion(otro.id, miUsername, `${miUsername} te hizo una pregunta`);
+                        res.status(201).json({ message: 'Pregunta enviada', questionId: this.lastID });
+                    }
+                );
+            }
+        );
     });
 });
 

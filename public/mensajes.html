@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensajes - NAVYBLUE</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%233f4f68'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23f5efe1'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%23c08a4e'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- BARRA SUPERIOR: solo el botón de volver al inicio (igual que en muro.html) -->
+    <header id="inicio-header" style="min-height: auto;">
+        <div class="header-content" style="justify-content: flex-end;">
+            <div class="header-acciones">
+                <a href="index.html" class="btn-pill">📘</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2 COLUMNAS: AMIGOS (para elegir con quién hablar) + CONVERSACIÓN -->
+    <main class="contenedor-principal" style="grid-template-columns: 260px 1fr;">
+
+        <!-- COLUMNA IZQUIERDA: LISTA DE AMIGOS -->
+        <aside class="columna-izquierda">
+            <h2>Mensajes</h2>
+            <p style="font-size: 0.75rem; color: #888; margin: -8px 0 12px 0;">Solo puedes escribirle a tus amigos.</p>
+            <div id="lista-conversaciones">
+                <p style="font-size: 14px; color: #666;">Cargando...</p>
+            </div>
+        </aside>
+
+        <!-- COLUMNA DERECHA: CONVERSACIÓN CON EL AMIGO SELECCIONADO -->
+        <section class="columna-centro" id="panel-conversacion">
+            <div id="estado-vacio-conversacion">
+                <h2>Mensajes</h2>
+                <p style="color: #888;">Elige un amigo de la lista para ver la conversación.</p>
+            </div>
+
+            <div id="conversacion-activa" style="display: none;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <h2 id="titulo-conversacion" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;"></h2>
+                </div>
+                <div style="border-bottom: 2px solid var(--color-borde); margin-bottom: 15px;"></div>
+
+                <div id="hilo-mensajes" style="display: flex; flex-direction: column; gap: 10px; max-height: 55vh; overflow-y: auto; padding: 4px;"></div>
+
+                <div style="margin-top: 15px; border-top: 1px solid var(--color-borde); padding-top: 12px;">
+                    <textarea id="input-mensaje" maxlength="1000" placeholder="Escribe un mensaje..."
+                        style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid var(--color-borde); font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 60px;"></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                        <span id="contador-mensaje" style="font-size: 0.72rem; color: #999;">0 / 1000</span>
+                        <button type="button" id="btn-enviar-mensaje" style="padding: 8px 18px; border-radius: 999px; border: none; background: #5b6f8f; color: white; font-size: 0.85rem; cursor: pointer;">Enviar</button>
+                    </div>
+                    <p id="mensaje-estado" style="font-size: 0.75rem; margin-top: 6px;"></p>
+                    <p style="font-size: 0.7rem; color: #999; margin-top: 6px;">
+                        Máximo 1000 caracteres y 1 mensaje por día en cada conversación (se habilita de nuevo al pasar la medianoche).
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer>
+        <p>Desarrollado por: mis dos cojones</p>
+    </footer>
+
+    <style>
+        .conversacion-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            margin-bottom: 4px;
+            color: inherit;
+            font-family: inherit;
+        }
+        .conversacion-item:hover {
+            background-color: var(--color-navy-claro);
+        }
+        .conversacion-item.activa {
+            background-color: var(--color-navy-claro);
+            border: 1px solid var(--color-borde);
+        }
+        .conversacion-nombre {
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+        .conversacion-preview {
+            font-size: 0.75rem;
+            color: #888;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+        .etiqueta-hoy {
+            font-size: 0.62rem;
+            font-weight: normal;
+            background: var(--color-like-fondo);
+            color: var(--color-like);
+            border-radius: 999px;
+            padding: 1px 7px;
+            flex-shrink: 0;
+        }
+        .burbuja-mensaje {
+            max-width: 75%;
+            padding: 8px 12px;
+            border-radius: 14px;
+            font-size: 0.88rem;
+            line-height: 1.35;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .burbuja-mia {
+            align-self: flex-end;
+            background: var(--color-navy);
+            color: white;
+            border-bottom-right-radius: 3px;
+        }
+        .burbuja-otro {
+            align-self: flex-start;
+            background: var(--color-navy-claro);
+            color: var(--color-navy-texto);
+            border-bottom-left-radius: 3px;
+        }
+        .burbuja-hora {
+            font-size: 0.65rem;
+            opacity: 0.75;
+            margin-top: 3px;
+            display: block;
+        }
+    </style>
+
+    <script src="js/ui-comunes.js"></script>
+    <script src="js/header-comun.js"></script>
+    <script src="js/mobile-tabs.js"></script>
+    <script>
+    const listaConversaciones = document.getElementById('lista-conversaciones');
+    const estadoVacio = document.getElementById('estado-vacio-conversacion');
+    const conversacionActiva = document.getElementById('conversacion-activa');
+    const tituloConversacion = document.getElementById('titulo-conversacion');
+    const hiloMensajes = document.getElementById('hilo-mensajes');
+    const inputMensaje = document.getElementById('input-mensaje');
+    const contadorMensaje = document.getElementById('contador-mensaje');
+    const btnEnviarMensaje = document.getElementById('btn-enviar-mensaje');
+    const mensajeEstado = document.getElementById('mensaje-estado');
+
+    let usuarioActual = null; // quién soy yo (username), una vez cargada la sesión
+    let conversacionAbierta = null; // con quién estoy hablando ahora mismo
+
+    function tiempoRelativo(fechaServidor) {
+        if (!fechaServidor) return '';
+        let fechaLimpia = fechaServidor;
+        if (typeof fechaServidor === 'string' && !fechaServidor.endsWith('Z') && !fechaServidor.includes('+')) {
+            fechaLimpia = fechaServidor.replace(' ', 'T') + 'Z';
+        }
+        const fecha = new Date(fechaLimpia);
+        const diffSeg = Math.floor((new Date() - fecha) / 1000);
+        if (diffSeg < 60) return 'Ahora';
+        const diffMin = Math.floor(diffSeg / 60);
+        if (diffMin < 60) return `${diffMin}m`;
+        const diffHoras = Math.floor(diffMin / 60);
+        if (diffHoras < 24) return `${diffHoras}h`;
+        return `${Math.floor(diffHoras / 24)}d`;
+    }
+
+    // --- LISTA DE CONVERSACIONES (columna izquierda) ---
+
+    async function cargarConversaciones() {
+        try {
+            const resp = await fetch('/api/messages');
+            const data = await resp.json();
+            listaConversaciones.innerHTML = '';
+
+            if (!data.conversaciones || data.conversaciones.length === 0) {
+                listaConversaciones.appendChild(crearEstadoVacio('Todavía no tienes amigos agregados. Agrega amigos desde su muro para poder escribirles.'));
+                return;
+            }
+
+            data.conversaciones.forEach(conv => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'conversacion-item';
+                if (conversacionAbierta === conv.username) btn.classList.add('activa');
+
+                const fila = document.createElement('div');
+                fila.className = 'conversacion-nombre';
+                const nombre = document.createElement('span');
+                nombre.textContent = conv.username;
+                fila.appendChild(nombre);
+                if (conv.puedo_enviar_hoy === false) {
+                    const etiqueta = document.createElement('span');
+                    etiqueta.className = 'etiqueta-hoy';
+                    etiqueta.textContent = 'Ya le escribiste hoy';
+                    fila.appendChild(etiqueta);
+                }
+                btn.appendChild(fila);
+
+                const preview = document.createElement('div');
+                preview.className = 'conversacion-preview';
+                if (conv.ultimo_mensaje) {
+                    preview.textContent = (conv.ultimo_es_mio ? 'Tú: ' : '') + conv.ultimo_mensaje;
+                } else {
+                    preview.textContent = 'Todavía no hay mensajes.';
+                    preview.style.fontStyle = 'italic';
+                }
+                btn.appendChild(preview);
+
+                btn.addEventListener('click', () => abrirConversacion(conv.username));
+                listaConversaciones.appendChild(btn);
+            });
+        } catch (error) {
+            listaConversaciones.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar tus conversaciones.</p>';
+        }
+    }
+
+    // --- CONVERSACIÓN ABIERTA (columna derecha) ---
+
+    function crearBurbuja(mensaje) {
+        const envoltorio = document.createElement('div');
+        envoltorio.className = 'burbuja-mensaje ' + (mensaje.es_mio ? 'burbuja-mia' : 'burbuja-otro');
+
+        const texto = document.createElement('span');
+        texto.textContent = mensaje.content;
+        envoltorio.appendChild(texto);
+
+        const hora = document.createElement('span');
+        hora.className = 'burbuja-hora';
+        hora.textContent = tiempoRelativo(mensaje.created_at);
+        envoltorio.appendChild(hora);
+
+        return envoltorio;
+    }
+
+    function actualizarEstadoEnvio(puedeEnviarHoy) {
+        inputMensaje.disabled = !puedeEnviarHoy;
+        btnEnviarMensaje.disabled = !puedeEnviarHoy;
+        btnEnviarMensaje.style.opacity = puedeEnviarHoy ? '1' : '0.6';
+        btnEnviarMensaje.style.cursor = puedeEnviarHoy ? 'pointer' : 'not-allowed';
+        mensajeEstado.style.color = '#666';
+        mensajeEstado.textContent = puedeEnviarHoy ? '' : 'Ya le enviaste un mensaje hoy. Podrás volver a escribirle cuando empiece el próximo día.';
+    }
+
+    async function abrirConversacion(username) {
+        conversacionAbierta = username;
+
+        // marcamos visualmente cuál está activa en la lista
+        document.querySelectorAll('.conversacion-item').forEach(el => {
+            const nombre = el.querySelector('.conversacion-nombre span').textContent;
+            el.classList.toggle('activa', nombre === username);
+        });
+
+        estadoVacio.style.display = 'none';
+        conversacionActiva.style.display = 'block';
+        tituloConversacion.textContent = username;
+        hiloMensajes.innerHTML = '<p style="color: #888; font-size: 0.85rem;">Cargando...</p>';
+        inputMensaje.value = '';
+        contadorMensaje.textContent = '0 / 1000';
+        mensajeEstado.textContent = '';
+
+        try {
+            const resp = await fetch(`/api/messages/${encodeURIComponent(username)}`);
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+                hiloMensajes.innerHTML = '';
+                hiloMensajes.appendChild(crearEstadoVacio(data.error || 'No se pudo abrir esta conversación.'));
+                actualizarEstadoEnvio(false);
+                return;
+            }
+
+            hiloMensajes.innerHTML = '';
+            if (data.mensajes.length === 0) {
+                hiloMensajes.appendChild(crearEstadoVacio(`Todavía no tienes mensajes con ${username}. ¡Escríbele el primero!`));
+            } else {
+                data.mensajes.forEach(m => hiloMensajes.appendChild(crearBurbuja(m)));
+                hiloMensajes.scrollTop = hiloMensajes.scrollHeight;
+            }
+
+            actualizarEstadoEnvio(data.puedo_enviar_hoy);
+        } catch (error) {
+            hiloMensajes.innerHTML = '';
+            hiloMensajes.appendChild(crearEstadoVacio('No se pudo conectar con el servidor.'));
+            actualizarEstadoEnvio(false);
+        }
+    }
+
+    async function enviarMensaje() {
+        if (!conversacionAbierta) return;
+        const content = inputMensaje.value.trim();
+        if (!content) {
+            mensajeEstado.style.color = 'red';
+            mensajeEstado.textContent = 'Escribe algo antes de enviar.';
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/api/messages/${encodeURIComponent(conversacionAbierta)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+                mensajeEstado.style.color = 'red';
+                mensajeEstado.textContent = data.error || 'No se pudo enviar el mensaje.';
+                return;
+            }
+
+            inputMensaje.value = '';
+            contadorMensaje.textContent = '0 / 1000';
+            await abrirConversacion(conversacionAbierta);
+            cargarConversaciones();
+        } catch (error) {
+            mensajeEstado.style.color = 'red';
+            mensajeEstado.textContent = 'No se pudo conectar con el servidor.';
+        }
+    }
+
+    inputMensaje.addEventListener('input', () => {
+        contadorMensaje.textContent = `${inputMensaje.value.length} / 1000`;
+    });
+    inputMensaje.addEventListener('keydown', (e) => {
+        // Enter envía, Shift+Enter agrega una línea nueva
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            enviarMensaje();
+        }
+    });
+    btnEnviarMensaje.addEventListener('click', enviarMensaje);
+
+    // Punto de entrada: exige sesión (igual que muro.html), y si viene con
+    // ?usuario=nombre, abre esa conversación directo (ej: desde un perfil).
+    (async () => {
+        try {
+            const resp = await fetch('/api/session');
+            const sesion = await resp.json();
+            if (!sesion.loggedIn) {
+                window.location.href = 'index.html';
+                return;
+            }
+            usuarioActual = sesion.user.username;
+
+            montarHeaderComun();
+            await cargarConversaciones();
+
+            const params = new URLSearchParams(window.location.search);
+            const usuarioInicial = params.get('usuario');
+            if (usuarioInicial && usuarioInicial !== usuarioActual) {
+                abrirConversacion(usuarioInicial);
+            }
+
+            activarTabsMobile([
+                { selector: '.columna-izquierda', texto: 'Amigos' },
+                { selector: '.columna-centro', texto: 'Chat' }
+            ]);
+        } catch (error) {
+            window.location.href = 'index.html';
+        }
+    })();
+    </script>
+
+</body>
+</html>

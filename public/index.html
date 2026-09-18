@@ -34,7 +34,7 @@
             <h2>Menú</h2>
             <ul class="lista-categorias">
                 <li><a href="https://open-slum.org/" target="_blank">Anita</a></li>
-                <li><a href="#clasicos">Mensajes</a></li>
+                <li><a href="mensajes.html">Mensajes</a></li>
                 <li><a href="#manga">Manga</a></li>
                 <li><a href="#novela-grafica">Novela Gráfica</a></li>
                 <li><a href="#fantasia">Fantasía</a></li>
@@ -196,21 +196,24 @@
     // Función para cargar los posts desde el servidor
     async function cargarPosts() {
         try {
-            const [respPosts, respReviews, respSesion] = await Promise.all([
+            const [respPosts, respReviews, respPreguntas, respSesion] = await Promise.all([
                 fetch('/api/posts'),
                 fetch('/api/reviews'),
+                fetch('/api/questions'),
                 fetch('/api/session')
             ]);
             const dataPosts = await respPosts.json();
             const dataReviews = await respReviews.json();
+            const dataPreguntas = await respPreguntas.json();
             const sesion = await respSesion.json();
             const miId = sesion.loggedIn ? sesion.user.id : null;
             const miUsername = sesion.loggedIn ? sesion.user.username : null;
 
-            // Mezclamos posts y reseñas en un solo feed, ordenados por fecha
+            // Mezclamos posts, reseñas y preguntas públicas en un solo feed, ordenados por fecha
             const items = [
                 ...dataPosts.posts.map(p => ({ _tipo: 'post', ...p })),
-                ...dataReviews.reviews.map(r => ({ _tipo: 'reseña', ...r }))
+                ...dataReviews.reviews.map(r => ({ _tipo: 'reseña', ...r })),
+                ...(dataPreguntas.questions || []).map(q => ({ _tipo: 'pregunta', ...q }))
             ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
             if (items.length > 0) {
@@ -218,6 +221,8 @@
                 items.forEach(item => {
                     if (item._tipo === 'post') {
                         feedPosts.appendChild(crearPostCard(item, miId));
+                    } else if (item._tipo === 'pregunta') {
+                        feedPosts.appendChild(crearPreguntaCard(item));
                     } else {
                         const envoltorio = document.createElement('div');
                         envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
@@ -375,6 +380,67 @@
             abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
         });
 
+        return article;
+    }
+
+    // Construye la tarjeta de una pregunta pública (alguien le preguntó algo a
+    // otra persona). Usa textContent para el contenido, igual que crearPostCard.
+    function crearPreguntaCard(pregunta) {
+        const article = document.createElement('article');
+        article.className = 'post-card';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'post-avatar';
+        avatar.textContent = '❓';
+
+        const contenido = document.createElement('div');
+        contenido.className = 'post-contenido';
+
+        const header = document.createElement('div');
+        header.className = 'post-header';
+
+        const infoIzquierda = document.createElement('div');
+        infoIzquierda.className = 'post-info-izquierda';
+
+        const autorPregunta = document.createElement('a');
+        autorPregunta.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
+        autorPregunta.href = `muro.html?usuario=${encodeURIComponent(pregunta.asker_username)}`;
+        autorPregunta.textContent = pregunta.asker_username;
+
+        const flecha = document.createElement('span');
+        flecha.style.cssText = 'color: #888; margin: 0 4px;';
+        flecha.textContent = '→';
+
+        const autorRespuesta = document.createElement('a');
+        autorRespuesta.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
+        autorRespuesta.href = `muro.html?usuario=${encodeURIComponent(pregunta.asked_username)}`;
+        autorRespuesta.textContent = pregunta.asked_username;
+
+        infoIzquierda.append(autorPregunta, flecha, autorRespuesta);
+
+        const tiempo = document.createElement('span');
+        tiempo.className = 'post-tiempo';
+        tiempo.textContent = obtenerTiempoRelativo(pregunta.created_at);
+
+        header.appendChild(infoIzquierda);
+        header.appendChild(tiempo);
+
+        const texto = document.createElement('p');
+        texto.className = 'post-texto';
+        texto.textContent = pregunta.content;
+
+        const badge = document.createElement('div');
+        badge.className = 'post-libro-badge';
+        const em = document.createElement('em');
+        em.textContent = 'Pregunta pública';
+        badge.append('❓ ', em);
+
+        contenido.appendChild(header);
+        contenido.appendChild(texto);
+        contenido.appendChild(badge);
+
+        article.appendChild(avatar);
+        article.appendChild(contenido);
         return article;
     }
 
