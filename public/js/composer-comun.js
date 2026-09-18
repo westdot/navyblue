@@ -281,6 +281,7 @@ function crearComposer({ onPost, onResena } = {}) {
     // por ejemplo, al terminar un libro en "Leyendo ahora": solo falta poner
     // las estrellas y publicar).
     contenedor.mostrarResenaPrecargada = function ({ titulo, autor, portada } = {}) {
+        contenedor.style.display = ''; // por si estaba oculta tras el icono de pluma
         btnTabResena.click();
         inputTitulo.value = titulo || '';
         inputAutor.value = autor || '';

@@ -35,12 +35,12 @@
             <ul class="lista-categorias">
                 <li><a href="https://open-slum.org/" target="_blank">Anita</a></li>
                 <li><a href="mensajes.html">Mensajes</a></li>
-                <li><a href="#manga">Manga</a></li>
-                <li><a href="#novela-grafica">Novela Gráfica</a></li>
-                <li><a href="#fantasia">Fantasía</a></li>
-                <li><a href="#ciencia-ficcion">Ciencia Ficción</a></li>
-                <li><a href="#mas">etc.</a></li>
-                <li><a href="#mas2">etc.</a></li>
+                <li><a href="estanterias.html">Estanterías</a></li>
+                <li><a href="insignias.html" id="link-menu-insignias">Insignias</a></li>
+                <li><a href="perfil.html">Opciones de perfil</a></li>
+                <li>&nbsp;</li>
+                <li>&nbsp;</li>
+                <li>&nbsp;</li>
             </ul>
         </aside>
 
@@ -186,7 +186,14 @@
     });
 
     // El header (título como botón de inicio, menú de usuario y buscador) vive en header-comun.js
-    window.addEventListener('DOMContentLoaded', () => montarHeaderComun({ reemplazarBotonesInvitado: true }));
+    window.addEventListener('DOMContentLoaded', async () => {
+        const sesion = await montarHeaderComun({ reemplazarBotonesInvitado: true });
+        // El link de "Insignias" del menú necesita saber de quién mostrarlas
+        if (sesion && sesion.loggedIn) {
+            const linkInsignias = document.getElementById('link-menu-insignias');
+            if (linkInsignias) linkInsignias.href = `insignias.html?usuario=${encodeURIComponent(sesion.user.username)}`;
+        }
+    });
 
     // ==========================================
     // SCRIPT PARA EL MURO DE PUBLICACIONES

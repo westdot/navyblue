@@ -109,8 +109,9 @@
             <p id="foto-perfil-mensaje" style="text-align: center; font-size: 0.75rem; margin-bottom: 10px;"></p>
             <h2>Muro</h2>
 
-            <!-- Caja para publicar: solo aparece en tu propio muro -->
-            <div id="composer-mount"></div>
+            <!-- Caja para publicar: solo aparece en tu propio muro. Empieza
+                 oculta: solo se ve un icono de pluma que la despliega/guarda. -->
+            <div id="composer-mount" style="text-align: center; margin-bottom: 10px;"></div>
 
             <!-- Pestañas: Post / Comentarios / Likes -->
             <div class="publicar-footer" style="display: flex; gap: 0; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; overflow: hidden;">
@@ -166,7 +167,16 @@
     // Formatea la fecha de registro en algo legible, ej: "septiembre de 2026"
     function formatearFecha(fechaISO) {
         if (!fechaISO) return 'Sin registrar';
-        const fecha = new Date(fechaISO.replace(' ', 'T') + 'Z');
+        // El servidor puede mandar la fecha como "2026-01-01 00:00:00" (sin
+        // zona horaria) o ya como ISO completo con "Z"/"+00:00". Si ya trae
+        // zona horaria, no hay que tocarla (antes se le pegaba una "Z" extra
+        // y quedaba una fecha inválida -> "Invalid date").
+        let fechaLimpia = fechaISO;
+        if (typeof fechaISO === 'string' && !fechaISO.endsWith('Z') && !fechaISO.includes('+')) {
+            fechaLimpia = fechaISO.replace(' ', 'T') + 'Z';
+        }
+        const fecha = new Date(fechaLimpia);
+        if (isNaN(fecha.getTime())) return 'Sin registrar';
         return fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' });
     }
 
@@ -549,8 +559,20 @@
         if (esMiMuro) {
             const info = document.createElement('p');
             info.style.cssText = 'font-size: 0.8rem; color: #666;';
-            info.textContent = 'Acá los demás pueden hacerte una pregunta pública. Aparecerá en el feed general y en tu pestaña "Preguntas".';
+            info.textContent = 'Cargando...';
             contenedor.appendChild(info);
+
+            try {
+                const resp = await fetch(`/api/questions?username=${encodeURIComponent(usuarioObjetivo)}`);
+                const data = await resp.json();
+                if (!data.questions || data.questions.length === 0) {
+                    info.textContent = 'Nadie ha preguntado todavía.';
+                } else {
+                    info.textContent = 'Acá los demás pueden hacerte una pregunta pública. Aparecerá en el feed general y en tu pestaña "Preguntas".';
+                }
+            } catch (error) {
+                info.textContent = 'Acá los demás pueden hacerte una pregunta pública. Aparecerá en el feed general y en tu pestaña "Preguntas".';
+            }
             return;
         }
 
@@ -1316,7 +1338,26 @@
                     onPost: () => activarTab('posts', usuarioObjetivo, esMiMuro),
                     onResena: () => {} // las reseñas no se muestran en el muro, solo en la columna derecha del inicio
                 });
-                document.getElementById('composer-mount').appendChild(composerActual);
+                composerActual.style.display = 'none';
+
+                // En el muro propio no se muestra la caja de Postear/Reseñar
+                // directamente: solo un icono de pluma que la despliega (o la
+                // vuelve a guardar) al hacerle clic.
+                const btnPluma = document.createElement('button');
+                btnPluma.type = 'button';
+                btnPluma.id = 'btn-pluma-composer';
+                btnPluma.title = 'Postear o reseñar';
+                btnPluma.textContent = '🖋️';
+                btnPluma.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 50%; border: none; background: var(--color-navy); color: white; font-size: 1.3rem; cursor: pointer; margin-bottom: 12px;';
+                btnPluma.addEventListener('click', () => {
+                    const abierto = composerActual.style.display !== 'none';
+                    composerActual.style.display = abierto ? 'none' : '';
+                    if (!abierto) composerActual.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+
+                const mountComposer = document.getElementById('composer-mount');
+                mountComposer.appendChild(btnPluma);
+                mountComposer.appendChild(composerActual);
             }
 
             cargarPersonal(usuarioObjetivo, esMiMuro);

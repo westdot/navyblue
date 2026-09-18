@@ -1225,7 +1225,7 @@ app.delete('/api/lecturas/:id', requiereSesion, (req, res) => {
 // --- RUTA DE INSIGNIAS / LOGROS ---
 // Se calculan al vuelo según tu actividad real (no se guardan aparte, así
 // siempre reflejan el estado actual sin desincronizarse).
-// Cantidad de libros marcados como "Leídos" durante un año + la meta que el
+// Cantidad de libros marcados como "Terminado" durante un año + la meta que el
 // usuario se puso para ese año (si existe). Se muestra en el muro, entre
 // "Leyendo ahora" e "Insignias". Por defecto usa el año actual.
 app.get('/api/users/:username/meta-lectura', (req, res) => {
@@ -1244,7 +1244,7 @@ app.get('/api/users/:username/meta-lectura', (req, res) => {
                  FROM shelf_items
                  JOIN shelves ON shelves.id = shelf_items.shelf_id
                  WHERE shelves.user_id = ?
-                   AND LOWER(shelves.nombre) = LOWER('Leídos')
+                   AND LOWER(shelves.nombre) = LOWER('Terminado')
                    AND EXTRACT(YEAR FROM shelf_items.created_at) = ?`,
                 [user.id, anio],
                 (err, row) => {
@@ -1287,7 +1287,7 @@ function calcularBadgesUsuario(userId) {
 
     // Revisa, para cada año YA TERMINADO en que el usuario se puso una
     // meta de lectura, si la cumplió o no. Si cumplió al menos un año,
-    // desbloquea "yhlqmdlg"; si no cumplió al menos un año, desbloquea
+    // desbloquea "yllqmdlg"; si no cumplió al menos un año, desbloquea
     // "dlml" (un usuario podría tener ambas, de años distintos).
     const metasCumplimiento = () => new Promise((resolve) => {
         const anioActual = new Date().getFullYear();
@@ -1306,7 +1306,7 @@ function calcularBadgesUsuario(userId) {
                          FROM shelf_items
                          JOIN shelves ON shelves.id = shelf_items.shelf_id
                          WHERE shelves.user_id = ?
-                           AND LOWER(shelves.nombre) = LOWER('Leídos')
+                           AND LOWER(shelves.nombre) = LOWER('Terminado')
                            AND EXTRACT(YEAR FROM shelf_items.created_at) = ?`,
                         [userId, m.anio],
                         (err, row) => {
@@ -1321,30 +1321,91 @@ function calcularBadgesUsuario(userId) {
         );
     });
 
+    // Suma comentarios en posts + reseñas + libros (3 tablas separadas)
+    const contarComentariosTotales = () => Promise.all([
+        contar(`SELECT COUNT(*) AS n FROM comments WHERE user_id = ?`, [userId]),
+        contar(`SELECT COUNT(*) AS n FROM review_comments WHERE user_id = ?`, [userId]),
+        contar(`SELECT COUNT(*) AS n FROM book_comments WHERE user_id = ?`, [userId])
+    ]).then(([a, b, c]) => a + b + c);
+
+    // ¿La cuenta tiene más de un año de antigüedad?
+    const tieneUnAnioDeAntiguedad = () => new Promise((resolve) => {
+        db.get(`SELECT created_at FROM users WHERE id = ?`, [userId], (err, row) => {
+            if (err || !row || !row.created_at) return resolve(false);
+            const creado = new Date(row.created_at);
+            const unAnioMs = 365 * 24 * 60 * 60 * 1000;
+            resolve((Date.now() - creado.getTime()) >= unAnioMs);
+        });
+    });
+
+    const contarEnEstanteria = (nombreEstanteria) => contar(
+        `SELECT COUNT(*) AS n FROM shelf_items JOIN shelves ON shelves.id = shelf_items.shelf_id
+         WHERE shelves.user_id = ? AND LOWER(shelves.nombre) = LOWER(?)`,
+        [userId, nombreEstanteria]
+    );
+
     return Promise.all([
         contar(`SELECT COUNT(*) AS n FROM posts WHERE user_id = ?`, [userId]),
         contar(`SELECT COUNT(*) AS n FROM reviews WHERE user_id = ?`, [userId]),
+        contar(`SELECT COUNT(*) AS n FROM reviews WHERE user_id = ? AND valoracion = 5`, [userId]),
         contar(
             `SELECT COUNT(*) AS n FROM friend_requests WHERE (from_user_id = ? OR to_user_id = ?) AND estado = 'aceptada'`,
             [userId, userId]
         ),
         contar(`SELECT COUNT(*) AS n FROM follows WHERE followed_id = ?`, [userId]),
+        contar(`SELECT COUNT(*) AS n FROM follows WHERE follower_id = ?`, [userId]),
         contar(
             `SELECT COUNT(*) AS n FROM shelf_items JOIN shelves ON shelves.id = shelf_items.shelf_id WHERE shelves.user_id = ?`,
             [userId]
         ),
+        contarEnEstanteria('Quiero Leer'),
+        contarEnEstanteria('Terminado'),
+        contarEnEstanteria('DNF'),
+        contar(`SELECT COUNT(*) AS n FROM shelves WHERE user_id = ?`, [userId]),
+        contar(`SELECT COUNT(*) AS n FROM lecturas_en_curso WHERE user_id = ?`, [userId]),
+        contar(`SELECT COUNT(*) AS n FROM questions WHERE asker_id = ?`, [userId]),
+        contar(`SELECT COUNT(*) AS n FROM questions WHERE asked_id = ?`, [userId]),
+        contarComentariosTotales(),
+        contar(`SELECT COUNT(*) AS n FROM likes WHERE user_id = ?`, [userId]),
+        contar(`SELECT COUNT(*) AS n FROM messages WHERE sender_id = ?`, [userId]),
+        tieneUnAnioDeAntiguedad(),
         metasCumplimiento()
-    ]).then(([posts, reviews, amigos, seguidores, librosEnEstantes, metas]) => ([
-        { nombre: 'Primera Publicación', icono: '1', desbloqueada: posts >= 1, descripcion: 'Publica tu primer post' },
-        { nombre: 'Publicador Activo', icono: '2', desbloqueada: posts >= 10, descripcion: 'Publica 10 posts' },
-        { nombre: 'Primera Reseña', icono: '3', desbloqueada: reviews >= 1, descripcion: 'Publica tu primera reseña' },
-        { nombre: 'Crítico Literario', icono: '4', desbloqueada: reviews >= 5, descripcion: 'Publica 5 reseñas' },
-        { nombre: 'Primer Amigo', icono: '5', desbloqueada: amigos >= 1, descripcion: 'Agrega tu primer amigo' },
-        { nombre: 'Sociable', icono: '6', desbloqueada: amigos >= 5, descripcion: 'Ten 5 amigos' },
-        { nombre: 'Popular', icono: '7', desbloqueada: seguidores >= 10, descripcion: 'Consigue 10 seguidores' },
-        { nombre: 'Lector', icono: '8', desbloqueada: librosEnEstantes >= 1, descripcion: 'Agrega un libro a una estanteria' },
-        { nombre: 'yhlqmdlg', icono: '🏆', desbloqueada: metas.cumplida, descripcion: 'Cumple tu meta de libros de un año' },
-        { nombre: 'dlml', icono: '💔', desbloqueada: metas.noCumplida, descripcion: 'No cumplas tu meta de libros de un año' }
+    ]).then(([
+        posts, reviews, reviews5estrellas, amigos, seguidores, seguidos, librosEnEstantes,
+        quieroLeer, terminados, dnf, estanteriasCreadas, lecturasIniciadas,
+        preguntasHechas, preguntasRecibidas, comentariosTotales, likesDados,
+        mensajesEnviados, antiguo, metas
+    ]) => ([
+        { nombre: 'Primera Publicación', icono: '📣', desbloqueada: posts >= 1, descripcion: 'Publica tu primer post' },
+        { nombre: 'Publicador Activo', icono: '📢', desbloqueada: posts >= 10, descripcion: 'Publica 10 posts' },
+        { nombre: 'Voz Incansable', icono: '🔊', desbloqueada: posts >= 50, descripcion: 'Publica 50 posts' },
+        { nombre: 'Primera Reseña', icono: '📝', desbloqueada: reviews >= 1, descripcion: 'Publica tu primera reseña' },
+        { nombre: 'Crítico Literario', icono: '🖋️', desbloqueada: reviews >= 5, descripcion: 'Publica 5 reseñas' },
+        { nombre: 'Crítico de Élite', icono: '🎖️', desbloqueada: reviews >= 20, descripcion: 'Publica 20 reseñas' },
+        { nombre: 'Cinco Estrellas', icono: '🌟', desbloqueada: reviews5estrellas >= 1, descripcion: 'Dale 5 estrellas a un libro en una reseña' },
+        { nombre: 'Primer Amigo', icono: '🤝', desbloqueada: amigos >= 1, descripcion: 'Agrega tu primer amigo' },
+        { nombre: 'Sociable', icono: '👥', desbloqueada: amigos >= 5, descripcion: 'Ten 5 amigos' },
+        { nombre: 'Círculo Cercano', icono: '💞', desbloqueada: amigos >= 15, descripcion: 'Ten 15 amigos' },
+        { nombre: 'Popular', icono: '📈', desbloqueada: seguidores >= 10, descripcion: 'Consigue 10 seguidores' },
+        { nombre: 'Estrella de NAVYBLUE', icono: '🌠', desbloqueada: seguidores >= 50, descripcion: 'Consigue 50 seguidores' },
+        { nombre: 'Siguiendo la Pista', icono: '🧭', desbloqueada: seguidos >= 10, descripcion: 'Sigue a 10 personas' },
+        { nombre: 'Lector', icono: '📖', desbloqueada: librosEnEstantes >= 1, descripcion: 'Agrega un libro a una estantería' },
+        { nombre: 'Coleccionista', icono: '📚', desbloqueada: librosEnEstantes >= 25, descripcion: 'Ten 25 libros en tus estanterías' },
+        { nombre: 'Bibliotecario', icono: '🏛️', desbloqueada: librosEnEstantes >= 100, descripcion: 'Ten 100 libros en tus estanterías' },
+        { nombre: 'Wishlist Infinita', icono: '🎁', desbloqueada: quieroLeer >= 10, descripcion: 'Ten 10 libros en "Quiero Leer"' },
+        { nombre: 'Terminador', icono: '✅', desbloqueada: terminados >= 10, descripcion: 'Ten 10 libros en "Terminado"' },
+        { nombre: 'Primeras Páginas', icono: '📄', desbloqueada: lecturasIniciadas >= 1, descripcion: 'Empieza a leer un libro (Leyendo ahora)' },
+        { nombre: 'Se Aprende Soltando', icono: '🏳️', desbloqueada: dnf >= 1, descripcion: 'Marca un libro como DNF' },
+        { nombre: 'Organizador', icono: '🗂️', desbloqueada: estanteriasCreadas >= 5, descripcion: 'Crea 5 estanterías propias' },
+        { nombre: 'yllqmdlg', icono: '🏆', desbloqueada: metas.cumplida, descripcion: 'Cumple tu meta de libros de un año' },
+        { nombre: 'dlml', icono: '💔', desbloqueada: metas.noCumplida, descripcion: 'No cumplas tu meta de libros de un año' },
+        { nombre: 'Rompehielos', icono: '🧊', desbloqueada: preguntasHechas >= 1, descripcion: 'Hazle una pregunta pública a alguien' },
+        { nombre: 'Preguntón', icono: '❓', desbloqueada: preguntasHechas >= 10, descripcion: 'Haz 10 preguntas públicas' },
+        { nombre: 'El Oráculo', icono: '🔮', desbloqueada: preguntasRecibidas >= 10, descripcion: 'Recibe 10 preguntas públicas' },
+        { nombre: 'Comentarista', icono: '💬', desbloqueada: comentariosTotales >= 1, descripcion: 'Deja tu primer comentario' },
+        { nombre: 'Aplaudidor', icono: '👏', desbloqueada: likesDados >= 10, descripcion: 'Dale like a 10 publicaciones' },
+        { nombre: 'Mensajero', icono: '✉️', desbloqueada: mensajesEnviados >= 1, descripcion: 'Envía tu primer mensaje privado' },
+        { nombre: 'Un Año Aquí', icono: '🎂', desbloqueada: antiguo, descripcion: 'Ten tu cuenta creada hace más de un año' }
     ]));
 }
 
@@ -1565,7 +1626,7 @@ app.get('/api/users/:username/shelves', (req, res) => {
             if (err) return res.status(500).json({ error: 'Error en el servidor' });
             if (row.n > 0) return traerEstanterias();
 
-            const porDefecto = ['Leídos', 'Quiero leer', 'Favoritos'];
+            const porDefecto = ['Leyendo', 'Quiero Leer', 'Terminado', 'DNF'];
             let creadas = 0;
             porDefecto.forEach(nombre => {
                 db.run(`INSERT INTO shelves (user_id, nombre) VALUES (?, ?)`, [user.id, nombre], () => {
@@ -2037,7 +2098,7 @@ app.get('/api/reviews/:id', (req, res) => {
 
 // Crear una reseña: título, autor, portada (opcional), valoración 1-5 y un texto
 // de opinión opcional. Además, la reseña reciente se agrega automáticamente a
-// la estantería "Leídos" (se crea si el usuario todavía no la tiene, y no se
+// la estantería "Terminado" (se crea si el usuario todavía no la tiene, y no se
 // duplica si el libro ya estaba ahí).
 app.post('/api/reviews', requiereSesion, (req, res) => {
     const { id: userId, username } = req.session.user;
@@ -2050,10 +2111,10 @@ app.post('/api/reviews', requiereSesion, (req, res) => {
         return res.status(400).json({ error: 'Completa título, autor y una valoración entre 0,5 y 5 (se permiten medias estrellas).' });
     }
 
-    // Agrega el libro reseñado a la estantería "Leídos" del usuario, creándola
+    // Agrega el libro reseñado a la estantería "Terminado" del usuario, creándola
     // si todavía no existe, y sin duplicarlo si ya estaba ahí.
     function agregarALeidos(callback) {
-        db.get(`SELECT id FROM shelves WHERE user_id = ? AND LOWER(nombre) = LOWER(?)`, [userId, 'Leídos'], (err, estante) => {
+        db.get(`SELECT id FROM shelves WHERE user_id = ? AND LOWER(nombre) = LOWER(?)`, [userId, 'Terminado'], (err, estante) => {
             if (err) return callback();
 
             const insertarSiFalta = (shelfId) => {
@@ -2074,7 +2135,7 @@ app.post('/api/reviews', requiereSesion, (req, res) => {
             if (estante) {
                 insertarSiFalta(estante.id);
             } else {
-                db.run(`INSERT INTO shelves (user_id, nombre) VALUES (?, ?)`, [userId, 'Leídos'], function(err) {
+                db.run(`INSERT INTO shelves (user_id, nombre) VALUES (?, ?)`, [userId, 'Terminado'], function(err) {
                     if (err) return callback();
                     insertarSiFalta(this.lastID);
                 });
