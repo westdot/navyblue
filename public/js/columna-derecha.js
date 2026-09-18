@@ -251,10 +251,17 @@ async function cargarTrending(contenedor) {
         data.trending.forEach(t => {
             const li = document.createElement('li');
             li.style.cssText = 'margin-bottom: 6px; font-size: 0.85rem;';
+            const link = document.createElement('a');
+            link.href = `tendencia.html?tag=${encodeURIComponent(t.tag)}`;
+            link.style.cssText = 'color: inherit; text-decoration: none;';
+            link.title = `Ver publicaciones de #${t.tag}`;
             const strong = document.createElement('strong');
             strong.textContent = `#${t.tag}`;
-            li.appendChild(strong);
-            li.append(` · ${t.cantidad} publicaci${t.cantidad === 1 ? 'ón' : 'ones'}`);
+            link.appendChild(strong);
+            link.append(` · ${t.cantidad} publicaci${t.cantidad === 1 ? 'ón' : 'ones'}`);
+            link.addEventListener('mouseenter', () => { strong.style.textDecoration = 'underline'; });
+            link.addEventListener('mouseleave', () => { strong.style.textDecoration = 'none'; });
+            li.appendChild(link);
             ol.appendChild(li);
         });
         contenedor.appendChild(ol);

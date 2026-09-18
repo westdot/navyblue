@@ -1100,6 +1100,117 @@ app.post('/api/meta-lectura', requiereSesion, (req, res) => {
     );
 });
 
+// Calcula el array de insignias (SIN porcentaje todavía) para un userId dado.
+// Se usa tanto para el usuario que se está consultando como, más abajo, para
+// calcular las estadísticas globales (cuánta gente tiene cada una).
+function calcularBadgesUsuario(userId) {
+    const contar = (sql, params) => new Promise((resolve) => {
+        db.get(sql, params, (err, row) => resolve(err ? 0 : row.n));
+    });
+
+    // Revisa, para cada año YA TERMINADO en que el usuario se puso una
+    // meta de lectura, si la cumplió o no. Si cumplió al menos un año,
+    // desbloquea "yhlqmdlg"; si no cumplió al menos un año, desbloquea
+    // "dlml" (un usuario podría tener ambas, de años distintos).
+    const metasCumplimiento = () => new Promise((resolve) => {
+        const anioActual = new Date().getFullYear();
+        db.all(
+            `SELECT anio, meta FROM metas_lectura WHERE user_id = ? AND anio < ?`,
+            [userId, anioActual],
+            (err, metas) => {
+                if (err || !metas || metas.length === 0) return resolve({ cumplida: false, noCumplida: false });
+
+                let pendientes = metas.length;
+                let cumplida = false;
+                let noCumplida = false;
+                metas.forEach(m => {
+                    db.get(
+                        `SELECT COUNT(*) AS n
+                         FROM shelf_items
+                         JOIN shelves ON shelves.id = shelf_items.shelf_id
+                         WHERE shelves.user_id = ?
+                           AND LOWER(shelves.nombre) = LOWER('Leídos')
+                           AND EXTRACT(YEAR FROM shelf_items.created_at) = ?`,
+                        [userId, m.anio],
+                        (err, row) => {
+                            const leidos = err ? 0 : row.n;
+                            if (leidos >= m.meta) cumplida = true; else noCumplida = true;
+                            pendientes--;
+                            if (pendientes === 0) resolve({ cumplida, noCumplida });
+                        }
+                    );
+                });
+            }
+        );
+    });
+
+    return Promise.all([
+        contar(`SELECT COUNT(*) AS n FROM posts WHERE user_id = ?`, [userId]),
+        contar(`SELECT COUNT(*) AS n FROM reviews WHERE user_id = ?`, [userId]),
+        contar(
+            `SELECT COUNT(*) AS n FROM friend_requests WHERE (from_user_id = ? OR to_user_id = ?) AND estado = 'aceptada'`,
+            [userId, userId]
+        ),
+        contar(`SELECT COUNT(*) AS n FROM follows WHERE followed_id = ?`, [userId]),
+        contar(
+            `SELECT COUNT(*) AS n FROM shelf_items JOIN shelves ON shelves.id = shelf_items.shelf_id WHERE shelves.user_id = ?`,
+            [userId]
+        ),
+        metasCumplimiento()
+    ]).then(([posts, reviews, amigos, seguidores, librosEnEstantes, metas]) => ([
+        { nombre: 'Primera Publicación', icono: '1', desbloqueada: posts >= 1, descripcion: 'Publica tu primer post' },
+        { nombre: 'Publicador Activo', icono: '2', desbloqueada: posts >= 10, descripcion: 'Publica 10 posts' },
+        { nombre: 'Primera Reseña', icono: '3', desbloqueada: reviews >= 1, descripcion: 'Publica tu primera reseña' },
+        { nombre: 'Crítico Literario', icono: '4', desbloqueada: reviews >= 5, descripcion: 'Publica 5 reseñas' },
+        { nombre: 'Primer Amigo', icono: '5', desbloqueada: amigos >= 1, descripcion: 'Agrega tu primer amigo' },
+        { nombre: 'Sociable', icono: '6', desbloqueada: amigos >= 5, descripcion: 'Ten 5 amigos' },
+        { nombre: 'Popular', icono: '7', desbloqueada: seguidores >= 10, descripcion: 'Consigue 10 seguidores' },
+        { nombre: 'Lector', icono: '8', desbloqueada: librosEnEstantes >= 1, descripcion: 'Agrega un libro a una estanteria' },
+        { nombre: 'yhlqmdlg', icono: '🏆', desbloqueada: metas.cumplida, descripcion: 'Cumple tu meta de libros de un año' },
+        { nombre: 'dlml', icono: '💔', desbloqueada: metas.noCumplida, descripcion: 'No cumplas tu meta de libros de un año' }
+    ]));
+}
+
+// Estadísticas globales: cuántas personas (de cuántas registradas en total)
+// tienen desbloqueada cada insignia. Se recalcula recorriendo a todos los
+// usuarios, así que se cachea un minuto para no repetir el trabajo en cada
+// visita a un muro o a la página de insignias.
+let _cacheBadgeStats = null;
+let _cacheBadgeStatsTs = 0;
+const CACHE_BADGE_STATS_MS = 60 * 1000;
+
+function calcularEstadisticasBadges() {
+    if (_cacheBadgeStats && (Date.now() - _cacheBadgeStatsTs) < CACHE_BADGE_STATS_MS) {
+        return Promise.resolve(_cacheBadgeStats);
+    }
+    return new Promise((resolve, reject) => {
+        db.all(`SELECT id FROM users`, [], (err, users) => {
+            if (err) return reject(err);
+            const total = users.length;
+            if (total === 0) {
+                const vacio = { total: 0, conteos: {} };
+                _cacheBadgeStats = vacio;
+                _cacheBadgeStatsTs = Date.now();
+                return resolve(vacio);
+            }
+            Promise.all(users.map(u => calcularBadgesUsuario(u.id)))
+                .then((todasLasBadges) => {
+                    const conteos = {};
+                    todasLasBadges.forEach(badges => {
+                        badges.forEach(b => {
+                            if (b.desbloqueada) conteos[b.nombre] = (conteos[b.nombre] || 0) + 1;
+                        });
+                    });
+                    const stats = { total, conteos };
+                    _cacheBadgeStats = stats;
+                    _cacheBadgeStatsTs = Date.now();
+                    resolve(stats);
+                })
+                .catch(reject);
+        });
+    });
+}
+
 app.get('/api/users/:username/badges', (req, res) => {
     const { username } = req.params;
 
@@ -1107,74 +1218,16 @@ app.get('/api/users/:username/badges', (req, res) => {
         if (err) return res.status(500).json({ error: 'Error en el servidor' });
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-        const contar = (sql, params) => new Promise((resolve) => {
-            db.get(sql, params, (err, row) => resolve(err ? 0 : row.n));
-        });
-
-        // Revisa, para cada año YA TERMINADO en que el usuario se puso una
-        // meta de lectura, si la cumplió o no. Si cumplió al menos un año,
-        // desbloquea "yhlqmdlg"; si no cumplió al menos un año, desbloquea
-        // "dlml" (un usuario podría tener ambas, de años distintos).
-        const metasCumplimiento = () => new Promise((resolve) => {
-            const anioActual = new Date().getFullYear();
-            db.all(
-                `SELECT anio, meta FROM metas_lectura WHERE user_id = ? AND anio < ?`,
-                [user.id, anioActual],
-                (err, metas) => {
-                    if (err || !metas || metas.length === 0) return resolve({ cumplida: false, noCumplida: false });
-
-                    let pendientes = metas.length;
-                    let cumplida = false;
-                    let noCumplida = false;
-                    metas.forEach(m => {
-                        db.get(
-                            `SELECT COUNT(*) AS n
-                             FROM shelf_items
-                             JOIN shelves ON shelves.id = shelf_items.shelf_id
-                             WHERE shelves.user_id = ?
-                               AND LOWER(shelves.nombre) = LOWER('Leídos')
-                               AND EXTRACT(YEAR FROM shelf_items.created_at) = ?`,
-                            [user.id, m.anio],
-                            (err, row) => {
-                                const leidos = err ? 0 : row.n;
-                                if (leidos >= m.meta) cumplida = true; else noCumplida = true;
-                                pendientes--;
-                                if (pendientes === 0) resolve({ cumplida, noCumplida });
-                            }
-                        );
-                    });
-                }
-            );
-        });
-
-        Promise.all([
-            contar(`SELECT COUNT(*) AS n FROM posts WHERE user_id = ?`, [user.id]),
-            contar(`SELECT COUNT(*) AS n FROM reviews WHERE user_id = ?`, [user.id]),
-            contar(
-                `SELECT COUNT(*) AS n FROM friend_requests WHERE (from_user_id = ? OR to_user_id = ?) AND estado = 'aceptada'`,
-                [user.id, user.id]
-            ),
-            contar(`SELECT COUNT(*) AS n FROM follows WHERE followed_id = ?`, [user.id]),
-            contar(
-                `SELECT COUNT(*) AS n FROM shelf_items JOIN shelves ON shelves.id = shelf_items.shelf_id WHERE shelves.user_id = ?`,
-                [user.id]
-            ),
-            metasCumplimiento()
-        ]).then(([posts, reviews, amigos, seguidores, librosEnEstantes, metas]) => {
-            const badges = [
-                { nombre: 'Primera Publicación', icono: '1', desbloqueada: posts >= 1, descripcion: 'Publica tu primer post' },
-                { nombre: 'Publicador Activo', icono: '2', desbloqueada: posts >= 10, descripcion: 'Publica 10 posts' },
-                { nombre: 'Primera Reseña', icono: '3', desbloqueada: reviews >= 1, descripcion: 'Publica tu primera reseña' },
-                { nombre: 'Crítico Literario', icono: '4', desbloqueada: reviews >= 5, descripcion: 'Publica 5 reseñas' },
-                { nombre: 'Primer Amigo', icono: '5', desbloqueada: amigos >= 1, descripcion: 'Agrega tu primer amigo' },
-                { nombre: 'Sociable', icono: '6', desbloqueada: amigos >= 5, descripcion: 'Ten 5 amigos' },
-                { nombre: 'Popular', icono: '7', desbloqueada: seguidores >= 10, descripcion: 'Consigue 10 seguidores' },
-                { nombre: 'Lector', icono: '8', desbloqueada: librosEnEstantes >= 1, descripcion: 'Agrega un libro a una estanteria' },
-                { nombre: 'yhlqmdlg', icono: '🏆', desbloqueada: metas.cumplida, descripcion: 'Cumple tu meta de libros de un año' },
-                { nombre: 'dlml', icono: '💔', desbloqueada: metas.noCumplida, descripcion: 'No cumplas tu meta de libros de un año' }
-            ];
-            res.json({ badges });
-        });
+        Promise.all([calcularBadgesUsuario(user.id), calcularEstadisticasBadges()])
+            .then(([badges, stats]) => {
+                const badgesConPorcentaje = badges.map(b => {
+                    const personas = stats.conteos[b.nombre] || 0;
+                    const porcentaje = stats.total > 0 ? Math.round((personas / stats.total) * 100) : 0;
+                    return { ...b, porcentaje, personas, total_usuarios: stats.total };
+                });
+                res.json({ badges: badgesConPorcentaje });
+            })
+            .catch(() => res.status(500).json({ error: 'Error en el servidor' }));
     });
 });
 
@@ -1911,6 +1964,46 @@ app.get('/api/trending', (req, res) => {
             res.json({ trending: rows });
         }
     );
+});
+
+// Posts de un tema del trending, con opción de ordenarlos por likes,
+// comentarios o fecha (cada uno ascendente o descendente). Usado por la
+// página propia de un trending (tendencia.html).
+const ORDEN_TRENDING_PERMITIDO = {
+    likes: 'likes_count',
+    comentarios: 'comments_count',
+    fecha: 'posts.created_at'
+};
+
+app.get('/api/trending/:tag/posts', (req, res) => {
+    const { tag } = req.params;
+    const miId = req.session.user ? req.session.user.id : null;
+    const columnaOrden = ORDEN_TRENDING_PERMITIDO[req.query.orden] || 'posts.created_at';
+    const direccion = req.query.dir === 'asc' ? 'ASC' : 'DESC';
+
+    const query = `
+        SELECT
+            posts.id,
+            posts.user_id,
+            posts.content,
+            posts.tag,
+            posts.created_at,
+            COALESCE(users.username, posts.username) AS username,
+            (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id) AS comments_count,
+            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
+            (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
+            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) AS liked_by_me,
+            (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = ?) AS reposted_by_me
+        FROM posts
+        LEFT JOIN users ON posts.user_id = users.id
+        WHERE LOWER(posts.tag) = LOWER(?)
+        ORDER BY ${columnaOrden} ${direccion}, posts.id DESC
+    `;
+
+    db.all(query, [miId, miId, tag], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ posts: rows.map(normalizarPost) });
+    });
 });
 
 // --- RUTAS DE LIBROS ---

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trending - NAVYBLUE</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%233f4f68'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23f5efe1'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%23c08a4e'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .btn-orden-trending {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--color-borde);
+            background: var(--color-tarjeta);
+            color: var(--color-texto);
+            font-size: 0.88rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-orden-trending:hover {
+            background-color: var(--color-navy-claro);
+        }
+        .btn-orden-trending.activo {
+            background-color: var(--color-navy);
+            border-color: var(--color-navy);
+            color: white;
+            font-weight: bold;
+        }
+        .btn-orden-trending .flecha {
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header id="inicio-header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>NAVYBLUE</h1>
+            </div>
+            <div class="header-acciones"></div>
+        </div>
+    </header>
+
+    <main class="contenedor-principal" style="grid-template-columns: 240px 1fr 320px;">
+
+        <!-- COLUMNA IZQUIERDA: opciones para ordenar los posts de este trending -->
+        <aside class="columna-izquierda">
+            <h2>Ordenar por</h2>
+            <div id="opciones-orden"></div>
+
+            <div class="divisor-lomo"></div>
+
+            <a href="index.html" style="display: inline-block; margin-top: 10px; font-size: 0.85rem; color: var(--color-navy); text-decoration: none; font-weight: bold;">← Volver al inicio</a>
+        </aside>
+
+        <!-- COLUMNA CENTRO: posts del tema en tendencia -->
+        <section class="columna-centro">
+            <h2 id="titulo-tendencia">#tendencia</h2>
+            <div class="feed-posts" id="lista-posts-tendencia">
+                <p>Cargando...</p>
+            </div>
+        </section>
+
+        <!-- COLUMNA DERECHA: se mantiene igual que en el resto del sitio -->
+        <aside class="columna-derecha"></aside>
+
+    </main>
+
+    <footer>
+        <p>Desarrollado por: mis dos cojones</p>
+    </footer>
+
+    <script src="js/ui-comunes.js"></script>
+    <script src="js/header-comun.js"></script>
+    <script src="js/posts-comunes.js"></script>
+    <script src="js/columna-derecha.js"></script>
+    <script src="js/mobile-tabs.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const tag = params.get('tag') || '';
+        const listaPosts = document.getElementById('lista-posts-tendencia');
+        const opcionesOrden = document.getElementById('opciones-orden');
+
+        document.getElementById('titulo-tendencia').textContent = tag ? `#${tag}` : 'Trending';
+
+        // Estado del orden actual: por defecto, fecha más reciente primero
+        // (igual que el resto del feed del sitio).
+        let ordenActual = 'fecha';
+        let direccionActual = 'desc';
+
+        const CRITERIOS = [
+            { clave: 'likes', etiquetaBase: 'Likes', descDesc: 'Mayor a menor', descAsc: 'Menor a mayor' },
+            { clave: 'comentarios', etiquetaBase: 'Comentarios', descDesc: 'Mayor a menor', descAsc: 'Menor a mayor' },
+            { clave: 'fecha', etiquetaBase: 'Fecha', descDesc: 'Más reciente primero', descAsc: 'Más antigua primero' }
+        ];
+
+        function renderBotonesOrden() {
+            opcionesOrden.innerHTML = '';
+            CRITERIOS.forEach(criterio => {
+                const activo = ordenActual === criterio.clave;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-orden-trending' + (activo ? ' activo' : '');
+
+                const etiqueta = document.createElement('span');
+                // Mientras no sea el criterio activo, mostramos "Mayor likes" /
+                // "Más reciente" como invitación; una vez activo, mostramos qué
+                // dirección está aplicada ahora mismo.
+                if (activo) {
+                    etiqueta.textContent = `${criterio.etiquetaBase} · ${direccionActual === 'desc' ? criterio.descDesc : criterio.descAsc}`;
+                } else {
+                    etiqueta.textContent = criterio.etiquetaBase;
+                }
+                btn.appendChild(etiqueta);
+
+                if (activo) {
+                    const flecha = document.createElement('span');
+                    flecha.className = 'flecha';
+                    flecha.textContent = direccionActual === 'desc' ? '↓' : '↑';
+                    btn.appendChild(flecha);
+                }
+
+                btn.addEventListener('click', () => {
+                    if (ordenActual === criterio.clave) {
+                        // Ya estaba seleccionado: al volver a pinchar, se invierte la dirección
+                        direccionActual = direccionActual === 'desc' ? 'asc' : 'desc';
+                    } else {
+                        ordenActual = criterio.clave;
+                        direccionActual = 'desc';
+                    }
+                    renderBotonesOrden();
+                    cargarPostsTendencia();
+                });
+
+                opcionesOrden.appendChild(btn);
+            });
+        }
+
+        // Igual que en index.html: hace cuánto se publicó, estilo Twitter
+        function obtenerTiempoRelativo(fechaServidor) {
+            if (!fechaServidor) return 'Ahora';
+            let fechaLimpia = fechaServidor;
+            if (typeof fechaServidor === 'string' && !fechaServidor.endsWith('Z') && !fechaServidor.includes('+')) {
+                fechaLimpia = fechaServidor.replace(' ', 'T') + 'Z';
+            }
+            const fechaPost = new Date(fechaLimpia);
+            const diferenciaSegundos = Math.floor((new Date() - fechaPost) / 1000);
+            if (diferenciaSegundos < 60) return 'Ahora';
+            const diferenciaMinutos = Math.floor(diferenciaSegundos / 60);
+            if (diferenciaMinutos <= 60) return `${diferenciaMinutos}m`;
+            const diferenciaHoras = Math.floor(diferenciaMinutos / 60);
+            if (diferenciaHoras < 24) return `${diferenciaHoras}h`;
+            return `${Math.floor(diferenciaHoras / 24)}d`;
+        }
+
+        // Misma tarjeta de post que en el resto del sitio (index.html / muro.html)
+        function crearPostCard(post, miId) {
+            const article = document.createElement('article');
+            article.className = 'post-card';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'post-avatar';
+            avatar.textContent = '✍️';
+
+            const contenido = document.createElement('div');
+            contenido.className = 'post-contenido';
+
+            const header = document.createElement('div');
+            header.className = 'post-header';
+
+            const infoIzquierda = document.createElement('div');
+            infoIzquierda.className = 'post-info-izquierda';
+
+            const autor = document.createElement('a');
+            autor.className = 'post-autor';
+            autor.href = `muro.html?usuario=${encodeURIComponent(post.username)}`;
+            autor.style.cssText = 'text-decoration: none; color: inherit;';
+            autor.textContent = post.username;
+            autor.addEventListener('click', (e) => e.stopPropagation());
+
+            const userTag = document.createElement('span');
+            userTag.className = 'post-user';
+            userTag.textContent = `@${post.username}`;
+
+            infoIzquierda.appendChild(autor);
+            infoIzquierda.appendChild(userTag);
+
+            const tiempo = document.createElement('span');
+            tiempo.className = 'post-tiempo';
+            tiempo.textContent = obtenerTiempoRelativo(post.created_at);
+            tiempo.style.cursor = 'pointer';
+            tiempo.title = 'Abrir esta publicación';
+            tiempo.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.location.href = `post.html?id=${post.id}`;
+            });
+
+            header.appendChild(infoIzquierda);
+            header.appendChild(tiempo);
+
+            if (miId && post.user_id === miId) {
+                const btnEliminar = document.createElement('button');
+                btnEliminar.type = 'button';
+                btnEliminar.title = 'Eliminar publicación';
+                btnEliminar.textContent = '🗑️';
+                btnEliminar.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.9rem;';
+                btnEliminar.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (!(await confirmarAccion('¿Eliminar esta publicación?'))) return;
+                    try {
+                        const resp = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' });
+                        if (resp.ok) {
+                            article.remove();
+                        } else {
+                            const data = await resp.json().catch(() => ({}));
+                            mostrarAviso(data.error || 'No se pudo eliminar la publicación.');
+                        }
+                    } catch (error) {
+                        mostrarAviso('No se pudo conectar con el servidor.');
+                    }
+                });
+                header.appendChild(btnEliminar);
+            }
+
+            const texto = document.createElement('p');
+            texto.className = 'post-texto';
+            texto.appendChild(renderizarTextoConMenciones(post.content));
+
+            const badge = document.createElement('div');
+            badge.className = 'post-libro-badge';
+            const em = document.createElement('em');
+            em.textContent = post.tag;
+            badge.append('📚 ', em);
+
+            contenido.appendChild(header);
+            contenido.appendChild(texto);
+            contenido.appendChild(badge);
+            contenido.appendChild(crearBarraAcciones(post, () => {
+                abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
+            }));
+
+            article.appendChild(avatar);
+            article.appendChild(contenido);
+
+            article.style.cursor = 'pointer';
+            article.addEventListener('click', () => {
+                abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
+            });
+
+            return article;
+        }
+
+        async function cargarPostsTendencia() {
+            if (!tag) {
+                listaPosts.innerHTML = '';
+                listaPosts.appendChild(crearEstadoVacio('No se indicó de qué tema mostrar las publicaciones.'));
+                return;
+            }
+            listaPosts.innerHTML = '<p>Cargando...</p>';
+            try {
+                const [respPosts, respSesion] = await Promise.all([
+                    fetch(`/api/trending/${encodeURIComponent(tag)}/posts?orden=${ordenActual}&dir=${direccionActual}`),
+                    fetch('/api/session')
+                ]);
+                const dataPosts = await respPosts.json();
+                const sesion = await respSesion.json();
+                const miId = sesion.loggedIn ? sesion.user.id : null;
+
+                listaPosts.innerHTML = '';
+                if (!dataPosts.posts || dataPosts.posts.length === 0) {
+                    listaPosts.appendChild(crearEstadoVacio('Todavía no hay publicaciones de este tema.'));
+                    return;
+                }
+                dataPosts.posts.forEach(post => listaPosts.appendChild(crearPostCard(post, miId)));
+            } catch (error) {
+                listaPosts.innerHTML = '<p>No se pudo conectar con el servidor.</p>';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            montarHeaderComun({ reemplazarBotonesInvitado: true });
+            renderBotonesOrden();
+            cargarPostsTendencia();
+
+            const columnaDerecha = document.querySelector('.columna-derecha');
+            cargarColumnaDerecha(columnaDerecha);
+
+            activarTabsMobile([
+                { selector: '.columna-izquierda', texto: 'Ordenar' },
+                { selector: '.columna-centro', texto: 'Posts' },
+                { selector: '.columna-derecha', texto: 'Reseñas' }
+            ]);
+        });
+    </script>
+
+</body>
+</html>

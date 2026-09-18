@@ -98,6 +98,12 @@
             info.appendChild(h3);
             info.appendChild(p);
 
+            const pPorcentaje = document.createElement('p');
+            pPorcentaje.style.cssText = 'font-size: 0.78rem; color: var(--color-acento-oscuro); font-weight: bold; margin-top: 2px;';
+            const personasTexto = badge.personas === 1 ? '1 persona' : `${badge.personas} personas`;
+            pPorcentaje.textContent = `La tiene ${personasTexto} de ${badge.total_usuarios} registradas (${badge.porcentaje}%)`;
+            info.appendChild(pPorcentaje);
+
             div.appendChild(icono);
             div.appendChild(info);
             return div;

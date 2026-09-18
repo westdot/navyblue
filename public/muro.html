@@ -1019,13 +1019,20 @@
             const data = await resp.json();
             contenedor.innerHTML = '';
 
-            // Solo dejamos 4 insignias a la vista en la barra: primero las
-            // desbloqueadas, y de ahí las que faltan. El resto (y el detalle
-            // completo) vive en insignias.html.
-            const ordenadas = [...data.badges].sort((a, b) => (b.desbloqueada ? 1 : 0) - (a.desbloqueada ? 1 : 0));
+            // Solo dejamos 4 insignias a la vista en la barra: primero las que
+            // el usuario ya tiene (priorizando las más raras, con menor % de
+            // gente que las tiene, para destacar lo más difícil de conseguir),
+            // y si le faltan para completar las 4, se rellena con las
+            // bloqueadas más raras. El resto (y el detalle completo) vive en
+            // insignias.html.
+            const ordenadas = [...data.badges].sort((a, b) => {
+                if (a.desbloqueada !== b.desbloqueada) return (b.desbloqueada ? 1 : 0) - (a.desbloqueada ? 1 : 0);
+                return a.porcentaje - b.porcentaje;
+            });
             ordenadas.slice(0, 4).forEach(badge => {
                 const chip = document.createElement('div');
-                chip.title = `${badge.nombre}: ${badge.descripcion}`;
+                const personasTexto = badge.personas === 1 ? '1 persona' : `${badge.personas} personas`;
+                chip.title = `${badge.nombre}: ${badge.descripcion} — la tiene ${personasTexto} (${badge.porcentaje}% de los registrados)`;
                 chip.style.cssText = `
                     width: 42px; height: 42px; border-radius: 50%;
                     display: flex; align-items: center; justify-content: center;
