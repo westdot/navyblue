@@ -74,9 +74,33 @@ function crearResenaCard(resena, miUsername, compacta) {
 
     const valoracionP = document.createElement('p');
     valoracionP.className = 'valoracion';
-    if (compacta) valoracionP.style.cssText = 'font-size: 0.78rem; margin: 0;';
+    valoracionP.style.cssText = compacta
+        ? 'font-size: 0.78rem; margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;'
+        : 'font-size: 0.8rem; margin: 2px 0; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;';
     if (!compacta) valoracionP.append('Valoración: ');
     valoracionP.appendChild(crearEstrellas(resena.valoracion));
+
+    // Si venimos del TOP de "Reseñas Recientes" (agrupado por libro), también
+    // viene el promedio de valoración de TODAS las reseñas de ese libro; lo
+    // mostramos justo al lado de las estrellas de la última reseña.
+    if (resena.promedio_valoracion !== undefined && resena.promedio_valoracion !== null) {
+        const separador = document.createElement('span');
+        separador.style.cssText = 'color: #bbb;';
+        separador.textContent = '·';
+        valoracionP.appendChild(separador);
+
+        const promedioSpan = document.createElement('span');
+        promedioSpan.style.cssText = compacta
+            ? 'font-size: 0.68rem; color: #888; display: flex; align-items: center; gap: 3px;'
+            : 'font-size: 0.75rem; color: #888; display: flex; align-items: center; gap: 4px;';
+        promedioSpan.title = 'Promedio de todas las reseñas de este libro';
+        promedioSpan.append(compacta ? 'prom.' : 'Promedio del libro:');
+        promedioSpan.appendChild(crearEstrellas(resena.promedio_valoracion));
+        const numero = document.createElement('span');
+        numero.textContent = Number(resena.promedio_valoracion).toFixed(1);
+        promedioSpan.appendChild(numero);
+        valoracionP.appendChild(promedioSpan);
+    }
     info.appendChild(valoracionP);
 
     // Cuando la tarjeta viene de "Reseñas Recientes" agrupada por libro

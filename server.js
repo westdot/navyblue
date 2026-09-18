@@ -1696,9 +1696,14 @@ app.get('/api/reviews', (req, res) => {
 
 // "Reseñas Recientes" de la barra lateral: en vez de listar reseñas sueltas
 // (donde un mismo libro con 2 reseñas aparecería 2 veces), agrupamos por
-// libro (título + autor, sin importar mayúsculas) y mostramos el TOP 3 de
-// libros con más reseñas. De cada libro se muestra como representante su
-// reseña más reciente, junto con el total de reseñas que tiene ese libro.
+// libro (título + autor, sin importar mayúsculas) y mostramos el TOP 3. El
+// orden se basa en cuántas reseñas recibió cada libro en los ÚLTIMOS 3 DÍAS
+// (no el total histórico), así la lista va mutando día a día según lo que
+// esté reseñándose ahora; como desempate (si hay poca actividad reciente)
+// usamos el total histórico y luego la reseña más nueva. De cada libro se
+// muestra como representante su reseña más reciente (con la valoración de
+// quien la escribió), junto con el promedio de valoración de TODAS sus
+// reseñas y el total de reseñas que tiene.
 app.get('/api/reviews/top', (req, res) => {
     const miId = req.session.user ? req.session.user.id : null;
 
@@ -1710,19 +1715,23 @@ app.get('/api/reviews/top', (req, res) => {
             (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'like') AS likes_count,
             (SELECT COUNT(*) FROM review_reactions WHERE review_id = reviews.id AND tipo = 'dislike') AS dislikes_count,
             (SELECT tipo FROM review_reactions WHERE review_id = reviews.id AND user_id = ?) AS mi_reaccion,
-            conteo.total_resenas
+            conteo.total_resenas,
+            conteo.promedio_valoracion
         FROM reviews
         LEFT JOIN users ON reviews.user_id = users.id
         JOIN (
             SELECT LOWER(libro_titulo) AS libro_key, LOWER(autor) AS autor_key,
-                   COUNT(*) AS total_resenas, MAX(id) AS id_representativo
+                   COUNT(*) AS total_resenas,
+                   ROUND(AVG(valoracion)::numeric, 1) AS promedio_valoracion,
+                   MAX(id) AS id_representativo,
+                   COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '3 days') AS recientes_3dias
             FROM reviews
             GROUP BY LOWER(libro_titulo), LOWER(autor)
         ) AS conteo
             ON LOWER(reviews.libro_titulo) = conteo.libro_key
             AND LOWER(reviews.autor) = conteo.autor_key
             AND reviews.id = conteo.id_representativo
-        ORDER BY conteo.total_resenas DESC, reviews.id DESC
+        ORDER BY conteo.recientes_3dias DESC, conteo.total_resenas DESC, reviews.id DESC
         LIMIT 3
     `;
 
