@@ -817,7 +817,7 @@ body.modo-compacto .resena-card {
 /* ====================================================== */
 .fondo-muro {
     position: relative;
-    height: 306px; /* 180px * 1.7 */
+    height: 420px; 
     background-size: cover;
     background-position: center;
 }
