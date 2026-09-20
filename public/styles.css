@@ -817,7 +817,7 @@ body.modo-compacto .resena-card {
 /* ====================================================== */
 .fondo-muro {
     position: relative;
-    height: 180px;
+    height: 306px; /* 180px * 1.7 */
     background-size: cover;
     background-position: center;
 }
@@ -1005,7 +1005,7 @@ body.modo-compacto .resena-card {
         min-width: 140px !important;
     }
     .fondo-muro {
-        height: 140px;
+        height: 238px; /* 140px * 1.7 */
     }
     .visor-imagen-caja {
         width: 92vw;
