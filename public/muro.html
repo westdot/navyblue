@@ -39,7 +39,9 @@
             <div id="foto-menu-dropdown" class="foto-menu-dropdown">
                 <label for="foto-perfil-input">📷 Foto de perfil</label>
                 <label for="foto-portada-input">🖼️ Foto de portada</label>
+                <button type="button" id="btn-color-fondo">🎨 Color de fondo</button>
             </div>
+            <div id="panel-color-fondo" class="panel-color-fondo"></div>
             <input type="file" id="foto-perfil-input" accept="image/*" style="display: none;">
             <input type="file" id="foto-portada-input" accept="image/*" style="display: none;">
         </div>
@@ -1244,7 +1246,30 @@
         }
     }
 
-    // --- FOTO DE PERFIL Y FOTO DE PORTADA (arriba del muro) ---
+    // --- FOTO DE PERFIL, FOTO DE PORTADA Y COLOR DE FONDO (arriba del muro) ---
+
+    // Paleta de 12 pasteles acordes a la temática del sitio (navy + dorado
+    // envejecido + fondo papel). Cada uno es un degradado, igual que el fondo
+    // navy que trae el muro por defecto, para que no se vea "plano" al lado
+    // de una foto de portada. La clave (key) es lo único que se guarda en la
+    // base de datos; el degradado vive acá.
+    const COLORES_FONDO = [
+        { key: 'navy', nombre: 'Navy (por defecto)', gradiente: 'linear-gradient(135deg, #3f4f68, #5b6f8f)' },
+        { key: 'dorado', nombre: 'Dorado envejecido', gradiente: 'linear-gradient(135deg, #a06f3a, #c08a4e)' },
+        { key: 'salvia', nombre: 'Salvia', gradiente: 'linear-gradient(135deg, #5f7d68, #7fa88b)' },
+        { key: 'terracota', nombre: 'Terracota', gradiente: 'linear-gradient(135deg, #a15b62, #c17b83)' },
+        { key: 'lavanda', nombre: 'Lavanda', gradiente: 'linear-gradient(135deg, #7c6f97, #a79bc4)' },
+        { key: 'ciruela', nombre: 'Ciruela', gradiente: 'linear-gradient(135deg, #6e4f63, #9c7089)' },
+        { key: 'arena', nombre: 'Arena cálida', gradiente: 'linear-gradient(135deg, #b99b6b, #d9c39a)' },
+        { key: 'bosque', nombre: 'Verde bosque suave', gradiente: 'linear-gradient(135deg, #4f6b5c, #7fa892)' },
+        { key: 'cielo', nombre: 'Azul cielo pastel', gradiente: 'linear-gradient(135deg, #6f92ab, #a3c4d9)' },
+        { key: 'rosa', nombre: 'Rosa polvo', gradiente: 'linear-gradient(135deg, #ad7c82, #d9aeb3)' },
+        { key: 'musgo', nombre: 'Musgo', gradiente: 'linear-gradient(135deg, #7c7a52, #b0ab7a)' },
+        { key: 'vino', nombre: 'Vino suave', gradiente: 'linear-gradient(135deg, #6b4552, #99677a)' }
+        // Idea a futuro: una 13ª opción "Automático" que elija el color según
+        // los tonos dominantes de la foto de portada, en vez de una lista fija.
+    ];
+    const GRADIENTE_POR_DEFECTO = COLORES_FONDO[0].gradiente; // navy, igual que el index
 
     // Sube un archivo de imagen (perfil o portada) al endpoint indicado, con
     // las mismas validaciones (tipo de archivo y tamaño máx. 2MB) para ambas.
@@ -1295,10 +1320,13 @@
         const mensaje = document.getElementById('foto-perfil-mensaje');
         const flecha = document.getElementById('foto-menu-flecha');
         const dropdown = document.getElementById('foto-menu-dropdown');
+        const btnColor = document.getElementById('btn-color-fondo');
+        const panelColor = document.getElementById('panel-color-fondo');
         const fondoMuro = document.getElementById('fondo-muro');
 
         let fotoActual = null;
         let fondoActual = null;
+        let colorActual = null;
 
         try {
             const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}`);
@@ -1306,6 +1334,7 @@
             if (resp.ok) {
                 fotoActual = data.user.foto_url || null;
                 fondoActual = data.user.fondo_url || null;
+                colorActual = data.user.fondo_color || null;
             }
         } catch (error) {
             // si falla, dejamos los valores por defecto
@@ -1320,39 +1349,91 @@
             icono.style.display = 'block';
         }
 
-        if (fondoActual) {
-            fondoMuro.style.backgroundImage = `url("${fondoActual}")`;
-            fondoMuro.style.backgroundSize = 'cover';
-            fondoMuro.style.backgroundPosition = 'center';
-        } else {
-            fondoMuro.style.backgroundImage = 'none';
+        // Pinta la franja del muro: si hay foto de portada, esa manda; si no,
+        // el color pastel elegido; si tampoco hay color, el navy de siempre.
+        function pintarFondoMuro() {
+            if (fondoActual) {
+                fondoMuro.style.backgroundImage = `url("${fondoActual}")`;
+                fondoMuro.style.backgroundSize = 'cover';
+                fondoMuro.style.backgroundPosition = 'center';
+                fondoMuro.style.cursor = 'pointer';
+                fondoMuro.onclick = () => abrirVisorImagen(fondoActual);
+            } else {
+                const elegido = COLORES_FONDO.find(c => c.key === colorActual);
+                fondoMuro.style.backgroundImage = 'none';
+                fondoMuro.style.background = elegido ? elegido.gradiente : GRADIENTE_POR_DEFECTO;
+                fondoMuro.style.cursor = 'default';
+                fondoMuro.onclick = null;
+            }
         }
+        pintarFondoMuro();
 
-        // Click en la foto o en la portada: las abre agrandadas en un cuadro
-        // flotante (sin cambiar de página). No hace nada si no hay imagen.
+        // Click en la foto de perfil: la abre agrandada (sin cambiar de página).
         img.style.cursor = fotoActual ? 'pointer' : 'default';
         img.onclick = (e) => {
             e.stopPropagation();
             if (fotoActual) abrirVisorImagen(fotoActual);
         };
-        fondoMuro.style.cursor = fondoActual ? 'pointer' : 'default';
-        fondoMuro.onclick = () => {
-            if (fondoActual) abrirVisorImagen(fondoActual);
-        };
 
         flecha.style.display = esMiMuro ? 'flex' : 'none';
         if (!esMiMuro) {
             dropdown.classList.remove('activo');
+            panelColor.classList.remove('activo');
             return;
         }
 
+        // Arma la grilla de 12 pasteles, marcando el que está activo (o "navy"
+        // si todavía no eligieron ninguno, ya que es el que se ve por defecto).
+        panelColor.innerHTML = '';
+        COLORES_FONDO.forEach(c => {
+            const swatch = document.createElement('button');
+            swatch.type = 'button';
+            swatch.className = 'fondo-color-swatch';
+            swatch.title = c.nombre;
+            swatch.style.background = c.gradiente;
+            if ((colorActual || 'navy') === c.key) swatch.classList.add('activo');
+            swatch.addEventListener('click', async () => {
+                dropdown.classList.remove('activo');
+                panelColor.classList.remove('activo');
+                try {
+                    const resp = await fetch('/api/profile/color-fondo', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ color: c.key })
+                    });
+                    if (!resp.ok) {
+                        mensaje.style.color = 'red';
+                        mensaje.textContent = 'No se pudo guardar el color.';
+                        return;
+                    }
+                    colorActual = c.key;
+                    pintarFondoMuro();
+                    mensaje.style.color = 'green';
+                    mensaje.textContent = '¡Color de fondo actualizado!';
+                } catch (error) {
+                    mensaje.style.color = 'red';
+                    mensaje.textContent = 'No se pudo conectar con el servidor.';
+                }
+            });
+            panelColor.appendChild(swatch);
+        });
+
         flecha.onclick = (e) => {
             e.stopPropagation();
+            panelColor.classList.remove('activo');
             dropdown.classList.toggle('activo');
+        };
+        btnColor.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.classList.remove('activo');
+            panelColor.classList.toggle('activo');
         };
         document.addEventListener('click', (e) => {
             if (!dropdown.contains(e.target) && e.target !== flecha) {
                 dropdown.classList.remove('activo');
+            }
+            if (!panelColor.contains(e.target) && e.target !== btnColor) {
+                panelColor.classList.remove('activo');
             }
         });
 
@@ -1386,11 +1467,7 @@
                 mensaje,
                 onExito: (resultado) => {
                     fondoActual = resultado;
-                    fondoMuro.style.backgroundImage = `url("${resultado}")`;
-                    fondoMuro.style.backgroundSize = 'cover';
-                    fondoMuro.style.backgroundPosition = 'center';
-                    fondoMuro.style.cursor = 'pointer';
-                    fondoMuro.onclick = () => abrirVisorImagen(fondoActual);
+                    pintarFondoMuro();
                 }
             });
             inputPortada.value = '';

@@ -817,7 +817,7 @@ body.modo-compacto .resena-card {
 /* ====================================================== */
 .fondo-muro {
     position: relative;
-    height: 420px; 
+    height: 306px; /* 180px * 1.7 */
     background-size: cover;
     background-position: center;
 }
@@ -863,20 +863,68 @@ body.modo-compacto .resena-card {
 .foto-menu-dropdown.activo {
     display: block;
 }
-.foto-menu-dropdown label {
+.foto-menu-dropdown label,
+.foto-menu-dropdown button {
     display: block;
+    width: 100%;
     padding: 10px 14px;
     font-size: 0.85rem;
     color: var(--color-texto);
     cursor: pointer;
     white-space: nowrap;
+    background: none;
+    border: none;
+    text-align: left;
+    font-family: inherit;
 }
-.foto-menu-dropdown label:hover {
+.foto-menu-dropdown label:hover,
+.foto-menu-dropdown button:hover {
     background: var(--color-navy-claro);
     color: var(--color-navy-texto);
 }
-.foto-menu-dropdown label:not(:last-child) {
+.foto-menu-dropdown label:not(:last-child),
+.foto-menu-dropdown button:not(:last-child) {
     border-bottom: 1px solid var(--color-borde);
+}
+
+/* Grilla de 12 pasteles para el color de fondo del muro (cuando no hay foto
+   de portada). Se abre como un panel aparte, independiente del menú de
+   fotos, para que se vean bien los 12 círculos de color. */
+.panel-color-fondo {
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    margin-top: 6px;
+    background: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(58, 50, 38, 0.25);
+    padding: 12px;
+    z-index: 6;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    width: 176px;
+}
+.panel-color-fondo.activo {
+    display: grid;
+}
+.fondo-color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(58, 50, 38, 0.3);
+}
+.fondo-color-swatch:hover {
+    transform: scale(1.1);
+}
+.fondo-color-swatch.activo {
+    border-color: var(--color-acento);
+    box-shadow: 0 0 0 2px var(--color-tarjeta), 0 0 0 4px var(--color-acento);
 }
 
 /* ====================================================== */

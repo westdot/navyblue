@@ -130,6 +130,8 @@ async function crearTablas() {
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS foto_url TEXT`);
         // foto de portada (fondo del muro): mismo esquema que foto_url
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fondo_url TEXT`);
+        // color de fondo del muro (pastel, a elección), para cuando no hay foto de portada
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fondo_color TEXT`);
 
         await pool.query(`CREATE TABLE IF NOT EXISTS posts (
             id SERIAL PRIMARY KEY,
@@ -695,7 +697,7 @@ function notificarMenciones(texto, actorUsername, tipoLugar) {
 // Perfil PÚBLICO de cualquier usuario (nombre, país, fecha de registro) — para
 // poder mostrar el muro de otras personas, sin exponer correo ni datos privados
 app.get('/api/users/:username', (req, res) => {
-    db.get(`SELECT name, username, pais, created_at, foto_url, fondo_url FROM users WHERE username = ?`, [req.params.username], (err, user) => {
+    db.get(`SELECT name, username, pais, created_at, foto_url, fondo_url, fondo_color FROM users WHERE username = ?`, [req.params.username], (err, user) => {
         if (err) return res.status(500).json({ error: 'Error en el servidor' });
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
         res.json({ user });
@@ -740,6 +742,28 @@ app.put('/api/profile/fondo', requiereSesion, (req, res) => {
     db.run(`UPDATE users SET fondo_url = ? WHERE id = ?`, [fondo_url, userId], (err) => {
         if (err) return res.status(500).json({ error: 'No se pudo guardar la foto de portada.' });
         res.json({ message: 'Foto de portada actualizada', fondo_url });
+    });
+});
+
+// Colores pasteles disponibles para el fondo del muro (cuando no hay foto de
+// portada). Se valida contra esta misma lista en el servidor para no guardar
+// cualquier string como color. El degradado real de cada uno vive en el
+// frontend (muro.html); acá solo nos importa que la clave sea válida.
+const COLORES_FONDO_VALIDOS = [
+    'navy', 'dorado', 'salvia', 'terracota', 'lavanda', 'ciruela',
+    'arena', 'bosque', 'cielo', 'rosa', 'musgo', 'vino'
+];
+app.put('/api/profile/color-fondo', requiereSesion, (req, res) => {
+    const { color } = req.body;
+    const { id: userId } = req.session.user;
+
+    if (!COLORES_FONDO_VALIDOS.includes(color)) {
+        return res.status(400).json({ error: 'Ese color no es válido.' });
+    }
+
+    db.run(`UPDATE users SET fondo_color = ? WHERE id = ?`, [color, userId], (err) => {
+        if (err) return res.status(500).json({ error: 'No se pudo guardar el color.' });
+        res.json({ message: 'Color de fondo actualizado', color });
     });
 });
 
