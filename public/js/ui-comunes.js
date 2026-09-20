@@ -76,6 +76,57 @@ function crearEstadoVacio(mensaje) {
     return div;
 }
 
+// Abre una imagen agrandada en un cuadro flotante centrado, sin cambiar de
+// página (se usa para la foto de perfil y la foto de portada, pero sirve
+// para cualquier imagen). El cuadro mide la mitad del ancho y la mitad del
+// alto de la pantalla en escritorio (ver .visor-imagen-caja en styles.css);
+// en celular se agranda vía media query para aprovechar mejor el espacio.
+function abrirVisorImagen(url) {
+    let overlay = document.getElementById('visor-imagen-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'visor-imagen-overlay';
+        overlay.className = 'visor-imagen-overlay';
+        overlay.innerHTML = `
+            <div class="visor-imagen-caja">
+                <span class="visor-imagen-cerrar">&times;</span>
+                <img class="visor-imagen-img" alt="Imagen ampliada">
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay || e.target.classList.contains('visor-imagen-cerrar')) {
+                overlay.classList.remove('activo');
+            }
+        });
+    }
+    overlay.querySelector('.visor-imagen-img').src = url;
+    overlay.classList.add('activo');
+}
+
+// Ajusta el padding-top del body para que siempre coincida con la altura
+// real del header (que es "fixed"). Antes era un valor fijo en el CSS, pero
+// en celular el header puede pasar a ocupar 2 líneas (título + buscador +
+// botones), así que un valor fijo dejaba contenido tapado. Se recalcula al
+// cargar, al cambiar de tamaño la ventana, y un rato después de cada scroll
+// (por si el header se agranda/achica con la clase "shrink").
+(function ajustarEspacioHeader() {
+    function ajustar() {
+        const header = document.querySelector('header');
+        if (!header) return;
+        document.body.style.paddingTop = header.offsetHeight + 'px';
+    }
+    let temporizador;
+    function ajustarConDelay() {
+        clearTimeout(temporizador);
+        temporizador = setTimeout(ajustar, 150);
+    }
+    document.addEventListener('DOMContentLoaded', ajustar);
+    window.addEventListener('load', ajustar);
+    window.addEventListener('resize', ajustarConDelay);
+    window.addEventListener('scroll', ajustarConDelay);
+})();
+
 // Convierte el título de un libro en un link a su página de detalle
 // (libro.html), manteniendo el mismo look que si fuera texto plano. Se usa
 // en todas partes donde aparece un título de libro (reseñas, estanterías,

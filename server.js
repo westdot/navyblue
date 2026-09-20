@@ -128,6 +128,8 @@ async function crearTablas() {
         await pool.query(`UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL`);
         // foto de perfil: se guarda como data URL (base64), no como archivo en disco
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS foto_url TEXT`);
+        // foto de portada (fondo del muro): mismo esquema que foto_url
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fondo_url TEXT`);
 
         await pool.query(`CREATE TABLE IF NOT EXISTS posts (
             id SERIAL PRIMARY KEY,
@@ -693,7 +695,7 @@ function notificarMenciones(texto, actorUsername, tipoLugar) {
 // Perfil PÚBLICO de cualquier usuario (nombre, país, fecha de registro) — para
 // poder mostrar el muro de otras personas, sin exponer correo ni datos privados
 app.get('/api/users/:username', (req, res) => {
-    db.get(`SELECT name, username, pais, created_at, foto_url FROM users WHERE username = ?`, [req.params.username], (err, user) => {
+    db.get(`SELECT name, username, pais, created_at, foto_url, fondo_url FROM users WHERE username = ?`, [req.params.username], (err, user) => {
         if (err) return res.status(500).json({ error: 'Error en el servidor' });
         if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
         res.json({ user });
@@ -719,6 +721,25 @@ app.put('/api/profile/foto', requiereSesion, (req, res) => {
     db.run(`UPDATE users SET foto_url = ? WHERE id = ?`, [foto_url, userId], (err) => {
         if (err) return res.status(500).json({ error: 'No se pudo guardar la foto.' });
         res.json({ message: 'Foto de perfil actualizada', foto_url });
+    });
+});
+
+// Subir/actualizar la foto de portada (fondo del muro). Mismo esquema que la
+// foto de perfil: se guarda como data URL directo en la base de datos.
+app.put('/api/profile/fondo', requiereSesion, (req, res) => {
+    const { fondo_url } = req.body;
+    const { id: userId } = req.session.user;
+
+    if (!fondo_url || typeof fondo_url !== 'string' || !fondo_url.startsWith('data:image/')) {
+        return res.status(400).json({ error: 'La imagen no es válida.' });
+    }
+    if (fondo_url.length > LARGO_MAX_FOTO_PERFIL) {
+        return res.status(400).json({ error: 'La imagen pesa más de 2MB.' });
+    }
+
+    db.run(`UPDATE users SET fondo_url = ? WHERE id = ?`, [fondo_url, userId], (err) => {
+        if (err) return res.status(500).json({ error: 'No se pudo guardar la foto de portada.' });
+        res.json({ message: 'Foto de portada actualizada', fondo_url });
     });
 });
 

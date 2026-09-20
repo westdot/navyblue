@@ -181,7 +181,7 @@ function crearBuscador() {
     contenedor.style.cssText = 'position: relative; display: flex; align-items: center;';
     contenedor.innerHTML = `
         <input type="text" class="buscador-input" placeholder="Buscar libros, usuarios..."
-               style="padding: 8px 38px 8px 14px; border-radius: 999px; border: 1px solid #ccc; font-size: 0.85rem; width: 190px; background: white; color: #333;">
+               style="padding: 8px 38px 8px 14px; border-radius: 999px; border: 1px solid #ccc; font-size: 0.85rem; background: white; color: #333;">
         <button type="button" class="buscador-boton" title="Buscar"
                 style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex;">
             🔍
