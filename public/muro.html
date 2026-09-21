@@ -1271,9 +1271,11 @@
     ];
     const GRADIENTE_POR_DEFECTO = COLORES_FONDO[0].gradiente; // navy, igual que el index
 
-    // Sube un archivo de imagen (perfil o portada) al endpoint indicado, con
-    // las mismas validaciones (tipo de archivo y tamaño máx. 2MB) para ambas.
-    function subirImagen({ archivo, endpoint, campo, mensaje, onExito }) {
+    // Sube un archivo de imagen (perfil o portada) al endpoint indicado. Antes
+    // de mandarla, la comprime/redimensiona en el navegador (ver
+    // comprimirImagenParaSubir en ui-comunes.js) para no guardar fotos de
+    // varios MB tal cual en la base de datos.
+    async function subirImagen({ archivo, endpoint, campo, mensaje, onExito }) {
         if (!archivo) return;
 
         if (!archivo.type.startsWith('image/')) {
@@ -1281,35 +1283,43 @@
             mensaje.textContent = 'Elige un archivo de imagen.';
             return;
         }
-        if (archivo.size > 2 * 1024 * 1024) {
+        if (archivo.size > 15 * 1024 * 1024) {
             mensaje.style.color = 'red';
-            mensaje.textContent = 'La imagen pesa más de 2MB. Elige una más liviana.';
+            mensaje.textContent = 'La imagen es demasiado pesada (máx. 15MB). Elige una más liviana.';
             return;
         }
 
-        const lector = new FileReader();
-        lector.onload = async () => {
-            try {
-                const resp = await fetch(endpoint, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ [campo]: lector.result })
-                });
-                const data = await resp.json().catch(() => ({}));
-                if (!resp.ok) {
-                    mensaje.style.color = 'red';
-                    mensaje.textContent = data.error || 'No se pudo guardar la imagen.';
-                    return;
-                }
-                mensaje.style.color = 'green';
-                mensaje.textContent = '¡Imagen actualizada!';
-                onExito(lector.result);
-            } catch (error) {
+        mensaje.style.color = '#777';
+        mensaje.textContent = 'Optimizando imagen...';
+
+        let dataUrl;
+        try {
+            dataUrl = await comprimirImagenParaSubir(archivo);
+        } catch (error) {
+            mensaje.style.color = 'red';
+            mensaje.textContent = 'No se pudo procesar esa imagen.';
+            return;
+        }
+
+        try {
+            const resp = await fetch(endpoint, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [campo]: dataUrl })
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
                 mensaje.style.color = 'red';
-                mensaje.textContent = 'No se pudo conectar con el servidor.';
+                mensaje.textContent = data.error || 'No se pudo guardar la imagen.';
+                return;
             }
-        };
-        lector.readAsDataURL(archivo);
+            mensaje.style.color = 'green';
+            mensaje.textContent = '¡Imagen actualizada!';
+            onExito(dataUrl);
+        } catch (error) {
+            mensaje.style.color = 'red';
+            mensaje.textContent = 'No se pudo conectar con el servidor.';
+        }
     }
 
     async function cargarFotoPerfil(usuarioObjetivo, esMiMuro) {

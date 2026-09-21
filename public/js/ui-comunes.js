@@ -76,6 +76,52 @@ function crearEstadoVacio(mensaje) {
     return div;
 }
 
+// Comprime y redimensiona una imagen en el navegador antes de subirla (se usa
+// para la foto de perfil y la foto de portada). Sin esto, cada foto se
+// guardaba tal cual llegara del celular/cámara (a veces varios MB) directo
+// como texto en la base de datos, lo que la infla rápido. Devuelve un data
+// URL en JPEG, ya recortado a un lado máximo, bajando la calidad un par de
+// veces si hiciera falta para no pasarse del límite que acepta el servidor.
+function comprimirImagenParaSubir(archivo, { maxLado = 1600, calidadInicial = 0.82 } = {}) {
+    return new Promise((resolve, reject) => {
+        const lector = new FileReader();
+        lector.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+        lector.onload = () => {
+            const imagen = new Image();
+            imagen.onerror = () => reject(new Error('El archivo no es una imagen válida.'));
+            imagen.onload = () => {
+                let { width, height } = imagen;
+                if (width > maxLado || height > maxLado) {
+                    if (width >= height) {
+                        height = Math.round(height * (maxLado / width));
+                        width = maxLado;
+                    } else {
+                        width = Math.round(width * (maxLado / height));
+                        height = maxLado;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(imagen, 0, 0, width, height);
+
+                // ~2.6M caracteres de data URL son ~1.9MB reales; si se pasa de
+                // ahí, bajamos la calidad e intentamos de nuevo antes de rendirnos.
+                (function intentar(calidad) {
+                    const dataUrl = canvas.toDataURL('image/jpeg', calidad);
+                    if (dataUrl.length > 2.6 * 1024 * 1024 && calidad > 0.4) {
+                        intentar(calidad - 0.15);
+                    } else {
+                        resolve(dataUrl);
+                    }
+                })(calidadInicial);
+            };
+            imagen.src = lector.result;
+        };
+        lector.readAsDataURL(archivo);
+    });
+}
+
 // Abre una imagen agrandada en un cuadro flotante centrado, sin cambiar de
 // página (se usa para la foto de perfil y la foto de portada, pero sirve
 // para cualquier imagen). El cuadro mide la mitad del ancho y la mitad del

@@ -4,9 +4,26 @@ const { Pool, types } = require('pg');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const session = require('express-session');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Render (y casi cualquier hosting moderno) pone un proxy delante del server;
+// sin esto, Express nunca detecta que la conexión ya venía por HTTPS, y la
+// cookie de sesión "secure" de más abajo jamás se activaría en producción.
+app.set('trust proxy', 1);
+
+// Cabeceras de seguridad HTTP básicas (X-Frame-Options, X-Content-Type-Options,
+// Strict-Transport-Security, etc.). Se deja la CSP (contentSecurityPolicy)
+// desactivada a propósito: el sitio usa scripts y estilos inline en casi
+// todas las páginas, y la CSP por defecto de Helmet los bloquearía todos.
+// Activarla bien más adelante implica mover ese código inline a archivos
+// aparte — por ahora se dejan las otras protecciones, que no rompen nada.
+app.use(helmet({
+    contentSecurityPolicy: false
+}));
 
 // middleware para parsear JSON y servir archivos estaticos
 // límite subido de 100kb a 3mb: necesario para poder guardar la foto de
@@ -15,6 +32,23 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '3mb' }));
 app.use(express.static(path.join(__dirname, 'public'))); // se asume que los archivos HTML/CSS estan en una carpeta 'public'
 
+// Freno para login/registro: sin esto, cualquiera puede probar contraseñas
+// a la fuerza (o crear cuentas en cadena) sin límite. Se cuenta por IP.
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 10, // 10 intentos de login por IP en esa ventana
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiados intentos de inicio de sesión. Espera unos minutos y vuelve a intentar.' }
+});
+const registerLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hora
+    max: 20, // 20 registros por IP por hora (deja margen para redes/oficinas compartidas)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiadas cuentas creadas desde esta conexión. Intenta de nuevo más tarde.' }
+});
+
 // middleware de sesión: el servidor recuerda quién inicio sesion mediante una cookie firmada
 app.use(session({
     secret: process.env.SESSION_SECRET || 'cambia-esto-por-una-frase-larga-y-secreta',
@@ -22,8 +56,9 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         maxAge: 1000 * 60 * 60 * 24, // la sesión dura 24 horas
-        httpOnly: true
-        // secure: true  // descomenta esto cuando se sirve el sitio con HTTPS
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // true en Render (necesita NODE_ENV=production en las variables de entorno), false en tu PC para que sigas pudiendo probar por http local
+        sameSite: 'lax'
     }
 }));
 
@@ -325,11 +360,14 @@ crearTablas();
 // --- RUTAS DE AUTENTICACIÓN ---
 
 // Registro de usuario
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', registerLimiter, async (req, res) => {
     const { name, username, email, password, pais } = req.body;
     
     if (!name || !username || !email || !password) {
         return res.status(400).json({ error: 'Faltan datos obligatorios' });
+    }
+    if (password.length < 8) {
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     }
 
     try {
@@ -603,7 +641,7 @@ app.delete('/api/posts/:id', requiereSesion, (req, res) => {
 });
 
 // Inicio de sesión actualizado
-app.post('/api/login', (req, res) => {
+app.post('/api/login', loginLimiter, (req, res) => {
     const { email, password } = req.body;
     
     db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
@@ -809,8 +847,8 @@ app.put('/api/profile/password', requiereSesion, async (req, res) => {
     if (!currentPassword || !newPassword) {
         return res.status(400).json({ error: 'Faltan datos obligatorios' });
     }
-    if (newPassword.length < 6) {
-        return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
     }
 
     db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, user) => {
