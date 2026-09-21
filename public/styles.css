@@ -32,7 +32,7 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--color-papel);
     /* Textura de papel muy sutil (cuadrícula fina), sin imágenes externas */
     background-image:
