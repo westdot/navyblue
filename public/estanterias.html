@@ -288,6 +288,16 @@
         h3.textContent = estante.nombre;
         header.appendChild(h3);
 
+        // Aviso de que ESTA es la estantería que cuenta para la meta de lectura
+        // anual (se fija por nombre: "Leídos" o "Terminado", sin mayúsculas/acentos).
+        const nombreNorm = estante.nombre.trim().toLowerCase();
+        if (['leídos', 'leidos', 'terminado', 'terminados'].includes(nombreNorm)) {
+            const chip = document.createElement('span');
+            chip.textContent = '🎯 cuenta para tu meta';
+            chip.style.cssText = 'font-size: 0.68rem; color: #7a705f; background: #f7ecd9; border-radius: 999px; padding: 2px 8px; white-space: nowrap;';
+            header.appendChild(chip);
+        }
+
         const botonesHeader = document.createElement('div');
         botonesHeader.style.cssText = 'display: flex; gap: 6px; flex-shrink: 0;';
 

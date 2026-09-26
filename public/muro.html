@@ -493,13 +493,13 @@
             listaMuro.innerHTML = ''; listaMuro.appendChild(crearEstadoVacio('Aún no implementado.'));
         } else if (tab === 'preguntas') {
             tituloLista.textContent = 'Preguntas';
-            cargarPreguntasDelMuro(username);
+            cargarPreguntasDelMuro(username, esMiMuro);
         }
     }
 
     // --- PREGUNTAS (pestaña de la columna central: las que le han hecho a esta persona) ---
 
-    function crearPreguntaCardMuro(pregunta) {
+    function crearPreguntaCardMuro(pregunta, esMiMuro) {
         const article = document.createElement('article');
         article.className = 'post-card';
 
@@ -531,12 +531,78 @@
 
         contenido.appendChild(header);
         contenido.appendChild(texto);
+
+        if (pregunta.respuesta) {
+            // Ya tiene respuesta: se muestra, no se puede volver a responder.
+            const bloqueRespuesta = document.createElement('div');
+            bloqueRespuesta.style.cssText = 'margin-top: 8px; padding: 8px 10px; background: #f7ecd9; border-radius: 8px; border-left: 3px solid #c08a4e;';
+            const etiqueta = document.createElement('p');
+            etiqueta.style.cssText = 'margin: 0 0 3px; font-size: 0.72rem; font-weight: bold; color: #a06f3a;';
+            etiqueta.textContent = `↳ ${pregunta.asked_username} respondió:`;
+            const textoResp = document.createElement('p');
+            textoResp.style.cssText = 'margin: 0; font-size: 0.85rem;';
+            textoResp.textContent = pregunta.respuesta;
+            bloqueRespuesta.appendChild(etiqueta);
+            bloqueRespuesta.appendChild(textoResp);
+            contenido.appendChild(bloqueRespuesta);
+        } else if (esMiMuro) {
+            // Es mi muro y todavía no la respondo: dejo el cuadro para responder.
+            const cajaResponder = document.createElement('div');
+            cajaResponder.style.cssText = 'margin-top: 8px; display: flex; gap: 6px;';
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Escribe tu respuesta...';
+            input.maxLength = 200;
+            input.style.cssText = 'flex: 1; padding: 6px 10px; border-radius: 999px; border: 1px solid #ccc; font-size: 0.82rem;';
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = 'Responder';
+            btn.style.cssText = 'background: #34517c; color: white; border: none; border-radius: 999px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; flex-shrink: 0;';
+
+            const mensajeError = document.createElement('p');
+            mensajeError.style.cssText = 'margin: 4px 0 0; font-size: 0.75rem; color: red; width: 100%;';
+
+            const enviar = async () => {
+                const texto = input.value.trim();
+                if (!texto) { mensajeError.textContent = 'Escribe algo primero.'; return; }
+                btn.disabled = true;
+                try {
+                    const resp = await fetch(`/api/questions/${pregunta.id}/responder`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ respuesta: texto })
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok) {
+                        mensajeError.textContent = data.error || 'No se pudo enviar la respuesta.';
+                        btn.disabled = false;
+                        return;
+                    }
+                    pregunta.respuesta = data.respuesta;
+                    // Reemplaza esta tarjeta por su versión ya respondida, sin recargar toda la lista.
+                    article.replaceWith(crearPreguntaCardMuro(pregunta, esMiMuro));
+                } catch (error) {
+                    mensajeError.textContent = 'No se pudo conectar con el servidor.';
+                    btn.disabled = false;
+                }
+            };
+            btn.addEventListener('click', enviar);
+            input.addEventListener('keydown', e => { if (e.key === 'Enter') enviar(); });
+
+            cajaResponder.appendChild(input);
+            cajaResponder.appendChild(btn);
+            contenido.appendChild(cajaResponder);
+            contenido.appendChild(mensajeError);
+        }
+
         article.appendChild(avatar);
         article.appendChild(contenido);
         return article;
     }
 
-    async function cargarPreguntasDelMuro(username) {
+    async function cargarPreguntasDelMuro(username, esMiMuro) {
         listaMuro.innerHTML = '<p>Cargando...</p>';
         try {
             const resp = await fetch(`/api/questions?username=${encodeURIComponent(username)}`);
@@ -547,7 +613,7 @@
                 listaMuro.appendChild(crearEstadoVacio('Todavía nadie le ha hecho una pregunta.'));
                 return;
             }
-            data.questions.forEach(p => listaMuro.appendChild(crearPreguntaCardMuro(p)));
+            data.questions.forEach(p => listaMuro.appendChild(crearPreguntaCardMuro(p, esMiMuro)));
         } catch (error) {
             listaMuro.innerHTML = '<p>No se pudieron cargar las preguntas.</p>';
         }
@@ -1254,18 +1320,18 @@
     // de una foto de portada. La clave (key) es lo único que se guarda en la
     // base de datos; el degradado vive acá.
     const COLORES_FONDO = [
-        { key: 'navy', nombre: 'Navy (por defecto)', gradiente: 'linear-gradient(135deg, #3f4f68, #5b6f8f)' },
-        { key: 'dorado', nombre: 'Dorado envejecido', gradiente: 'linear-gradient(135deg, #a06f3a, #c08a4e)' },
-        { key: 'salvia', nombre: 'Salvia', gradiente: 'linear-gradient(135deg, #5f7d68, #7fa88b)' },
-        { key: 'terracota', nombre: 'Terracota', gradiente: 'linear-gradient(135deg, #a15b62, #c17b83)' },
-        { key: 'lavanda', nombre: 'Lavanda', gradiente: 'linear-gradient(135deg, #7c6f97, #a79bc4)' },
-        { key: 'ciruela', nombre: 'Ciruela', gradiente: 'linear-gradient(135deg, #6e4f63, #9c7089)' },
-        { key: 'arena', nombre: 'Arena cálida', gradiente: 'linear-gradient(135deg, #b99b6b, #d9c39a)' },
-        { key: 'bosque', nombre: 'Verde bosque suave', gradiente: 'linear-gradient(135deg, #4f6b5c, #7fa892)' },
-        { key: 'cielo', nombre: 'Azul cielo pastel', gradiente: 'linear-gradient(135deg, #6f92ab, #a3c4d9)' },
-        { key: 'rosa', nombre: 'Rosa polvo', gradiente: 'linear-gradient(135deg, #ad7c82, #d9aeb3)' },
-        { key: 'musgo', nombre: 'Musgo', gradiente: 'linear-gradient(135deg, #7c7a52, #b0ab7a)' },
-        { key: 'vino', nombre: 'Vino suave', gradiente: 'linear-gradient(135deg, #6b4552, #99677a)' }
+        { key: 'navy', nombre: 'Navy (por defecto)', gradiente: 'linear-gradient(135deg, #3f4f68, #5b6f8f)', pagina: '#e9edf3' },
+        { key: 'dorado', nombre: 'Dorado envejecido', gradiente: 'linear-gradient(135deg, #a06f3a, #c08a4e)', pagina: '#f7ecd9' },
+        { key: 'salvia', nombre: 'Salvia', gradiente: 'linear-gradient(135deg, #5f7d68, #7fa88b)', pagina: '#e9f0ea' },
+        { key: 'terracota', nombre: 'Terracota', gradiente: 'linear-gradient(135deg, #a15b62, #c17b83)', pagina: '#f8ecee' },
+        { key: 'lavanda', nombre: 'Lavanda', gradiente: 'linear-gradient(135deg, #7c6f97, #a79bc4)', pagina: '#eeecf5' },
+        { key: 'ciruela', nombre: 'Ciruela', gradiente: 'linear-gradient(135deg, #6e4f63, #9c7089)', pagina: '#f2e9ee' },
+        { key: 'arena', nombre: 'Arena cálida', gradiente: 'linear-gradient(135deg, #b99b6b, #d9c39a)', pagina: '#f8f1e2' },
+        { key: 'bosque', nombre: 'Verde bosque suave', gradiente: 'linear-gradient(135deg, #4f6b5c, #7fa892)', pagina: '#e7f0ea' },
+        { key: 'cielo', nombre: 'Azul cielo pastel', gradiente: 'linear-gradient(135deg, #6f92ab, #a3c4d9)', pagina: '#e9f2f7' },
+        { key: 'rosa', nombre: 'Rosa polvo', gradiente: 'linear-gradient(135deg, #ad7c82, #d9aeb3)', pagina: '#f7ecee' },
+        { key: 'musgo', nombre: 'Musgo', gradiente: 'linear-gradient(135deg, #7c7a52, #b0ab7a)', pagina: '#f1f0e4' },
+        { key: 'vino', nombre: 'Vino suave', gradiente: 'linear-gradient(135deg, #6b4552, #99677a)', pagina: '#f3e9ec' }
         // Idea a futuro: una 13ª opción "Automático" que elija el color según
         // los tonos dominantes de la foto de portada, en vez de una lista fija.
     ];
@@ -1361,6 +1427,9 @@
 
         // Pinta la franja del muro: si hay foto de portada, esa manda; si no,
         // el color pastel elegido; si tampoco hay color, el navy de siempre.
+        // El color elegido, además, tiñe el fondo de TODA la página (donde viven
+        // las 3 columnas) — es independiente de la portada: una es la franja de
+        // arriba, la otra es el telón de fondo de toda la vista de este muro.
         function pintarFondoMuro() {
             if (fondoActual) {
                 fondoMuro.style.backgroundImage = `url("${fondoActual}")`;
@@ -1375,6 +1444,8 @@
                 fondoMuro.style.cursor = 'default';
                 fondoMuro.onclick = null;
             }
+            const elegidoPagina = COLORES_FONDO.find(c => c.key === colorActual);
+            document.body.style.backgroundColor = elegidoPagina ? elegidoPagina.pagina : '';
         }
         pintarFondoMuro();
 

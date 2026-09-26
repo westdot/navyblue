@@ -141,7 +141,7 @@ function crearCampanaNotificaciones() {
         } else {
             notificaciones.forEach(n => {
                 const item = document.createElement('a');
-                item.href = `muro.html?usuario=${encodeURIComponent(n.actor_username)}`;
+                item.href = n.destino || `muro.html?usuario=${encodeURIComponent(n.actor_username)}`;
                 item.style.cssText = `display: block; padding: 10px 15px; border-bottom: 1px solid #eee; text-decoration: none; color: #333; font-size: 0.83rem; ${n.leida ? '' : 'background: #eef2f7;'}`;
                 const mensaje = document.createElement('div');
                 mensaje.textContent = n.mensaje;

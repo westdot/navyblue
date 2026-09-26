@@ -294,6 +294,10 @@ async function crearTablas() {
             leida INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
+        // A qué página debe llevar al hacer click (ej. "mensajes.html?usuario=x",
+        // "post.html?id=5"). Si es NULL (notificaciones viejas, de antes de este
+        // cambio), el frontend cae de vuelta al muro del actor como antes.
+        await pool.query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS destino TEXT`);
 
         // Progreso de lectura
         await pool.query(`CREATE TABLE IF NOT EXISTS lecturas_en_curso (
@@ -360,6 +364,11 @@ async function crearTablas() {
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
+        // Respuesta pública a la pregunta (una sola por pregunta: solo se puede
+        // responder mientras esté en NULL). La persona que la puede responder es
+        // siempre asked_id, nunca el que preguntó.
+        await pool.query(`ALTER TABLE questions ADD COLUMN IF NOT EXISTS respuesta TEXT`);
+        await pool.query(`ALTER TABLE questions ADD COLUMN IF NOT EXISTS respondida_at TIMESTAMP`);
 
         // --- ÍNDICES ---
         // Sin esto, cada consulta que filtra por una de estas columnas (ej. "dame
@@ -389,6 +398,17 @@ async function crearTablas() {
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_receiver_id ON messages(receiver_id)`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_questions_asked_id ON questions(asked_id)`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_questions_asker_id ON questions(asker_id)`);
+
+        // Backfill: a cualquier cuenta ya existente que todavía no tenga una
+        // estantería "Leídos" (o "Terminado", por si alguien ya usaba ese nombre)
+        // se la creamos, para que la meta de lectura tenga algo que contar.
+        await pool.query(`
+            INSERT INTO shelves (user_id, nombre)
+            SELECT id, 'Leídos' FROM users
+            WHERE id NOT IN (
+                SELECT user_id FROM shelves WHERE LOWER(nombre) IN ('leídos', 'leidos', 'terminado', 'terminados')
+            )
+        `);
 
         console.log('Tablas verificadas/creadas correctamente en PostgreSQL.');
     } catch (err) {
@@ -420,6 +440,10 @@ app.post('/api/register', registerLimiter, async (req, res) => {
                 // Si hay error, puede ser que el email o el username ya existan
                 return res.status(400).json({ error: 'El correo o el nombre de usuario ya están en uso' });
             }
+            // Le creamos de entrada una estantería "Leídos": es la que cuenta para
+            // la meta de lectura anual, así que todos parten teniéndola en vez de
+            // tener que adivinar cómo llamarla.
+            db.run(`INSERT INTO shelves (user_id, nombre) VALUES (?, ?)`, [this.lastID, 'Leídos']);
             res.status(201).json({ message: 'Usuario registrado con éxito', userId: this.lastID });
         });
     } catch (error) {
@@ -540,7 +564,7 @@ app.post('/api/posts/:id/comments', requiereSesion, (req, res) => {
         function (err) {
             if (err) return res.status(500).json({ error: err.message });
             db.get(`SELECT user_id FROM posts WHERE id = ?`, [id], (err, post) => {
-                if (post) crearNotificacion(post.user_id, req.session.user.username, `${req.session.user.username} comentó tu publicación`);
+                if (post) crearNotificacion(post.user_id, req.session.user.username, `${req.session.user.username} comentó tu publicación`, `post.html?id=${id}`);
             });
             notificarMenciones(content.trim(), req.session.user.username, 'un comentario');
             res.status(201).json({ message: 'Comentario agregado', commentId: this.lastID });
@@ -590,7 +614,7 @@ app.post('/api/posts/:id/like', requiereSesion, (req, res) => {
             db.run(`INSERT INTO likes (post_id, user_id) VALUES (?, ?)`, [id, userId], (err) => {
                 if (err) return res.status(500).json({ error: err.message });
                 db.get(`SELECT user_id FROM posts WHERE id = ?`, [id], (err, post) => {
-                    if (post) crearNotificacion(post.user_id, req.session.user.username, `A ${req.session.user.username} le gustó tu publicación`);
+                    if (post) crearNotificacion(post.user_id, req.session.user.username, `A ${req.session.user.username} le gustó tu publicación`, `post.html?id=${id}`);
                 });
                 terminar(true);
             });
@@ -623,7 +647,7 @@ app.post('/api/posts/:id/repost', requiereSesion, (req, res) => {
             db.run(`INSERT INTO reposts (post_id, user_id) VALUES (?, ?)`, [id, userId], (err) => {
                 if (err) return res.status(500).json({ error: err.message });
                 db.get(`SELECT user_id FROM posts WHERE id = ?`, [id], (err, post) => {
-                    if (post) crearNotificacion(post.user_id, req.session.user.username, `${req.session.user.username} republicó tu publicación`);
+                    if (post) crearNotificacion(post.user_id, req.session.user.username, `${req.session.user.username} republicó tu publicación`, `post.html?id=${id}`);
                 });
                 terminar(true);
             });
@@ -738,14 +762,16 @@ function requiereSesion(req, res, next) {
 
 // Crea una notificación para userId, salvo que sea la misma persona que hizo la
 // acción (no tiene sentido notificarte a ti mismo por darte like a tu propio post).
-function crearNotificacion(userId, actorUsername, mensaje) {
+// `destino` es la página a la que debe llevar al hacer click (ej.
+// "mensajes.html?usuario=x"); si se omite, el frontend usa el muro del actor.
+function crearNotificacion(userId, actorUsername, mensaje, destino = null) {
     if (!userId) return;
     db.get(`SELECT username FROM users WHERE id = ?`, [userId], (err, destinatario) => {
         if (err || !destinatario) return;
         if (destinatario.username === actorUsername) return; // no te notifiques a ti mismo
         db.run(
-            `INSERT INTO notifications (user_id, actor_username, mensaje) VALUES (?, ?, ?)`,
-            [userId, actorUsername, mensaje]
+            `INSERT INTO notifications (user_id, actor_username, mensaje, destino) VALUES (?, ?, ?, ?)`,
+            [userId, actorUsername, mensaje, destino]
         );
     });
 }
@@ -1239,7 +1265,7 @@ app.post('/api/messages/:username', requiereSesion, (req, res) => {
                         [miId, otro.id, content.trim()],
                         function(err) {
                             if (err) return res.status(500).json({ error: 'Error en el servidor' });
-                            crearNotificacion(otro.id, req.session.user.username, `${req.session.user.username} te envió un mensaje`);
+                            crearNotificacion(otro.id, req.session.user.username, `${req.session.user.username} te envió un mensaje`, `mensajes.html?usuario=${encodeURIComponent(req.session.user.username)}`);
                             res.status(201).json({ message: 'Mensaje enviado', mensajeId: this.lastID });
                         }
                     );
@@ -1368,7 +1394,7 @@ app.get('/api/users/:username/meta-lectura', (req, res) => {
                  FROM shelf_items
                  JOIN shelves ON shelves.id = shelf_items.shelf_id
                  WHERE shelves.user_id = ?
-                   AND LOWER(shelves.nombre) = LOWER('Terminado')
+                   AND LOWER(shelves.nombre) IN ('leídos', 'leidos', 'terminado', 'terminados')
                    AND EXTRACT(YEAR FROM shelf_items.created_at) = ?`,
                 [user.id, anio],
                 (err, row) => {
@@ -1599,7 +1625,7 @@ app.get('/api/users/:username/badges', (req, res) => {
 app.get('/api/notifications', requiereSesion, (req, res) => {
     const userId = req.session.user.id;
     db.all(
-        `SELECT id, actor_username, mensaje, leida, created_at FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 20`,
+        `SELECT id, actor_username, mensaje, destino, leida, created_at FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 20`,
         [userId],
         (err, rows) => {
             if (err) return res.status(500).json({ error: 'Error en el servidor' });
@@ -1629,7 +1655,7 @@ app.get('/api/questions', (req, res) => {
 
     if (username) {
         db.all(
-            `SELECT id, asker_username, asked_username, content, created_at
+            `SELECT id, asker_username, asked_username, content, respuesta, created_at
              FROM questions WHERE asked_username = ? ORDER BY id DESC`,
             [username],
             (err, rows) => {
@@ -1639,7 +1665,7 @@ app.get('/api/questions', (req, res) => {
         );
     } else {
         db.all(
-            `SELECT id, asker_username, asked_username, content, created_at FROM questions ORDER BY id DESC`,
+            `SELECT id, asker_username, asked_username, content, respuesta, created_at FROM questions ORDER BY id DESC`,
             [],
             (err, rows) => {
                 if (err) return res.status(500).json({ error: err.message });
@@ -1711,7 +1737,45 @@ app.post('/api/questions/:username', requiereSesion, (req, res) => {
     });
 });
 
-// --- RUTAS DE ESTANTERÍAS / COLECCIONES DE LIBROS ---
+// Responder una pregunta que te hicieron: solo puede hacerlo asked_id (el
+// dueño del muro donde cayó la pregunta), y solo si todavía no tiene
+// respuesta (una sola respuesta por pregunta, no se puede editar después).
+app.put('/api/questions/:id/responder', requiereSesion, (req, res) => {
+    const { id } = req.params;
+    const { respuesta } = req.body;
+    const miId = req.session.user.id;
+    const miUsername = req.session.user.username;
+
+    if (!respuesta || !respuesta.trim()) {
+        return res.status(400).json({ error: 'La respuesta no puede estar vacía' });
+    }
+    if (respuesta.trim().length > LARGO_MAX_PREGUNTA) {
+        return res.status(400).json({ error: `La respuesta no puede superar los ${LARGO_MAX_PREGUNTA} caracteres` });
+    }
+
+    db.get(`SELECT * FROM questions WHERE id = ?`, [id], (err, pregunta) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!pregunta) return res.status(404).json({ error: 'Pregunta no encontrada' });
+        if (pregunta.asked_id !== miId) {
+            return res.status(403).json({ error: 'Solo la persona a la que le hicieron la pregunta puede responderla' });
+        }
+        if (pregunta.respuesta) {
+            return res.status(400).json({ error: 'Esta pregunta ya tiene una respuesta' });
+        }
+
+        db.run(
+            `UPDATE questions SET respuesta = ?, respondida_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            [respuesta.trim(), id],
+            (err) => {
+                if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                crearNotificacion(pregunta.asker_id, miUsername, `${miUsername} respondió tu pregunta`, `muro.html?usuario=${encodeURIComponent(miUsername)}`);
+                res.json({ message: 'Respuesta publicada', respuesta: respuesta.trim() });
+            }
+        );
+    });
+});
+
+
 
 // Trae las estanterías (con sus libros) de CUALQUIER usuario, por nombre — pública.
 // Si el que pregunta es el dueño y todavía no tiene ninguna, le creamos 3 por defecto.
@@ -2332,7 +2396,7 @@ app.post('/api/reviews/:id/comments', requiereSesion, (req, res) => {
         function (err) {
             if (err) return res.status(500).json({ error: err.message });
             db.get(`SELECT user_id FROM reviews WHERE id = ?`, [id], (err, review) => {
-                if (review) crearNotificacion(review.user_id, req.session.user.username, `${req.session.user.username} comentó tu reseña`);
+                if (review) crearNotificacion(review.user_id, req.session.user.username, `${req.session.user.username} comentó tu reseña`, `resena.html?id=${id}`);
             });
             notificarMenciones(content.trim(), req.session.user.username, 'un comentario de reseña');
             res.status(201).json({ message: 'Comentario agregado', commentId: this.lastID });
@@ -2403,7 +2467,7 @@ app.post('/api/reviews/:id/reaccionar', requiereSesion, (req, res) => {
                 db.get(`SELECT user_id FROM reviews WHERE id = ?`, [id], (err, review) => {
                     if (review) {
                         const verbo = tipo === 'like' ? 'le gustó' : 'no le gustó';
-                        crearNotificacion(review.user_id, req.session.user.username, `A ${req.session.user.username} ${verbo} tu reseña`);
+                        crearNotificacion(review.user_id, req.session.user.username, `A ${req.session.user.username} ${verbo} tu reseña`, `resena.html?id=${id}`);
                     }
                 });
                 responderConContadores();
