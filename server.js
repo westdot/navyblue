@@ -4,6 +4,7 @@ const { Pool, types } = require('pg');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const session = require('express-session');
+const PgSession = require('connect-pg-simple')(session);
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
@@ -49,19 +50,6 @@ const registerLimiter = rateLimit({
     message: { error: 'Demasiadas cuentas creadas desde esta conexión. Intenta de nuevo más tarde.' }
 });
 
-// middleware de sesión: el servidor recuerda quién inicio sesion mediante una cookie firmada
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'cambia-esto-por-una-frase-larga-y-secreta',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        maxAge: 1000 * 60 * 60 * 24, // la sesión dura 24 horas
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // true en Render (necesita NODE_ENV=production en las variables de entorno), false en tu PC para que sigas pudiendo probar por http local
-        sameSite: 'lax'
-    }
-}));
-
 // --- CONEXIÓN A LA BASE DE DATOS (PostgreSQL en Neon) ---
 // DATABASE_URL viene de una variable de entorno:
 //   - En tu PC: ponla en un archivo .env (ver .env.example)
@@ -85,6 +73,30 @@ types.setTypeParser(20, (val) => parseInt(val, 10));
 pool.query('SELECT NOW()')
     .then(() => console.log('Conectado a la base de datos PostgreSQL (Neon).'))
     .catch((err) => console.error('Error al conectar con la base de datos:', err.message));
+
+// middleware de sesión: el servidor recuerda quién inicio sesion mediante una cookie firmada.
+// Las sesiones se guardan en una tabla de esta misma base de datos (en vez del
+// almacén en memoria que trae express-session por defecto). Ese almacén por
+// defecto NO está pensado para producción: pierde a todos los usuarios logueados
+// cada vez que Render reinicia el servidor, y no funcionaría si algún día corres
+// más de una instancia del servidor a la vez. connect-pg-simple crea sola la
+// tabla "session" la primera vez que arranca (createTableIfMissing).
+app.use(session({
+    store: new PgSession({
+        pool,
+        tableName: 'session',
+        createTableIfMissing: true
+    }),
+    secret: process.env.SESSION_SECRET || 'cambia-esto-por-una-frase-larga-y-secreta',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24, // la sesión dura 24 horas
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // true en Render (necesita NODE_ENV=production en las variables de entorno), false en tu PC para que sigas pudiendo probar por http local
+        sameSite: 'lax'
+    }
+}));
 
 // --- CAPA DE COMPATIBILIDAD CON LA API DE sqlite3 ---
 // Todo el resto de este archivo (más abajo) sigue escrito EXACTAMENTE igual que
@@ -348,6 +360,35 @@ async function crearTablas() {
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
+
+        // --- ÍNDICES ---
+        // Sin esto, cada consulta que filtra por una de estas columnas (ej. "dame
+        // los posts de este usuario", "las notificaciones de este usuario") obliga
+        // a Postgres a revisar la tabla entera fila por fila. Con la cantidad de
+        // datos de hoy no se nota, pero es la primera causa de que un sitio se
+        // ponga lento apenas crece. No se listan las columnas que ya tienen un
+        // índice automático por venir de un UNIQUE (ej. username, email, o el
+        // "post_id" de likes/reposts que ya es la primera columna de su UNIQUE).
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_reposts_user_id ON reposts(user_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON reviews(created_at DESC)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_review_comments_review_id ON review_comments(review_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_follows_followed_id ON follows(followed_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_friend_requests_to_user_id ON friend_requests(to_user_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_shelves_user_id ON shelves(user_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_shelf_items_shelf_id ON shelf_items(shelf_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_lecturas_user_id ON lecturas_en_curso(user_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_book_comments_libro ON book_comments(libro_titulo, autor)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_receiver_id ON messages(receiver_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_questions_asked_id ON questions(asked_id)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_questions_asker_id ON questions(asker_id)`);
 
         console.log('Tablas verificadas/creadas correctamente en PostgreSQL.');
     } catch (err) {
