@@ -437,45 +437,66 @@
         }
     }
 
-    // Carga las publicaciones del usuario que se está viendo (propio o de otra persona)
-    async function cargarMisPosts(username, esMiMuro) {
+    // Scroll infinito de la lista central del muro (cambia según la pestaña activa)
+    let scrollMuro = null;
+
+    function detenerScrollMuro() {
+        if (scrollMuro) { scrollMuro.detener(); scrollMuro = null; }
+    }
+
+    // Carga las publicaciones del usuario que se está viendo (propio o de otra persona),
+    // de a páginas: posts y reseñas mezclados por fecha, con scroll infinito.
+    function cargarMisPosts(username, esMiMuro) {
+        detenerScrollMuro();
         listaMuro.innerHTML = '<p>Cargando...</p>';
-        try {
-            const [respPosts, respReviews] = await Promise.all([
-                fetch(`/api/posts?username=${encodeURIComponent(username)}`),
-                fetch(`/api/reviews?username=${encodeURIComponent(username)}`)
-            ]);
-            const dataPosts = await respPosts.json();
-            const dataReviews = await respReviews.json();
-            listaMuro.innerHTML = '';
 
-            const items = [
-                ...dataPosts.posts.map(p => ({ _tipo: 'post', ...p })),
-                ...dataReviews.reviews.map(r => ({ _tipo: 'reseña', ...r }))
-            ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const paginador = crearPaginadorMezclado([
+            { tipo: 'post', url: '/api/posts', clave: 'posts', params: { username } },
+            { tipo: 'reseña', url: '/api/reviews', clave: 'reviews', params: { username } }
+        ], 15);
+        let primeraPagina = true;
 
-            if (items.length === 0) {
-                listaMuro.appendChild(crearEstadoVacio(esMiMuro ? 'Todavía no has publicado nada.' : 'Esta persona todavía no ha publicado nada.'));
-                return;
-            }
-
-            items.forEach(item => {
-                if (item._tipo === 'post') {
-                    listaMuro.appendChild(crearPostCard(item, esMiMuro));
-                } else {
-                    const envoltorio = document.createElement('div');
-                    envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
-                    envoltorio.appendChild(crearResenaCard(item, esMiMuro ? username : null));
-                    listaMuro.appendChild(envoltorio);
+        scrollMuro = crearScrollInfinito({
+            contenedor: listaMuro,
+            mensajeFin: 'Eso es todo por ahora 📚',
+            cargarMas: async () => {
+                let resultado;
+                try {
+                    resultado = await paginador.siguiente();
+                } catch (error) {
+                    if (primeraPagina) {
+                        listaMuro.innerHTML = '<p>No se pudieron cargar las publicaciones.</p>';
+                        return false;
+                    }
+                    throw error; // el ayudante muestra "toca para reintentar"
                 }
-            });
-        } catch (error) {
-            listaMuro.innerHTML = '<p>No se pudieron cargar las publicaciones.</p>';
-        }
+                if (primeraPagina) { listaMuro.innerHTML = ''; }
+
+                if (primeraPagina && resultado.items.length === 0) {
+                    primeraPagina = false;
+                    listaMuro.appendChild(crearEstadoVacio(esMiMuro ? 'Todavía no has publicado nada.' : 'Esta persona todavía no ha publicado nada.'));
+                    return false;
+                }
+                primeraPagina = false;
+
+                resultado.items.forEach(item => {
+                    if (item._tipo === 'post') {
+                        listaMuro.appendChild(crearPostCard(item, esMiMuro));
+                    } else {
+                        const envoltorio = document.createElement('div');
+                        envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
+                        envoltorio.appendChild(crearResenaCard(item, esMiMuro ? username : null));
+                        listaMuro.appendChild(envoltorio);
+                    }
+                });
+                return resultado.hayMas;
+            }
+        });
     }
 
     // Cambiar entre pestañas (por ahora solo "Post" está implementado de verdad)
     function activarTab(tab, username, esMiMuro) {
+        detenerScrollMuro(); // la pestaña anterior ya no debe seguir pidiendo páginas
         botonesTab.forEach(btn => {
             const activo = btn.dataset.tab === tab;
             btn.style.background = activo ? '#34517c' : '#eee';
@@ -602,21 +623,42 @@
         return article;
     }
 
-    async function cargarPreguntasDelMuro(username, esMiMuro) {
+    function cargarPreguntasDelMuro(username, esMiMuro) {
+        detenerScrollMuro();
         listaMuro.innerHTML = '<p>Cargando...</p>';
-        try {
-            const resp = await fetch(`/api/questions?username=${encodeURIComponent(username)}`);
-            const data = await resp.json();
-            listaMuro.innerHTML = '';
 
-            if (!data.questions || data.questions.length === 0) {
-                listaMuro.appendChild(crearEstadoVacio('Todavía nadie le ha hecho una pregunta.'));
-                return;
+        const paginador = crearPaginadorMezclado([
+            { tipo: 'pregunta', url: '/api/questions', clave: 'questions', params: { username } }
+        ], 15);
+        let primeraPagina = true;
+
+        scrollMuro = crearScrollInfinito({
+            contenedor: listaMuro,
+            mensajeFin: 'Eso es todo por ahora 📚',
+            cargarMas: async () => {
+                let resultado;
+                try {
+                    resultado = await paginador.siguiente();
+                } catch (error) {
+                    if (primeraPagina) {
+                        listaMuro.innerHTML = '<p>No se pudieron cargar las preguntas.</p>';
+                        return false;
+                    }
+                    throw error;
+                }
+                if (primeraPagina) { listaMuro.innerHTML = ''; }
+
+                if (primeraPagina && resultado.items.length === 0) {
+                    primeraPagina = false;
+                    listaMuro.appendChild(crearEstadoVacio('Todavía nadie le ha hecho una pregunta.'));
+                    return false;
+                }
+                primeraPagina = false;
+
+                resultado.items.forEach(p => listaMuro.appendChild(crearPreguntaCardMuro(p, esMiMuro)));
+                return resultado.hayMas;
             }
-            data.questions.forEach(p => listaMuro.appendChild(crearPreguntaCardMuro(p, esMiMuro)));
-        } catch (error) {
-            listaMuro.innerHTML = '<p>No se pudieron cargar las preguntas.</p>';
-        }
+        });
     }
 
     // --- CASILLA DE PREGUNTAS (columna "Lector", debajo de Insignias): para

@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db/compat');
 const requiereSesion = require('../middleware/auth');
 const { crearNotificacion } = require('../services/notificaciones');
+const { leerPaginacion, recortarPagina } = require('../utils/paginacion');
 
 const router = express.Router();
 
@@ -9,30 +10,29 @@ const router = express.Router();
 
 const LARGO_MAX_PREGUNTA = 200;
 
-// Feed general de preguntas (todas), o las hechas a un usuario puntual (?username=)
+// Preguntas, de a páginas (scroll infinito): ?limit=20&before=<id>. Sin filtro
+// es el feed general; con ?username= son las hechas a esa persona.
 router.get('/questions', (req, res) => {
     const { username } = req.query;
+    const { limit, before } = leerPaginacion(req.query);
 
-    if (username) {
-        db.all(
-            `SELECT id, asker_username, asked_username, content, respuesta, created_at
-             FROM questions WHERE asked_username = ? ORDER BY id DESC`,
-            [username],
-            (err, rows) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ questions: rows });
-            }
-        );
-    } else {
-        db.all(
-            `SELECT id, asker_username, asked_username, content, respuesta, created_at FROM questions ORDER BY id DESC`,
-            [],
-            (err, rows) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ questions: rows });
-            }
-        );
-    }
+    const condiciones = [];
+    const params = [];
+    if (username) { condiciones.push('asked_username = ?'); params.push(username); }
+    if (before) { condiciones.push('id < ?'); params.push(before); }
+    const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
+    params.push(limit + 1);
+
+    db.all(
+        `SELECT id, asker_username, asked_username, content, respuesta, created_at
+         FROM questions ${where} ORDER BY id DESC LIMIT ?`,
+        params,
+        (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            const { filas, hasMore } = recortarPagina(rows, limit);
+            res.json({ questions: filas, hasMore });
+        }
+    );
 });
 
 // Si hoy ya le hice una pregunta a esta persona (para deshabilitar el botón en el frontend)

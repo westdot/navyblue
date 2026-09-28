@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db/compat');
 const requiereSesion = require('../middleware/auth');
 const { crearNotificacion } = require('../services/notificaciones');
+const { leerPaginacion, recortarPagina } = require('../utils/paginacion');
 const { sonAmigos } = require('../services/amistad');
 
 const router = express.Router();
@@ -61,7 +62,10 @@ router.get('/messages', requiereSesion, (req, res) => {
     );
 });
 
-// Historial de mensajes con un amigo puntual
+// Historial de mensajes con un amigo puntual, de a páginas: por defecto trae los
+// 30 MÁS RECIENTES (?limit=30) y con ?before=<id> los anteriores a ese mensaje
+// (el frontend los pide al hacer scroll hacia arriba). Siempre se devuelven en
+// orden cronológico (del más viejo al más nuevo) para poder mostrarlos tal cual.
 router.get('/messages/:username', requiereSesion, (req, res) => {
     const miId = req.session.user.id;
     const { username } = req.params;
@@ -78,20 +82,29 @@ router.get('/messages/:username', requiereSesion, (req, res) => {
             if (err) return res.status(500).json({ error: 'Error en el servidor' });
             if (!amigos) return res.status(403).json({ error: 'Solo puedes escribirle a tus amigos' });
 
+            const { limit, before } = leerPaginacion(req.query, 30);
+            const params = [miId, otro.id, otro.id, miId];
+            let filtroCursor = '';
+            if (before) { filtroCursor = 'AND id < ?'; params.push(before); }
+            params.push(limit + 1);
+
             db.all(
                 `SELECT id, sender_id, receiver_id, content, created_at FROM messages
-                 WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
-                 ORDER BY id ASC`,
-                [miId, otro.id, otro.id, miId],
-                (err, mensajes) => {
+                 WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) ${filtroCursor}
+                 ORDER BY id DESC LIMIT ?`,
+                params,
+                (err, filasDesc) => {
                     if (err) return res.status(500).json({ error: 'Error en el servidor' });
+                    const { filas, hasMore } = recortarPagina(filasDesc, limit);
+                    const mensajes = filas.reverse(); // de más viejo a más nuevo
                     db.get(
                         `SELECT id FROM messages WHERE sender_id = ? AND receiver_id = ? AND created_at::date = CURRENT_DATE`,
                         [miId, otro.id],
                         (err2, envioHoy) => {
                             res.json({
                                 mensajes: mensajes.map(m => ({ ...m, es_mio: m.sender_id === miId })),
-                                puedo_enviar_hoy: !envioHoy
+                                puedo_enviar_hoy: !envioHoy,
+                                hasMore
                             });
                         }
                     );

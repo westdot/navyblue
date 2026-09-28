@@ -200,47 +200,65 @@
     // ==========================================
     const feedPosts = document.querySelector('.feed-posts');
 
-    // Función para cargar los posts desde el servidor
-    async function cargarPosts() {
-        try {
-            const [respPosts, respReviews, respPreguntas, respSesion] = await Promise.all([
-                fetch('/api/posts'),
-                fetch('/api/reviews'),
-                fetch('/api/questions'),
-                fetch('/api/session')
-            ]);
-            const dataPosts = await respPosts.json();
-            const dataReviews = await respReviews.json();
-            const dataPreguntas = await respPreguntas.json();
-            const sesion = await respSesion.json();
-            const miId = sesion.loggedIn ? sesion.user.id : null;
-            const miUsername = sesion.loggedIn ? sesion.user.username : null;
+    // ==========================================
+    // FEED CON SCROLL INFINITO
+    // ==========================================
+    // El feed mezcla posts, reseñas y preguntas públicas, cada una con su endpoint
+    // paginado. crearPaginadorMezclado (ui-comunes.js) las trae por páginas y las
+    // entrega ya ordenadas por fecha; crearScrollInfinito pide la siguiente página
+    // cuando la persona se acerca al final.
+    const paginadorFeed = crearPaginadorMezclado([
+        { tipo: 'post', url: '/api/posts', clave: 'posts' },
+        { tipo: 'reseña', url: '/api/reviews', clave: 'reviews' },
+        { tipo: 'pregunta', url: '/api/questions', clave: 'questions' }
+    ], 15);
 
-            // Mezclamos posts, reseñas y preguntas públicas en un solo feed, ordenados por fecha
-            const items = [
-                ...dataPosts.posts.map(p => ({ _tipo: 'post', ...p })),
-                ...dataReviews.reviews.map(r => ({ _tipo: 'reseña', ...r })),
-                ...(dataPreguntas.questions || []).map(q => ({ _tipo: 'pregunta', ...q }))
-            ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    let sesionFeed = null;
+    let primeraPaginaFeed = true;
 
-            if (items.length > 0) {
-                feedPosts.innerHTML = ''; // Limpiamos el feed estático de prueba
-                items.forEach(item => {
-                    if (item._tipo === 'post') {
-                        feedPosts.appendChild(crearPostCard(item, miId));
-                    } else if (item._tipo === 'pregunta') {
-                        feedPosts.appendChild(crearPreguntaCard(item));
-                    } else {
-                        const envoltorio = document.createElement('div');
-                        envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
-                        envoltorio.appendChild(crearResenaCard(item, miUsername));
-                        feedPosts.appendChild(envoltorio);
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error al cargar publicaciones:', error);
+    // Trae la siguiente página del feed y la pinta. Devuelve true si aún hay más.
+    async function cargarMasFeed() {
+        if (!sesionFeed) {
+            const respSesion = await fetch('/api/session');
+            sesionFeed = await respSesion.json();
         }
+        const miId = sesionFeed.loggedIn ? sesionFeed.user.id : null;
+        const miUsername = sesionFeed.loggedIn ? sesionFeed.user.username : null;
+
+        const { items, hayMas, obsoleto } = await paginadorFeed.siguiente();
+        if (obsoleto) return false; // el feed se reinició mientras cargaba
+
+        if (items.length > 0) {
+            if (primeraPaginaFeed) feedPosts.innerHTML = ''; // Limpiamos el feed estático de prueba
+            items.forEach(item => {
+                if (item._tipo === 'post') {
+                    feedPosts.appendChild(crearPostCard(item, miId));
+                } else if (item._tipo === 'pregunta') {
+                    feedPosts.appendChild(crearPreguntaCard(item));
+                } else {
+                    const envoltorio = document.createElement('div');
+                    envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
+                    envoltorio.appendChild(crearResenaCard(item, miUsername));
+                    feedPosts.appendChild(envoltorio);
+                }
+            });
+        }
+        primeraPaginaFeed = false;
+        return hayMas;
+    }
+
+    const scrollFeed = crearScrollInfinito({
+        contenedor: feedPosts,
+        cargarMas: cargarMasFeed,
+        mensajeFin: 'Llegaste al final 📚'
+    });
+
+    // Vuelve a cargar el feed desde el principio (ej. después de publicar algo nuevo)
+    function cargarPosts() {
+        paginadorFeed.reiniciar();
+        primeraPaginaFeed = true;
+        feedPosts.innerHTML = '';
+        scrollFeed.reiniciar();
     }
 
     //funcion para el tiempo de los post supongo
@@ -451,9 +469,9 @@
         return article;
     }
 
-    // Cargar los posts al abrir la página, y montar el composer + la columna derecha
+    // Montar el composer + la columna derecha (el feed lo carga el scroll infinito)
     window.addEventListener('DOMContentLoaded', () => {
-        cargarPosts();
+        // (el feed se carga solo: el scroll infinito pide la primera página apenas aparece)
 
         const columnaDerecha = document.querySelector('.columna-derecha');
         cargarColumnaDerecha(columnaDerecha);

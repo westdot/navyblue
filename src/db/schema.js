@@ -242,16 +242,35 @@ async function crearTablas() {
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_questions_asked_id ON questions(asked_id)`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_questions_asker_id ON questions(asker_id)`);
 
-        // Backfill: a cualquier cuenta ya existente que todavía no tenga una
-        // estantería "Leídos" (o "Terminado", por si alguien ya usaba ese nombre)
-        // se la creamos, para que la meta de lectura tenga algo que contar.
+        // Corrección de un error mío: en una vuelta anterior, esta migración creaba
+        // una estantería "Leídos" para cuentas que no tuvieran ninguna todavía —
+        // pero esto pisaba la creación automática de tus 4 estanterías por defecto
+        // (Leyendo / Quiero Leer / Terminado / DNF) en /api/users/:username/shelves,
+        // que solo se dispara cuando el conteo de estanterías es CERO. Esta corrección
+        // fusiona cualquier "Leídos" que haya quedado creada así dentro de "Terminado"
+        // (sin perder los libros que ya tuviera adentro), para que todos vuelvan a
+        // quedar en count=0 y reciban las 4 estanterías reales la próxima vez que
+        // visiten su perfil o estanterías.
         await pool.query(`
             INSERT INTO shelves (user_id, nombre)
-            SELECT id, 'Leídos' FROM users
-            WHERE id NOT IN (
-                SELECT user_id FROM shelves WHERE LOWER(nombre) IN ('leídos', 'leidos', 'terminado', 'terminados')
-            )
+            SELECT s.user_id, 'Terminado'
+            FROM shelves s
+            WHERE LOWER(s.nombre) IN ('leídos', 'leidos')
+              AND NOT EXISTS (
+                  SELECT 1 FROM shelves t WHERE t.user_id = s.user_id AND LOWER(t.nombre) = 'terminado'
+              )
         `);
+        await pool.query(`
+            UPDATE shelf_items
+            SET shelf_id = (
+                SELECT t.id FROM shelves t
+                JOIN shelves s ON s.user_id = t.user_id
+                WHERE s.id = shelf_items.shelf_id AND LOWER(t.nombre) = 'terminado'
+                LIMIT 1
+            )
+            WHERE shelf_id IN (SELECT id FROM shelves WHERE LOWER(nombre) IN ('leídos', 'leidos'))
+        `);
+        await pool.query(`DELETE FROM shelves WHERE LOWER(nombre) IN ('leídos', 'leidos')`);
 
         console.log('Tablas verificadas/creadas correctamente en PostgreSQL.');
     } catch (err) {

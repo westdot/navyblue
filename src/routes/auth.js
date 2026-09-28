@@ -27,10 +27,6 @@ router.post('/register', registerLimiter, async (req, res) => {
                 // Si hay error, puede ser que el email o el username ya existan
                 return res.status(400).json({ error: 'El correo o el nombre de usuario ya están en uso' });
             }
-            // Le creamos de entrada una estantería "Leídos": es la que cuenta para
-            // la meta de lectura anual, así que todos parten teniéndola en vez de
-            // tener que adivinar cómo llamarla.
-            db.run(`INSERT INTO shelves (user_id, nombre) VALUES (?, ?)`, [this.lastID, 'Leídos']);
             res.status(201).json({ message: 'Usuario registrado con éxito', userId: this.lastID });
         });
     } catch (error) {

@@ -110,21 +110,41 @@ function crearCampanaNotificaciones() {
         return `${Math.floor(diffHoras / 24)}d`;
     }
 
+    // Solo necesitamos el contador de no leídas: pedimos 1 notificación para no traer de más
     async function actualizarBadge() {
         try {
-            const resp = await fetch('/api/notifications');
+            const resp = await fetch('/api/notifications?limit=1');
             const data = await resp.json();
-            if (data.noLeidas > 0) {
-                badge.textContent = data.noLeidas > 9 ? '9+' : data.noLeidas;
-                badge.style.display = 'block';
-            } else {
-                badge.style.display = 'none';
-            }
-            return data.notifications || [];
-        } catch (error) {
-            return [];
+            pintarBadge(data.noLeidas);
+        } catch (error) { /* si falla, dejamos el contador como estaba */ }
+    }
+
+    function pintarBadge(noLeidas) {
+        if (noLeidas > 0) {
+            badge.textContent = noLeidas > 9 ? '9+' : noLeidas;
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
         }
     }
+
+    function crearItemNotificacion(n) {
+        const item = document.createElement('a');
+        item.href = n.destino || `muro.html?usuario=${encodeURIComponent(n.actor_username)}`;
+        item.style.cssText = `display: block; padding: 10px 15px; border-bottom: 1px solid #eee; text-decoration: none; color: #333; font-size: 0.83rem; ${n.leida ? '' : 'background: #eef2f7;'}`;
+        const mensaje = document.createElement('div');
+        mensaje.textContent = n.mensaje;
+        const fecha = document.createElement('div');
+        fecha.style.cssText = 'font-size: 0.72rem; color: #999; margin-top: 2px;';
+        fecha.textContent = tiempoRelativo(n.created_at);
+        item.appendChild(mensaje);
+        item.appendChild(fecha);
+        return item;
+    }
+
+    // Scroll infinito dentro del panel: al abrirlo se traen las 20 más nuevas y, si
+    // hay más, al llegar al final del panel se piden las siguientes 20.
+    let scrollNotificaciones = null;
 
     async function abrirPanel() {
         const abierto = panel.style.display === 'block';
@@ -133,25 +153,43 @@ function crearCampanaNotificaciones() {
             return;
         }
 
-        const notificaciones = await actualizarBadge();
+        if (scrollNotificaciones) { scrollNotificaciones.detener(); scrollNotificaciones = null; }
+
+        let data = { notifications: [], noLeidas: 0, hasMore: false };
+        try {
+            const resp = await fetch('/api/notifications?limit=20');
+            if (resp.ok) data = await resp.json();
+        } catch (error) { /* mostramos el panel vacío */ }
+        pintarBadge(data.noLeidas);
+
         panel.innerHTML = '';
+        const notificaciones = data.notifications || [];
 
         if (notificaciones.length === 0) {
             panel.innerHTML = '<p style="padding: 15px; margin: 0; color: #888; font-size: 0.85rem;">No tienes notificaciones todavía.</p>';
         } else {
-            notificaciones.forEach(n => {
-                const item = document.createElement('a');
-                item.href = n.destino || `muro.html?usuario=${encodeURIComponent(n.actor_username)}`;
-                item.style.cssText = `display: block; padding: 10px 15px; border-bottom: 1px solid #eee; text-decoration: none; color: #333; font-size: 0.83rem; ${n.leida ? '' : 'background: #eef2f7;'}`;
-                const mensaje = document.createElement('div');
-                mensaje.textContent = n.mensaje;
-                const fecha = document.createElement('div');
-                fecha.style.cssText = 'font-size: 0.72rem; color: #999; margin-top: 2px;';
-                fecha.textContent = tiempoRelativo(n.created_at);
-                item.appendChild(mensaje);
-                item.appendChild(fecha);
-                panel.appendChild(item);
-            });
+            const lista = document.createElement('div');
+            panel.appendChild(lista);
+            notificaciones.forEach(n => lista.appendChild(crearItemNotificacion(n)));
+            let ultimoId = notificaciones[notificaciones.length - 1].id;
+
+            if (data.hasMore) {
+                scrollNotificaciones = crearScrollInfinito({
+                    contenedor: lista,
+                    raiz: panel,
+                    margen: 100,
+                    cargarMas: async () => {
+                        const resp = await fetch(`/api/notifications?limit=20&before=${ultimoId}`);
+                        if (!resp.ok) throw new Error('Error al cargar notificaciones');
+                        const pagina = await resp.json();
+                        (pagina.notifications || []).forEach(n => lista.appendChild(crearItemNotificacion(n)));
+                        if (pagina.notifications && pagina.notifications.length > 0) {
+                            ultimoId = pagina.notifications[pagina.notifications.length - 1].id;
+                        }
+                        return !!pagina.hasMore;
+                    }
+                });
+            }
         }
 
         panel.style.display = 'block';

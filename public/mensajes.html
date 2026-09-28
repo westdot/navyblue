@@ -252,8 +252,13 @@
         mensajeEstado.textContent = puedeEnviarHoy ? '' : 'Ya le enviaste un mensaje hoy. Podrás volver a escribirle cuando empiece el próximo día.';
     }
 
+    // Scroll infinito hacia ARRIBA: la conversación abre en los mensajes más recientes
+    // (30) y, al subir, se van trayendo los anteriores de a 30.
+    let scrollMensajes = null;
+
     async function abrirConversacion(username) {
         conversacionAbierta = username;
+        if (scrollMensajes) { scrollMensajes.detener(); scrollMensajes = null; }
 
         // marcamos visualmente cuál está activa en la lista
         document.querySelectorAll('.conversacion-item').forEach(el => {
@@ -270,7 +275,7 @@
         mensajeEstado.textContent = '';
 
         try {
-            const resp = await fetch(`/api/messages/${encodeURIComponent(username)}`);
+            const resp = await fetch(`/api/messages/${encodeURIComponent(username)}?limit=30`);
             const data = await resp.json().catch(() => ({}));
             if (!resp.ok) {
                 hiloMensajes.innerHTML = '';
@@ -285,6 +290,33 @@
             } else {
                 data.mensajes.forEach(m => hiloMensajes.appendChild(crearBurbuja(m)));
                 hiloMensajes.scrollTop = hiloMensajes.scrollHeight;
+
+                if (data.hasMore) {
+                    let primerId = data.mensajes[0].id; // el más viejo cargado hasta ahora
+                    scrollMensajes = crearScrollInfinito({
+                        contenedor: hiloMensajes,
+                        raiz: hiloMensajes,
+                        centinelaEn: 'inicio',
+                        margen: 150,
+                        cargarMas: async () => {
+                            const r = await fetch(`/api/messages/${encodeURIComponent(username)}?limit=30&before=${primerId}`);
+                            if (!r.ok) throw new Error('Error al cargar mensajes anteriores');
+                            const pagina = await r.json();
+                            if (conversacionAbierta !== username) return false; // cambiaste de chat mientras cargaba
+
+                            // Insertamos los anteriores arriba y compensamos el scroll para que
+                            // lo que estabas leyendo no salte de lugar.
+                            const alturaAntes = hiloMensajes.scrollHeight;
+                            const topAntes = hiloMensajes.scrollTop;
+                            const referencia = scrollMensajes.centinela.nextSibling;
+                            pagina.mensajes.forEach(m => hiloMensajes.insertBefore(crearBurbuja(m), referencia));
+                            hiloMensajes.scrollTop = topAntes + (hiloMensajes.scrollHeight - alturaAntes);
+
+                            if (pagina.mensajes.length > 0) primerId = pagina.mensajes[0].id;
+                            return !!pagina.hasMore;
+                        }
+                    });
+                }
             }
 
             actualizarEstadoEnvio(data.puedo_enviar_hoy);

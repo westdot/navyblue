@@ -2,15 +2,18 @@ const express = require('express');
 const db = require('../db/compat');
 const requiereSesion = require('../middleware/auth');
 const { normalizarPost } = require('../utils/posts');
+const { leerPaginacion, recortarPagina } = require('../utils/paginacion');
 const { notificarMenciones } = require('../services/notificaciones');
 
 const router = express.Router();
 
 // --- RUTAS DE PUBLICACIONES (POSTS) ---
 
-// Obtener todas las publicaciones
+// Obtener publicaciones, de a páginas (scroll infinito): ?limit=20&before=<id>
+// devuelve las `limit` más nuevas que sean anteriores al post `before`.
 router.get('/posts', (req, res) => {
     const { username } = req.query;
+    const { limit, before } = leerPaginacion(req.query);
     const miId = req.session.user ? req.session.user.id : null;
 
     const baseQuery = `
@@ -30,23 +33,32 @@ router.get('/posts', (req, res) => {
         LEFT JOIN users ON posts.user_id = users.id
     `;
 
+    // Arma el WHERE según lo que se haya pedido (usuario puntual y/o cursor)
+    const traerPagina = (userIdFiltro) => {
+        const condiciones = [];
+        const params = [miId, miId];
+        if (userIdFiltro) { condiciones.push('posts.user_id = ?'); params.push(userIdFiltro); }
+        if (before) { condiciones.push('posts.id < ?'); params.push(before); }
+        const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
+        params.push(limit + 1);
+
+        db.all(`${baseQuery} ${where} ORDER BY posts.id DESC LIMIT ?`, params, (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            const { filas, hasMore } = recortarPagina(rows, limit);
+            res.json({ posts: filas.map(normalizarPost), hasMore });
+        });
+    };
+
     if (username) {
         // Buscamos el id de la cuenta a partir del username actual, y filtramos por ESE id
         // (así se incluyen todos sus posts, aunque algunos se hayan guardado con otro nombre)
         db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
             if (err) return res.status(500).json({ error: err.message });
-            if (!user) return res.json({ posts: [] });
-
-            db.all(`${baseQuery} WHERE posts.user_id = ? ORDER BY posts.id DESC`, [miId, miId, user.id], (err, rows) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ posts: rows.map(normalizarPost) });
-            });
+            if (!user) return res.json({ posts: [], hasMore: false });
+            traerPagina(user.id);
         });
     } else {
-        db.all(`${baseQuery} ORDER BY posts.id DESC`, [miId, miId], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ posts: rows.map(normalizarPost) });
-        });
+        traerPagina(null);
     }
 });
 

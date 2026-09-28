@@ -76,6 +76,195 @@ function crearEstadoVacio(mensaje) {
     return div;
 }
 
+// --- SCROLL INFINITO ---
+// Ayudante genérico: pone un "centinela" invisible junto a una lista y, cuando
+// la persona se acerca a él haciendo scroll, llama a `cargarMas()` para traer la
+// siguiente página. Se usa en el feed, el muro, las notificaciones y los mensajes.
+//
+//   contenedor : elemento donde van los items (el centinela se pone justo después)
+//   cargarMas  : async () => boolean. Trae y pinta la siguiente página; devuelve
+//                true si TODAVÍA hay más, false si ya no queda nada.
+//   raiz       : elemento con scroll propio (ej. el panel de notificaciones).
+//                null = la ventana entera.
+//   centinelaEn: 'despues' (defecto: debajo del contenedor) o 'inicio' (primer hijo
+//                del contenedor, para listas que crecen hacia arriba como el chat).
+//   margen     : px de anticipación, para que la siguiente página ya esté lista
+//                antes de que la persona llegue al final.
+//   mensajeFin : texto a mostrar cuando ya no hay más (opcional).
+//
+// Devuelve { centinela, reiniciar(), detener() }. La primera página también la
+// dispara el centinela apenas queda a la vista, así que quien lo usa no tiene
+// que hacer una carga inicial aparte (a menos que la quiera hacer él, como el chat).
+function crearScrollInfinito({ contenedor, cargarMas, raiz = null, centinelaEn = 'despues', margen = 300, mensajeFin = '' }) {
+    const centinela = document.createElement('div');
+    centinela.className = 'scroll-infinito-centinela';
+    // Altura fija: así el texto "Cargando más..." aparece/desaparece sin mover el contenido (importa en el chat)
+    centinela.style.cssText = 'height: 36px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; color: #999; flex-shrink: 0; box-sizing: border-box;';
+
+    let cargando = false;
+    let terminado = false;
+    let detenido = false;
+    let enError = false;
+    let generacion = 0; // sube con cada reiniciar(), para ignorar cargas que venían en camino
+
+    function colocar() {
+        if (centinelaEn === 'inicio') contenedor.prepend(centinela);
+        else contenedor.after(centinela);
+    }
+
+    // Navegadores muy viejos sin IntersectionObserver: cargamos todo de una vez.
+    if (!('IntersectionObserver' in window)) {
+        colocar();
+        (async () => {
+            for (let i = 0; i < 50; i++) {
+                if (!(await cargarMas())) break;
+            }
+        })();
+        return { centinela, reiniciar() {}, detener() { centinela.remove(); } };
+    }
+
+    async function intentarCargar(forzar = false) {
+        if (cargando || terminado || detenido) return;
+        if (enError && !forzar) return; // tras un error no insistimos solos
+        cargando = true;
+        enError = false;
+        centinela.style.cursor = '';
+        centinela.textContent = 'Cargando más...';
+        const miGeneracion = generacion;
+
+        let hayMas = false;
+        try {
+            hayMas = await cargarMas();
+        } catch (error) {
+            if (miGeneracion !== generacion) return; // ya se reinició: este error no importa
+            enError = true;
+            cargando = false;
+            centinela.style.cursor = 'pointer';
+            centinela.textContent = 'No se pudo cargar. Toca aquí para reintentar.';
+            return;
+        }
+
+        if (miGeneracion !== generacion) return; // se reinició mientras cargaba: descartamos este resultado
+        cargando = false;
+        if (detenido) return;
+        if (!hayMas) {
+            terminado = true;
+            observador.unobserve(centinela);
+            centinela.textContent = mensajeFin;
+        } else {
+            centinela.textContent = '';
+            // Si la página cargada no alcanzó a llenar la pantalla, el centinela
+            // sigue a la vista y el observador no volvería a avisar: lo re-observamos.
+            observador.unobserve(centinela);
+            observador.observe(centinela);
+        }
+    }
+
+    const observador = new IntersectionObserver((entradas) => {
+        if (entradas.some(e => e.isIntersecting)) intentarCargar();
+    }, { root: raiz, rootMargin: `${margen}px 0px ${margen}px 0px` });
+
+    centinela.addEventListener('click', () => { if (enError) intentarCargar(true); });
+
+    colocar();
+    observador.observe(centinela);
+
+    return {
+        centinela,
+        // Para volver a empezar desde la primera página (ej. tras publicar algo nuevo
+        // o al cambiar de pestaña): quien lo llama vacía el contenedor y reinicia.
+        reiniciar() {
+            generacion++;
+            terminado = false;
+            cargando = false;
+            enError = false;
+            detenido = false;
+            centinela.textContent = '';
+            colocar();
+            observador.unobserve(centinela);
+            observador.observe(centinela);
+        },
+        detener() {
+            detenido = true;
+            observador.disconnect();
+            centinela.remove();
+        }
+    };
+}
+
+// --- FEED MEZCLADO Y PAGINADO ---
+// El feed general y el muro de cada persona mezclan varios tipos de cosas (posts,
+// reseñas, preguntas), cada una con su propio endpoint paginado. Este ayudante las
+// va trayendo por páginas y las entrega ya mezcladas por fecha. Para no perder ni
+// repetir nada, cada tipo tiene su "cursor" (el id del último elemento de ese tipo
+// que YA se entregó): en cada página se pide `tamano` de cada tipo, se mezclan, se
+// entregan solo las `tamano` más nuevas, y el cursor de cada tipo avanza únicamente
+// hasta donde se llegó a entregar. Lo que se trajo de más se vuelve a pedir después.
+//
+//   fuentes: [{ tipo, url, clave, params }]  ej. { tipo: 'post', url: '/api/posts',
+//            clave: 'posts', params: { username: 'ana' } }
+//   siguiente(): async -> { items: [{ _tipo, ...fila }], hayMas, obsoleto }
+//   reiniciar(): vuelve a la primera página (las respuestas pendientes se descartan)
+function crearPaginadorMezclado(fuentes, tamano = 15) {
+    let cursores, agotados, entregados, generacion = 0;
+
+    function reiniciar() {
+        generacion++;
+        cursores = {};
+        agotados = {};
+        entregados = new Set(); // red de seguridad contra repetidos
+        fuentes.forEach(f => { cursores[f.tipo] = null; agotados[f.tipo] = false; });
+    }
+    reiniciar();
+
+    async function siguiente() {
+        const miGeneracion = generacion;
+
+        const traidos = await Promise.all(fuentes.map(async (f) => {
+            if (agotados[f.tipo]) return { tipo: f.tipo, filas: [], hasMore: false };
+            const params = new URLSearchParams(f.params || {});
+            params.set('limit', tamano);
+            if (cursores[f.tipo]) params.set('before', cursores[f.tipo]);
+            const resp = await fetch(`${f.url}?${params}`);
+            if (!resp.ok) throw new Error('Error al cargar ' + f.tipo);
+            const data = await resp.json();
+            return { tipo: f.tipo, filas: data[f.clave] || [], hasMore: !!data.hasMore };
+        }));
+        if (miGeneracion !== generacion) return { items: [], hayMas: false, obsoleto: true };
+
+        const mezclados = traidos
+            .flatMap(({ tipo, filas }) => filas.map(fila => ({ _tipo: tipo, ...fila })))
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const elegidos = mezclados.slice(0, tamano);
+        const idsElegidos = new Set(elegidos.map(e => `${e._tipo}:${e.id}`));
+
+        // Avanzamos el cursor de cada tipo solo por el tramo inicial que sí se entregó
+        let hayMas = false;
+        traidos.forEach(({ tipo, filas, hasMore }) => {
+            let cursor = cursores[tipo];
+            let quedanSinEntregar = false;
+            for (const fila of filas) {
+                if (!quedanSinEntregar && idsElegidos.has(`${tipo}:${fila.id}`)) cursor = fila.id;
+                else quedanSinEntregar = true;
+            }
+            cursores[tipo] = cursor;
+            const quedaMas = quedanSinEntregar || hasMore;
+            agotados[tipo] = !quedaMas;
+            if (quedaMas) hayMas = true;
+        });
+
+        const items = elegidos.filter(e => {
+            const clave = `${e._tipo}:${e.id}`;
+            if (entregados.has(clave)) return false;
+            entregados.add(clave);
+            return true;
+        });
+        return { items, hayMas, obsoleto: false };
+    }
+
+    return { siguiente, reiniciar };
+}
+
 // Comprime y redimensiona una imagen en el navegador antes de subirla (se usa
 // para la foto de perfil y la foto de portada). Sin esto, cada foto se
 // guardaba tal cual llegara del celular/cámara (a veces varios MB) directo

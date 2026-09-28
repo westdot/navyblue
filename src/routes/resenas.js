@@ -2,15 +2,18 @@ const express = require('express');
 const db = require('../db/compat');
 const requiereSesion = require('../middleware/auth');
 const { crearNotificacion, notificarMenciones } = require('../services/notificaciones');
+const { leerPaginacion, recortarPagina } = require('../utils/paginacion');
 
 const router = express.Router();
 
 // --- RUTAS DE RESEÑAS (funcionalidad separada de los posts) ---
 
-// Listar reseñas recientes, con sus contadores y tu propia reacción si tienes sesión
+// Listar reseñas recientes, de a páginas (scroll infinito): ?limit=20&before=<id>.
+// Incluye sus contadores y tu propia reacción si tienes sesión.
 router.get('/reviews', (req, res) => {
     const miId = req.session.user ? req.session.user.id : null;
     const { username } = req.query;
+    const { limit, before } = leerPaginacion(req.query);
 
     const baseQuery = `
         SELECT
@@ -24,21 +27,29 @@ router.get('/reviews', (req, res) => {
         LEFT JOIN users ON reviews.user_id = users.id
     `;
 
+    const traerPagina = (userIdFiltro) => {
+        const condiciones = [];
+        const params = [miId];
+        if (userIdFiltro) { condiciones.push('reviews.user_id = ?'); params.push(userIdFiltro); }
+        if (before) { condiciones.push('reviews.id < ?'); params.push(before); }
+        const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
+        params.push(limit + 1);
+
+        db.all(`${baseQuery} ${where} ORDER BY reviews.id DESC LIMIT ?`, params, (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            const { filas, hasMore } = recortarPagina(rows, limit);
+            res.json({ reviews: filas, hasMore });
+        });
+    };
+
     if (username) {
         db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
             if (err) return res.status(500).json({ error: err.message });
-            if (!user) return res.json({ reviews: [] });
-
-            db.all(`${baseQuery} WHERE reviews.user_id = ? ORDER BY reviews.id DESC`, [miId, user.id], (err, rows) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ reviews: rows });
-            });
+            if (!user) return res.json({ reviews: [], hasMore: false });
+            traerPagina(user.id);
         });
     } else {
-        db.all(`${baseQuery} ORDER BY reviews.id DESC LIMIT 20`, [miId], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ reviews: rows });
-        });
+        traerPagina(null);
     }
 });
 

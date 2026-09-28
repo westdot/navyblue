@@ -24,7 +24,7 @@ router.get('/users/:username/meta-lectura', (req, res) => {
                  FROM shelf_items
                  JOIN shelves ON shelves.id = shelf_items.shelf_id
                  WHERE shelves.user_id = ?
-                   AND LOWER(shelves.nombre) IN ('leídos', 'leidos', 'terminado', 'terminados')
+                   AND LOWER(shelves.nombre) = LOWER('Terminado')
                    AND EXTRACT(YEAR FROM shelf_items.created_at) = ?`,
                 [user.id, anio],
                 (err, row) => {
