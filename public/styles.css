@@ -11,19 +11,22 @@
    estas variables, no cazar colores sueltos en el archivo)
    ===================================================== */
 :root {
-    --color-papel: #f5efe1;          /* fondo tipo papel/crema, no blanco frío */
-    --color-tarjeta: #fdfaf3;        /* "hojas" (columnas, cards) — blanco cálido, no puro */
-    --color-borde: #e3d9c2;          /* bordes cálidos en vez de gris frío */
-    --color-texto: #3a3226;          /* marrón oscuro cálido, más suave que negro/gris */
-    --color-texto-suave: #7a7061;
+    /* "Navy Refinado": misma familia de siempre, pulida — más contraste entre
+       texto y fondo, navy un poco más saturado, y una superficie de tarjeta
+       distinta del fondo de página para que las cards se despeguen de verdad. */
+    --color-papel: #f6f1e7;          /* fondo tipo papel/crema */
+    --color-tarjeta: #fffdf7;        /* "hojas" (columnas, cards) — se nota más despegada del fondo */
+    --color-borde: #e2d9c3;          /* bordes cálidos */
+    --color-texto: #2b2520;          /* más oscuro que antes: mejor contraste de lectura */
+    --color-texto-suave: #8a8073;    /* texto secundario (horas, conteos) */
 
-    --color-navy: #5b6f8f;           /* navy suavizado/pastel — el azul principal */
-    --color-navy-oscuro: #3f4f68;    /* variante un poco más oscura, para header/footer */
-    --color-navy-claro: #e7ecf3;     /* fondo azulado pastel para hovers/badges */
-    --color-navy-texto: #445269;     /* texto sobre fondos claros azulados */
+    --color-navy: #3f5173;           /* navy secundario/más claro */
+    --color-navy-oscuro: #2f3e56;    /* navy principal — header, botones primarios */
+    --color-navy-claro: #e4e9f0;     /* fondo azulado pastel para hovers/badges */
+    --color-navy-texto: #33425c;     /* texto sobre fondos claros azulados */
 
-    --color-acento: #c08a4e;         /* dorado envejecido — CTAs, valoraciones, detalles */
-    --color-acento-oscuro: #a06f3a;
+    --color-acento: #b9823f;         /* dorado envejecido — CTAs, valoraciones, detalles */
+    --color-acento-oscuro: #9c6f35;
 
     --color-like: #7fa88b;           /* verde salvia suavizado (antes verde neón) */
     --color-like-fondo: #eaf3ee;
@@ -260,7 +263,7 @@ h2 {
     justify-content: space-between;
     align-items: center;
     margin-top: 10px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--color-borde);
     padding-top: 8px;
 }
 
@@ -568,6 +571,20 @@ footer a {
 
 .link-olvido:hover {
     text-decoration: underline;
+}
+
+.form-control {
+    border: 1px solid var(--color-borde);
+    border-radius: 8px;
+    background: var(--color-tarjeta);
+    color: var(--color-texto);
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: border-color 0.15s;
+}
+.form-control:focus {
+    outline: none;
+    border-color: var(--color-acento);
 }
 
 .btn-entrar {
@@ -987,6 +1004,9 @@ body.modo-compacto .resena-card {
    ganaba a cualquier media query y desbordaba la pantalla en celular). */
 .buscador-input {
     width: 190px;
+}
+.buscador-input::placeholder {
+    color: rgba(255,255,255,0.65);
 }
 
 /* ============================================================ */

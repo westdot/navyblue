@@ -84,27 +84,27 @@
         <aside class="columna-izquierda" id="col-lector">
             <h2>Leyendo ahora</h2>
             <div id="lecturas-contenedor">
-                <p style="font-size: 14px; color: #666;">Cargando...</p>
+                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
             </div>
 
             <div class="divisor-lomo"></div>
 
             <div id="libros-anio-contenedor" style="text-align: center; padding: 4px 0;">
-                <p style="font-size: 14px; color: #666;">Cargando...</p>
+                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
             </div>
 
             <div class="divisor-lomo"></div>
 
             <h2>Insignias</h2>
             <div id="insignias-contenedor" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                <p style="font-size: 14px; color: #666;">Cargando...</p>
+                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
             </div>
 
             <div class="divisor-lomo"></div>
 
             <h2>Preguntas</h2>
             <div id="preguntar-contenedor">
-                <p style="font-size: 14px; color: #666;">Cargando...</p>
+                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
             </div>
         </aside>
 
@@ -119,11 +119,11 @@
             <div id="composer-mount" style="text-align: center; margin-bottom: 10px;"></div>
 
             <!-- Pestañas: Post / Comentarios / Likes -->
-            <div class="publicar-footer" style="display: flex; gap: 0; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; overflow: hidden;">
-                <button class="btn-tab-muro tab-activa" data-tab="posts" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #34517c; color: white;">Post</button>
-                <button class="btn-tab-muro" data-tab="comentarios" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #eee;">Comentarios</button>
-                <button class="btn-tab-muro" data-tab="likes" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #eee;">Likes</button>
-                <button class="btn-tab-muro" data-tab="preguntas" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: #eee;">Preguntas</button>
+            <div class="publicar-footer" style="display: flex; gap: 0; margin-bottom: 15px; border: 1px solid var(--color-borde); border-radius: 6px; overflow: hidden;">
+                <button class="btn-tab-muro tab-activa" data-tab="posts" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: var(--color-navy-oscuro); color: white;">Post</button>
+                <button class="btn-tab-muro" data-tab="comentarios" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: var(--color-borde);">Comentarios</button>
+                <button class="btn-tab-muro" data-tab="likes" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: var(--color-borde);">Likes</button>
+                <button class="btn-tab-muro" data-tab="preguntas" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: var(--color-borde);">Preguntas</button>
             </div>
 
             <h3 id="titulo-lista">Publicaciones</h3>
@@ -136,11 +136,11 @@
         <aside class="columna-derecha">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Estanterías</h2>
-                <a id="link-gestionar-estanterias" href="estanterias.html" style="display: none; font-size: 0.75rem; color: #34517c; text-decoration: none; font-weight: bold;">Gestionar</a>
+                <a id="link-gestionar-estanterias" href="estanterias.html" style="display: none; font-size: 0.75rem; color: var(--color-navy-oscuro); text-decoration: none; font-weight: bold;">Gestionar</a>
             </div>
             <div style="border-bottom: 2px solid var(--color-borde); margin-bottom: 15px;"></div>
             <div id="estanterias-contenedor">
-                <p style="font-size: 14px; color: #666;">Cargando...</p>
+                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
             </div>
         </aside>
 
@@ -234,7 +234,7 @@
 
         const tiempo = document.createElement('span');
         tiempo.className = 'post-tiempo';
-        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: #888; cursor: pointer;';
+        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: var(--color-texto-suave); cursor: pointer;';
         tiempo.title = 'Abrir esta publicación';
         tiempo.textContent = obtenerTiempoRelativo(post.created_at);
         // Clic en la hora: abre el post en su propia página, distinto del resto
@@ -303,7 +303,7 @@
         ul.innerHTML = '';
         if (nombres.length === 0) {
             const li = document.createElement('li');
-            li.style.cssText = 'color: #888; font-size: 0.85rem;';
+            li.style.cssText = 'color: var(--color-texto-suave); font-size: 0.85rem;';
             li.textContent = mensajeVacio;
             ul.appendChild(li);
             return;
@@ -354,7 +354,7 @@
 
     function actualizarBotonSeguir(btn, siguiendo) {
         btn.textContent = siguiendo ? 'Dejar de seguir' : 'Seguir';
-        btn.style.cssText = `padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #34517c; background: ${siguiendo ? 'white' : '#34517c'}; color: ${siguiendo ? '#34517c' : 'white'};`;
+        btn.style.cssText = `padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid var(--color-navy-oscuro); background: ${siguiendo ? 'white' : 'var(--color-navy-oscuro)'}; color: ${siguiendo ? 'var(--color-navy-oscuro)' : 'white'};`;
     }
 
     // Carga Amigos de un usuario, y arma el botón de amistad según el estado (totalmente
@@ -387,7 +387,7 @@
                     btnAmigo.addEventListener('click', () => accionAmistad('', 'DELETE'));
                 } else if (data.estado === 'solicitud_enviada') {
                     btnAmigo.textContent = 'Solicitud enviada (cancelar)';
-                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #ccc; background: #eee; color: #333;';
+                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid var(--color-borde); background: var(--color-borde); color: var(--color-texto);';
                     btnAmigo.addEventListener('click', () => accionAmistad('', 'DELETE'));
                 } else if (data.estado === 'solicitud_recibida') {
                     btnAmigo.textContent = 'Aceptar solicitud de amistad';
@@ -395,7 +395,7 @@
                     btnAmigo.addEventListener('click', () => accionAmistad('/aceptar', 'POST'));
                 } else {
                     btnAmigo.textContent = 'Agregar amigo';
-                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #ccc; background: #eee; color: #333;';
+                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid var(--color-borde); background: var(--color-borde); color: var(--color-texto);';
                     btnAmigo.addEventListener('click', () => accionAmistad('/solicitar', 'POST'));
                 }
 
@@ -484,7 +484,7 @@
                         listaMuro.appendChild(crearPostCard(item, esMiMuro));
                     } else {
                         const envoltorio = document.createElement('div');
-                        envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
+                        envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid var(--color-borde);';
                         envoltorio.appendChild(crearResenaCard(item, esMiMuro ? username : null));
                         listaMuro.appendChild(envoltorio);
                     }
@@ -499,8 +499,8 @@
         detenerScrollMuro(); // la pestaña anterior ya no debe seguir pidiendo páginas
         botonesTab.forEach(btn => {
             const activo = btn.dataset.tab === tab;
-            btn.style.background = activo ? '#34517c' : '#eee';
-            btn.style.color = activo ? 'white' : '#333';
+            btn.style.background = activo ? 'var(--color-navy-oscuro)' : 'var(--color-borde)';
+            btn.style.color = activo ? 'white' : 'var(--color-texto)';
         });
 
         if (tab === 'posts') {
@@ -542,7 +542,7 @@
 
         const tiempo = document.createElement('span');
         tiempo.className = 'post-tiempo';
-        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: #888;';
+        tiempo.style.cssText = 'margin-left: auto; font-size: 0.75rem; color: var(--color-texto-suave);';
         tiempo.textContent = obtenerTiempoRelativo(pregunta.created_at);
         header.appendChild(tiempo);
 
@@ -556,9 +556,9 @@
         if (pregunta.respuesta) {
             // Ya tiene respuesta: se muestra, no se puede volver a responder.
             const bloqueRespuesta = document.createElement('div');
-            bloqueRespuesta.style.cssText = 'margin-top: 8px; padding: 8px 10px; background: #f7ecd9; border-radius: 8px; border-left: 3px solid #c08a4e;';
+            bloqueRespuesta.style.cssText = 'margin-top: 8px; padding: 8px 10px; background: #f7ecd9; border-radius: 8px; border-left: 3px solid #b9823f;';
             const etiqueta = document.createElement('p');
-            etiqueta.style.cssText = 'margin: 0 0 3px; font-size: 0.72rem; font-weight: bold; color: #a06f3a;';
+            etiqueta.style.cssText = 'margin: 0 0 3px; font-size: 0.72rem; font-weight: bold; color: #9c6f35;';
             etiqueta.textContent = `↳ ${pregunta.asked_username} respondió:`;
             const textoResp = document.createElement('p');
             textoResp.style.cssText = 'margin: 0; font-size: 0.85rem;';
@@ -575,12 +575,12 @@
             input.type = 'text';
             input.placeholder = 'Escribe tu respuesta...';
             input.maxLength = 200;
-            input.style.cssText = 'flex: 1; padding: 6px 10px; border-radius: 999px; border: 1px solid #ccc; font-size: 0.82rem;';
+            input.style.cssText = 'flex: 1; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--color-borde); font-size: 0.82rem;';
 
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.textContent = 'Responder';
-            btn.style.cssText = 'background: #34517c; color: white; border: none; border-radius: 999px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; flex-shrink: 0;';
+            btn.style.cssText = 'background: var(--color-navy-oscuro); color: white; border: none; border-radius: 999px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; flex-shrink: 0;';
 
             const mensajeError = document.createElement('p');
             mensajeError.style.cssText = 'margin: 4px 0 0; font-size: 0.75rem; color: red; width: 100%;';
@@ -671,7 +671,7 @@
 
         if (esMiMuro) {
             const info = document.createElement('p');
-            info.style.cssText = 'font-size: 0.8rem; color: #666;';
+            info.style.cssText = 'font-size: 0.8rem; color: var(--color-texto-suave);';
             info.textContent = 'Cargando...';
             contenedor.appendChild(info);
 
@@ -695,7 +695,7 @@
         textarea.style.cssText = 'width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; border: 1px solid var(--color-borde); font-family: inherit; font-size: 0.8rem; resize: vertical; min-height: 50px;';
 
         const contador = document.createElement('div');
-        contador.style.cssText = 'font-size: 0.7rem; color: #999; text-align: right; margin: 3px 0;';
+        contador.style.cssText = 'font-size: 0.7rem; color: var(--color-texto-suave); text-align: right; margin: 3px 0;';
         contador.textContent = '0 / 200';
         textarea.addEventListener('input', () => {
             contador.textContent = `${textarea.value.length} / 200`;
@@ -704,7 +704,7 @@
         const btnPreguntar = document.createElement('button');
         btnPreguntar.type = 'button';
         btnPreguntar.textContent = 'Preguntar';
-        btnPreguntar.style.cssText = 'width: 100%; padding: 7px; border-radius: 999px; border: none; background: #5b6f8f; color: white; font-size: 0.8rem; cursor: pointer;';
+        btnPreguntar.style.cssText = 'width: 100%; padding: 7px; border-radius: 999px; border: none; background: #3f5173; color: white; font-size: 0.8rem; cursor: pointer;';
 
         const mensaje = document.createElement('p');
         mensaje.style.cssText = 'font-size: 0.75rem; margin-top: 5px;';
@@ -715,7 +715,7 @@
             btnPreguntar.style.opacity = '0.6';
             btnPreguntar.style.cursor = 'not-allowed';
             if (motivo) {
-                mensaje.style.color = '#666';
+                mensaje.style.color = 'var(--color-texto-suave)';
                 mensaje.textContent = motivo;
             }
         }
@@ -766,7 +766,7 @@
 
     function crearLibroChip(libro, esMiMuro, alEliminar) {
         const chip = document.createElement('div');
-        chip.style.cssText = 'display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee;';
+        chip.style.cssText = 'display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--color-borde);';
 
         const img = document.createElement('img');
         img.src = libro.portada_url || 'https://via.placeholder.com/40x56';
@@ -780,7 +780,7 @@
         titulo.style.cssText = 'font-size: 0.82rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
         titulo.appendChild(crearLinkLibro(libro.libro_titulo, libro.autor, libro.portada_url));
         const autor = document.createElement('div');
-        autor.style.cssText = 'font-size: 0.75rem; color: #888;';
+        autor.style.cssText = 'font-size: 0.75rem; color: var(--color-texto-suave);';
         autor.textContent = libro.autor;
         info.appendChild(titulo);
         info.appendChild(autor);
@@ -791,7 +791,7 @@
             btnQuitar.type = 'button';
             btnQuitar.textContent = '✕';
             btnQuitar.title = 'Quitar de la estantería';
-            btnQuitar.style.cssText = 'background: none; border: none; cursor: pointer; color: #999; font-size: 0.8rem;';
+            btnQuitar.style.cssText = 'background: none; border: none; cursor: pointer; color: var(--color-texto-suave); font-size: 0.8rem;';
             btnQuitar.addEventListener('click', alEliminar);
             chip.appendChild(btnQuitar);
         }
@@ -801,13 +801,13 @@
 
     function crearFormularioLibro(shelfId, onAgregado) {
         const form = document.createElement('div');
-        form.style.cssText = 'display: none; margin-top: 8px; padding: 8px; background: #f7f7f7; border-radius: 6px;';
+        form.style.cssText = 'display: none; margin-top: 8px; padding: 8px; background: var(--color-borde); border-radius: 6px;';
 
         function campo(placeholder) {
             const input = document.createElement('input');
             input.type = 'text';
             input.placeholder = placeholder;
-            input.style.cssText = 'width: 100%; padding: 6px; margin-bottom: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8rem; box-sizing: border-box;';
+            input.style.cssText = 'width: 100%; padding: 6px; margin-bottom: 6px; border-radius: 4px; border: 1px solid var(--color-borde); font-size: 0.8rem; box-sizing: border-box;';
             return input;
         }
 
@@ -818,7 +818,7 @@
         const btnGuardar = document.createElement('button');
         btnGuardar.type = 'button';
         btnGuardar.textContent = 'Agregar';
-        btnGuardar.style.cssText = 'padding: 5px 12px; border-radius: 999px; border: none; background: #34517c; color: white; font-size: 0.78rem; cursor: pointer;';
+        btnGuardar.style.cssText = 'padding: 5px 12px; border-radius: 999px; border: none; background: var(--color-navy-oscuro); color: white; font-size: 0.78rem; cursor: pointer;';
 
         const mensaje = document.createElement('p');
         mensaje.style.cssText = 'font-size: 0.75rem; margin-top: 4px;';
@@ -886,7 +886,7 @@
             btnQuitar.type = 'button';
             btnQuitar.textContent = '✕';
             btnQuitar.title = 'Quitar de la estantería';
-            btnQuitar.style.cssText = 'position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; line-height: 16px; padding: 0; border-radius: 50%; border: 1px solid #ccc; background: white; color: #999; cursor: pointer; font-size: 0.7rem; opacity: 0; transition: opacity 0.15s ease;';
+            btnQuitar.style.cssText = 'position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; line-height: 16px; padding: 0; border-radius: 50%; border: 1px solid var(--color-borde); background: white; color: var(--color-texto-suave); cursor: pointer; font-size: 0.7rem; opacity: 0; transition: opacity 0.15s ease;';
             envoltorio.addEventListener('mouseenter', () => { btnQuitar.style.opacity = '1'; });
             envoltorio.addEventListener('mouseleave', () => { btnQuitar.style.opacity = '0'; });
             btnQuitar.addEventListener('click', alEliminar);
@@ -961,7 +961,7 @@
             const btnMostrarForm = document.createElement('button');
             btnMostrarForm.type = 'button';
             btnMostrarForm.textContent = '+ Agregar libro';
-            btnMostrarForm.style.cssText = 'margin-top: 6px; background: none; border: none; color: #34517c; cursor: pointer; font-size: 0.78rem; font-weight: bold;';
+            btnMostrarForm.style.cssText = 'margin-top: 6px; background: none; border: none; color: var(--color-navy-oscuro); cursor: pointer; font-size: 0.78rem; font-weight: bold;';
 
             const form = crearFormularioLibro(estante.id, () => cargarEstanterias(usuarioObjetivo, esMiMuro));
             btnMostrarForm.addEventListener('click', () => {
@@ -977,7 +977,7 @@
 
     async function cargarEstanterias(usuarioObjetivo, esMiMuro) {
         const contenedor = document.getElementById('estanterias-contenedor');
-        contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">Cargando...</p>';
+        contenedor.innerHTML = '<p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>';
         try {
             const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}/shelves`);
             const data = await resp.json();
@@ -995,7 +995,7 @@
                 const btnNuevaEstanteria = document.createElement('button');
                 btnNuevaEstanteria.type = 'button';
                 btnNuevaEstanteria.textContent = '+ Nueva estantería';
-                btnNuevaEstanteria.style.cssText = 'width: 100%; padding: 8px; border-radius: 999px; border: 1px dashed #34517c; background: none; color: #34517c; cursor: pointer; font-size: 0.85rem; margin-top: 10px;';
+                btnNuevaEstanteria.style.cssText = 'width: 100%; padding: 8px; border-radius: 999px; border: 1px dashed var(--color-navy-oscuro); background: none; color: var(--color-navy-oscuro); cursor: pointer; font-size: 0.85rem; margin-top: 10px;';
                 btnNuevaEstanteria.addEventListener('click', async () => {
                     const nombre = prompt('Nombre de la nueva estantería:');
                     if (!nombre || !nombre.trim()) return;
@@ -1022,7 +1022,7 @@
             // después de ver el detalle de un post, para no perder los listeners.
             document.querySelector('.columna-derecha')._volverCallback = () => cargarEstanterias(usuarioObjetivo, esMiMuro);
         } catch (error) {
-            contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar las estanterías.</p>';
+            contenedor.innerHTML = '<p style="font-size: 14px; color: var(--color-texto-suave);">No se pudieron cargar las estanterías.</p>';
         }
     }
 
@@ -1031,9 +1031,9 @@
     function crearBarraProgreso(pagina, total) {
         const porcentaje = total > 0 ? Math.min(100, Math.round((pagina / total) * 100)) : 0;
         const contenedor = document.createElement('div');
-        contenedor.style.cssText = 'background: #e3d9c2; border-radius: 999px; height: 6px; margin: 4px 0; overflow: hidden;';
+        contenedor.style.cssText = 'background: #e2d9c3; border-radius: 999px; height: 6px; margin: 4px 0; overflow: hidden;';
         const relleno = document.createElement('div');
-        relleno.style.cssText = `background: #c08a4e; height: 100%; width: ${porcentaje}%; border-radius: 999px;`;
+        relleno.style.cssText = `background: #b9823f; height: 100%; width: ${porcentaje}%; border-radius: 999px;`;
         contenedor.appendChild(relleno);
         return contenedor;
     }
@@ -1059,7 +1059,7 @@
         info.appendChild(crearBarraProgreso(lectura.pagina_actual, lectura.paginas_totales));
 
         const textoPagina = document.createElement('div');
-        textoPagina.style.cssText = 'font-size: 0.72rem; color: #888;';
+        textoPagina.style.cssText = 'font-size: 0.72rem; color: var(--color-texto-suave);';
         textoPagina.textContent = `Pág. ${lectura.pagina_actual} de ${lectura.paginas_totales}`;
         info.appendChild(textoPagina);
 
@@ -1072,19 +1072,19 @@
             inputPagina.min = '0';
             inputPagina.max = String(lectura.paginas_totales);
             inputPagina.value = lectura.pagina_actual;
-            inputPagina.style.cssText = 'width: 55px; padding: 3px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.75rem;';
+            inputPagina.style.cssText = 'width: 55px; padding: 3px; border-radius: 4px; border: 1px solid var(--color-borde); font-size: 0.75rem;';
 
             const btnActualizar = document.createElement('button');
             btnActualizar.type = 'button';
             btnActualizar.title = 'Actualizar página';
             btnActualizar.textContent = '🔄';
-            btnActualizar.style.cssText = 'padding: 3px 6px; border-radius: 999px; border: none; background: #5b6f8f; color: white; font-size: 0.75rem; cursor: pointer;';
+            btnActualizar.style.cssText = 'padding: 3px 6px; border-radius: 999px; border: none; background: #3f5173; color: white; font-size: 0.75rem; cursor: pointer;';
 
             const btnCompartir = document.createElement('button');
             btnCompartir.type = 'button';
             btnCompartir.title = 'Actualizar y compartir como post';
             btnCompartir.textContent = '📣';
-            btnCompartir.style.cssText = 'padding: 3px 6px; border-radius: 999px; border: none; background: #c08a4e; color: white; font-size: 0.7rem; cursor: pointer;';
+            btnCompartir.style.cssText = 'padding: 3px 6px; border-radius: 999px; border: none; background: #b9823f; color: white; font-size: 0.7rem; cursor: pointer;';
 
             const btnQuitar = document.createElement('button');
             btnQuitar.type = 'button';
@@ -1153,7 +1153,7 @@
 
     async function cargarLecturas(usuarioObjetivo, esMiMuro) {
         const contenedor = document.getElementById('lecturas-contenedor');
-        contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">Cargando...</p>';
+        contenedor.innerHTML = '<p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>';
         try {
             const resp = await fetch(`/api/users/${encodeURIComponent(usuarioObjetivo)}/lecturas`);
             const data = await resp.json();
@@ -1171,19 +1171,19 @@
                 const btnNueva = document.createElement('button');
                 btnNueva.type = 'button';
                 btnNueva.textContent = '+ Empezar una lectura';
-                btnNueva.style.cssText = 'width: 100%; padding: 7px; border-radius: 999px; border: 1px dashed #5b6f8f; background: none; color: #5b6f8f; cursor: pointer; font-size: 0.8rem;';
+                btnNueva.style.cssText = 'width: 100%; padding: 7px; border-radius: 999px; border: 1px dashed #3f5173; background: none; color: #3f5173; cursor: pointer; font-size: 0.8rem;';
                 btnNueva.addEventListener('click', () => {
                     formNuevaLectura.style.display = formNuevaLectura.style.display === 'none' ? 'block' : 'none';
                 });
 
                 const formNuevaLectura = document.createElement('div');
-                formNuevaLectura.style.cssText = 'display: none; margin-top: 8px; padding: 8px; background: #f7f7f7; border-radius: 6px;';
+                formNuevaLectura.style.cssText = 'display: none; margin-top: 8px; padding: 8px; background: var(--color-borde); border-radius: 6px;';
 
                 function campo(placeholder, tipo) {
                     const input = document.createElement('input');
                     input.type = tipo || 'text';
                     input.placeholder = placeholder;
-                    input.style.cssText = 'width: 100%; padding: 6px; margin-bottom: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8rem; box-sizing: border-box;';
+                    input.style.cssText = 'width: 100%; padding: 6px; margin-bottom: 6px; border-radius: 4px; border: 1px solid var(--color-borde); font-size: 0.8rem; box-sizing: border-box;';
                     return input;
                 }
                 const inputTitulo = campo('Título del libro');
@@ -1194,7 +1194,7 @@
                 const btnGuardar = document.createElement('button');
                 btnGuardar.type = 'button';
                 btnGuardar.textContent = 'Empezar';
-                btnGuardar.style.cssText = 'padding: 5px 12px; border-radius: 999px; border: none; background: #5b6f8f; color: white; font-size: 0.78rem; cursor: pointer;';
+                btnGuardar.style.cssText = 'padding: 5px 12px; border-radius: 999px; border: none; background: #3f5173; color: white; font-size: 0.78rem; cursor: pointer;';
 
                 const mensaje = document.createElement('p');
                 mensaje.style.cssText = 'font-size: 0.75rem; margin-top: 4px;';
@@ -1236,7 +1236,7 @@
                 contenedor.appendChild(formNuevaLectura);
             }
         } catch (error) {
-            contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar las lecturas.</p>';
+            contenedor.innerHTML = '<p style="font-size: 14px; color: var(--color-texto-suave);">No se pudieron cargar las lecturas.</p>';
         }
     }
 
@@ -1258,7 +1258,7 @@
             contenedor.appendChild(numeroP);
 
             const etiquetaP = document.createElement('p');
-            etiquetaP.style.cssText = 'font-size: 0.75rem; color: #666; margin: 2px 0 0 0;';
+            etiquetaP.style.cssText = 'font-size: 0.75rem; color: var(--color-texto-suave); margin: 2px 0 0 0;';
             etiquetaP.textContent = meta
                 ? `libros leídos en ${data.anio} (tu meta: ${meta})`
                 : `libro${leidos === 1 ? '' : 's'} leído${leidos === 1 ? '' : 's'} en ${data.anio}`;
@@ -1297,7 +1297,7 @@
                 contenedor.appendChild(btnMeta);
             }
         } catch (error) {
-            contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudo cargar.</p>';
+            contenedor.innerHTML = '<p style="font-size: 14px; color: var(--color-texto-suave);">No se pudo cargar.</p>';
         }
     }
 
@@ -1328,10 +1328,10 @@
                     width: 42px; height: 42px; border-radius: 50%;
                     display: flex; align-items: center; justify-content: center;
                     font-size: 1.3rem;
-                    background: ${badge.desbloqueada ? '#e7ecf3' : '#f0f0f0'};
+                    background: ${badge.desbloqueada ? 'var(--color-navy-claro)' : 'var(--color-borde)'};
                     filter: ${badge.desbloqueada ? 'none' : 'grayscale(100%)'};
                     opacity: ${badge.desbloqueada ? '1' : '0.4'};
-                    border: 1px solid ${badge.desbloqueada ? '#c08a4e' : '#ddd'};
+                    border: 1px solid ${badge.desbloqueada ? '#b9823f' : 'var(--color-borde)'};
                 `;
                 chip.textContent = badge.icono;
                 contenedor.appendChild(chip);
@@ -1350,7 +1350,7 @@
             btnMas.textContent = '+';
             contenedor.appendChild(btnMas);
         } catch (error) {
-            contenedor.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar las insignias.</p>';
+            contenedor.innerHTML = '<p style="font-size: 14px; color: var(--color-texto-suave);">No se pudieron cargar las insignias.</p>';
         }
     }
 
@@ -1362,11 +1362,11 @@
     // de una foto de portada. La clave (key) es lo único que se guarda en la
     // base de datos; el degradado vive acá.
     const COLORES_FONDO = [
-        { key: 'navy', nombre: 'Navy (por defecto)', gradiente: 'linear-gradient(135deg, #3f4f68, #5b6f8f)', pagina: '#e9edf3' },
-        { key: 'dorado', nombre: 'Dorado envejecido', gradiente: 'linear-gradient(135deg, #a06f3a, #c08a4e)', pagina: '#f7ecd9' },
+        { key: 'navy', nombre: 'Navy (por defecto)', gradiente: 'linear-gradient(135deg, #2f3e56, #3f5173)', pagina: '#e9edf3' },
+        { key: 'dorado', nombre: 'Dorado envejecido', gradiente: 'linear-gradient(135deg, #9c6f35, #b9823f)', pagina: '#f7ecd9' },
         { key: 'salvia', nombre: 'Salvia', gradiente: 'linear-gradient(135deg, #5f7d68, #7fa88b)', pagina: '#e9f0ea' },
         { key: 'terracota', nombre: 'Terracota', gradiente: 'linear-gradient(135deg, #a15b62, #c17b83)', pagina: '#f8ecee' },
-        { key: 'lavanda', nombre: 'Lavanda', gradiente: 'linear-gradient(135deg, #7c6f97, #a79bc4)', pagina: '#eeecf5' },
+        { key: 'lavanda', nombre: 'Lavanda', gradiente: 'linear-gradient(135deg, #7c6f97, #a79bc4)', pagina: 'var(--color-borde)cf5' },
         { key: 'ciruela', nombre: 'Ciruela', gradiente: 'linear-gradient(135deg, #6e4f63, #9c7089)', pagina: '#f2e9ee' },
         { key: 'arena', nombre: 'Arena cálida', gradiente: 'linear-gradient(135deg, #b99b6b, #d9c39a)', pagina: '#f8f1e2' },
         { key: 'bosque', nombre: 'Verde bosque suave', gradiente: 'linear-gradient(135deg, #4f6b5c, #7fa892)', pagina: '#e7f0ea' },
@@ -1397,7 +1397,7 @@
             return;
         }
 
-        mensaje.style.color = '#777';
+        mensaje.style.color = 'var(--color-texto-suave)';
         mensaje.textContent = 'Optimizando imagen...';
 
         let dataUrl;

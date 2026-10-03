@@ -24,16 +24,16 @@
     <main class="contenedor-principal" style="justify-content: center; display: flex;">
         <section class="columna-centro" style="max-width: 800px; width: 100%;">
             <h2>Mis Estanterías</h2>
-            <p style="color: #888; font-size: 0.85rem; margin-top: -8px;">
+            <p style="color: var(--color-texto-suave); font-size: 0.85rem; margin-top: -8px;">
                 Acá puedes crear estanterías, renombrarlas, agregar libros, editarlos o quitarlos.
             </p>
 
             <div id="estanterias-contenedor" style="margin-top: 20px;">
-                <p style="color: #888;">Cargando...</p>
+                <p style="color: var(--color-texto-suave);">Cargando...</p>
             </div>
 
             <button type="button" id="btn-nueva-estanteria"
-                    style="width: 100%; padding: 10px; border-radius: 999px; border: 1px dashed #34517c; background: none; color: #34517c; cursor: pointer; font-size: 0.9rem; margin-top: 10px;">
+                    style="width: 100%; padding: 10px; border-radius: 999px; border: 1px dashed var(--color-navy-oscuro); background: none; color: var(--color-navy-oscuro); cursor: pointer; font-size: 0.9rem; margin-top: 10px;">
                 + Nueva estantería
             </button>
         </section>
@@ -54,14 +54,14 @@
     // --- Formulario para agregar un libro nuevo a una estantería ---
     function crearFormularioLibro(shelfId, onAgregado) {
         const form = document.createElement('div');
-        form.style.cssText = 'display: none; margin-top: 10px; padding: 12px; background: #f7f7f7; border-radius: 6px;';
+        form.style.cssText = 'display: none; margin-top: 10px; padding: 12px; background: var(--color-borde); border-radius: 6px;';
 
         function campo(placeholder, valorInicial) {
             const input = document.createElement('input');
             input.type = 'text';
             input.placeholder = placeholder;
             input.value = valorInicial || '';
-            input.style.cssText = 'width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem; box-sizing: border-box;';
+            input.style.cssText = 'width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid var(--color-borde); font-size: 0.85rem; box-sizing: border-box;';
             return input;
         }
 
@@ -72,7 +72,7 @@
         const btnGuardar = document.createElement('button');
         btnGuardar.type = 'button';
         btnGuardar.textContent = 'Agregar';
-        btnGuardar.style.cssText = 'padding: 6px 14px; border-radius: 999px; border: none; background: #34517c; color: white; font-size: 0.82rem; cursor: pointer;';
+        btnGuardar.style.cssText = 'padding: 6px 14px; border-radius: 999px; border: none; background: var(--color-navy-oscuro); color: white; font-size: 0.82rem; cursor: pointer;';
 
         const mensaje = document.createElement('p');
         mensaje.style.cssText = 'font-size: 0.8rem; margin-top: 6px;';
@@ -124,14 +124,14 @@
     // --- Formulario para editar un libro ya existente (modificar título/autor/portada) ---
     function crearFormularioEdicion(libro, onGuardado, onCancelar) {
         const form = document.createElement('div');
-        form.style.cssText = 'margin-top: 8px; padding: 10px; background: #f0f0f0; border-radius: 6px;';
+        form.style.cssText = 'margin-top: 8px; padding: 10px; background: var(--color-borde); border-radius: 6px;';
 
         function campo(placeholder, valorInicial) {
             const input = document.createElement('input');
             input.type = 'text';
             input.placeholder = placeholder;
             input.value = valorInicial || '';
-            input.style.cssText = 'width: 100%; padding: 7px; margin-bottom: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.82rem; box-sizing: border-box;';
+            input.style.cssText = 'width: 100%; padding: 7px; margin-bottom: 6px; border-radius: 4px; border: 1px solid var(--color-borde); font-size: 0.82rem; box-sizing: border-box;';
             return input;
         }
 
@@ -145,12 +145,12 @@
         const btnGuardar = document.createElement('button');
         btnGuardar.type = 'button';
         btnGuardar.textContent = 'Guardar cambios';
-        btnGuardar.style.cssText = 'padding: 6px 12px; border-radius: 999px; border: none; background: #34517c; color: white; font-size: 0.78rem; cursor: pointer;';
+        btnGuardar.style.cssText = 'padding: 6px 12px; border-radius: 999px; border: none; background: var(--color-navy-oscuro); color: white; font-size: 0.78rem; cursor: pointer;';
 
         const btnCancelar = document.createElement('button');
         btnCancelar.type = 'button';
         btnCancelar.textContent = 'Cancelar';
-        btnCancelar.style.cssText = 'padding: 6px 12px; border-radius: 999px; border: 1px solid #ccc; background: white; color: #555; font-size: 0.78rem; cursor: pointer;';
+        btnCancelar.style.cssText = 'padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-borde); background: white; color: var(--color-texto-suave); font-size: 0.78rem; cursor: pointer;';
 
         const mensaje = document.createElement('p');
         mensaje.style.cssText = 'font-size: 0.78rem; margin-top: 6px;';
@@ -202,7 +202,7 @@
     // --- Una fila de libro dentro de una estantería (con botones Editar / Quitar) ---
     function crearLibroChip(libro, onCambio) {
         const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'border-bottom: 1px solid #eee; padding: 8px 0;';
+        wrapper.style.cssText = 'border-bottom: 1px solid var(--color-borde); padding: 8px 0;';
 
         const fila = document.createElement('div');
         fila.style.cssText = 'display: flex; gap: 10px; align-items: center;';
@@ -219,7 +219,7 @@
         titulo.style.cssText = 'font-size: 0.9rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
         titulo.appendChild(crearLinkLibro(libro.libro_titulo, libro.autor, libro.portada_url));
         const autor = document.createElement('div');
-        autor.style.cssText = 'font-size: 0.8rem; color: #888;';
+        autor.style.cssText = 'font-size: 0.8rem; color: var(--color-texto-suave);';
         autor.textContent = libro.autor;
         info.appendChild(titulo);
         info.appendChild(autor);
@@ -289,9 +289,10 @@
         header.appendChild(h3);
 
         // Aviso de que ESTA es la estantería que cuenta para la meta de lectura
-        // anual (se fija por nombre: "Leídos" o "Terminado", sin mayúsculas/acentos).
+        // anual (la que usa todo el sitio, incluida la creación automática al
+        // reseñar un libro, es "Terminado" exacto).
         const nombreNorm = estante.nombre.trim().toLowerCase();
-        if (['leídos', 'leidos', 'terminado', 'terminados'].includes(nombreNorm)) {
+        if (nombreNorm === 'terminado') {
             const chip = document.createElement('span');
             chip.textContent = '🎯 cuenta para tu meta';
             chip.style.cssText = 'font-size: 0.68rem; color: #7a705f; background: #f7ecd9; border-radius: 999px; padding: 2px 8px; white-space: nowrap;';
@@ -304,7 +305,7 @@
         const btnRenombrar = document.createElement('button');
         btnRenombrar.type = 'button';
         btnRenombrar.textContent = '✏️ Renombrar';
-        btnRenombrar.style.cssText = 'background: none; border: 1px solid #ccc; border-radius: 999px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; color: #555;';
+        btnRenombrar.style.cssText = 'background: none; border: 1px solid var(--color-borde); border-radius: 999px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; color: var(--color-texto-suave);';
         btnRenombrar.addEventListener('click', async () => {
             const nuevoNombre = prompt('Nuevo nombre de la estantería:', estante.nombre);
             if (!nuevoNombre || !nuevoNombre.trim() || nuevoNombre.trim() === estante.nombre) return;
@@ -362,7 +363,7 @@
         const btnMostrarForm = document.createElement('button');
         btnMostrarForm.type = 'button';
         btnMostrarForm.textContent = '+ Agregar libro';
-        btnMostrarForm.style.cssText = 'margin-top: 10px; background: none; border: none; color: #34517c; cursor: pointer; font-size: 0.85rem; font-weight: bold;';
+        btnMostrarForm.style.cssText = 'margin-top: 10px; background: none; border: none; color: var(--color-navy-oscuro); cursor: pointer; font-size: 0.85rem; font-weight: bold;';
 
         const formAgregar = crearFormularioLibro(estante.id, cargarEstanterias);
         btnMostrarForm.addEventListener('click', () => {
@@ -376,7 +377,7 @@
     }
 
     async function cargarEstanterias() {
-        contenedor.innerHTML = '<p style="color: #888;">Cargando...</p>';
+        contenedor.innerHTML = '<p style="color: var(--color-texto-suave);">Cargando...</p>';
         try {
             const resp = await fetch(`/api/users/${encodeURIComponent(miUsuario)}/shelves`);
             const data = await resp.json();
@@ -390,7 +391,7 @@
                 contenedor.appendChild(crearEstanteCard(estante));
             });
         } catch (error) {
-            contenedor.innerHTML = '<p style="color: #888;">No se pudieron cargar las estanterías.</p>';
+            contenedor.innerHTML = '<p style="color: var(--color-texto-suave);">No se pudieron cargar las estanterías.</p>';
         }
     }
 

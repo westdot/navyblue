@@ -23,7 +23,7 @@ function activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada, inputPagi
     envoltorio.appendChild(inputTitulo);
 
     const lista = document.createElement('div');
-    lista.style.cssText = 'display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; z-index: 80; margin-top: 2px;';
+    lista.style.cssText = 'display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-borde); border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; z-index: 80; margin-top: 2px;';
     envoltorio.appendChild(lista);
 
     let temporizador = null;
@@ -42,14 +42,14 @@ function activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada, inputPagi
         }
         resultados.forEach(libro => {
             const item = document.createElement('div');
-            item.style.cssText = 'display: flex; gap: 8px; align-items: center; padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #f0f0f0;';
-            item.addEventListener('mouseenter', () => { item.style.background = '#f5f5f5'; });
+            item.style.cssText = 'display: flex; gap: 8px; align-items: center; padding: 6px 8px; cursor: pointer; border-bottom: 1px solid var(--color-borde);';
+            item.addEventListener('mouseenter', () => { item.style.background = 'var(--color-borde)'; });
             item.addEventListener('mouseleave', () => { item.style.background = 'white'; });
 
             const img = document.createElement('img');
             img.src = libro.portada_url || 'https://via.placeholder.com/28x40?text=%20';
             img.alt = '';
-            img.style.cssText = 'width: 26px; height: 38px; object-fit: cover; border-radius: 2px; flex-shrink: 0; background: #eee;';
+            img.style.cssText = 'width: 26px; height: 38px; object-fit: cover; border-radius: 2px; flex-shrink: 0; background: var(--color-borde);';
             item.appendChild(img);
 
             const info = document.createElement('div');
@@ -58,7 +58,7 @@ function activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada, inputPagi
             t.style.cssText = 'font-size: 0.82rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
             t.textContent = libro.titulo;
             const a = document.createElement('div');
-            a.style.cssText = 'font-size: 0.75rem; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+            a.style.cssText = 'font-size: 0.75rem; color: var(--color-texto-suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
             a.textContent = libro.anio ? `${libro.autor} · ${libro.anio}` : libro.autor;
             info.appendChild(t);
             info.appendChild(a);
@@ -126,7 +126,7 @@ function activarBuscadorTag(inputTag) {
     envoltorio.appendChild(inputTag);
 
     const lista = document.createElement('div');
-    lista.style.cssText = 'display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; z-index: 80; margin-top: 2px;';
+    lista.style.cssText = 'display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-borde); border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; z-index: 80; margin-top: 2px;';
     envoltorio.appendChild(lista);
 
     let temporizador = null;
@@ -139,8 +139,8 @@ function activarBuscadorTag(inputTag) {
 
     function opcion(icono, etiqueta, valor) {
         const item = document.createElement('div');
-        item.style.cssText = 'display: flex; gap: 8px; align-items: center; padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.82rem;';
-        item.addEventListener('mouseenter', () => { item.style.background = '#f5f5f5'; });
+        item.style.cssText = 'display: flex; gap: 8px; align-items: center; padding: 6px 8px; cursor: pointer; border-bottom: 1px solid var(--color-borde); font-size: 0.82rem;';
+        item.addEventListener('mouseenter', () => { item.style.background = 'var(--color-borde)'; });
         item.addEventListener('mouseleave', () => { item.style.background = 'white'; });
 
         const pre = document.createElement('span');

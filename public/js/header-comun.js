@@ -25,14 +25,14 @@ function cerrarAlClickAfuera(panel, disparador) {
 function crearMenuUsuario(usuario) {
     const contenedor = document.createElement('div');
     contenedor.className = 'menu-usuario';
-    contenedor.style.cssText = 'position: relative; display: flex; align-items: center; gap: 6px;';
+    contenedor.style.cssText = 'position: relative; display: flex; align-items: center; height: 34px; gap: 7px;';
     contenedor.innerHTML = `
-        <a href="muro.html" style="color: white; font-weight: bold; font-size: 15px; text-decoration: none;">${usuario.username}</a>
-        <button type="button" class="btn-flecha-usuario" style="background: none; border: none; color: white; font-size: 12px; cursor: pointer; padding: 4px;">▾</button>
-        <div class="dropdown-usuario" style="display: none; position: absolute; right: 0; top: 130%; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); overflow: hidden; min-width: 160px; z-index: 200;">
-            <a href="estanterias.html" style="display: block; padding: 10px 15px; color: #333; text-decoration: none;">Mis Estanterías</a>
-            <a href="perfil.html" style="display: block; padding: 10px 15px; color: #333; text-decoration: none;">Configuración</a>
-            <a href="#" class="btn-cerrar-sesion" style="display: block; padding: 10px 15px; color: #d9534f; text-decoration: none;">Cerrar Sesión</a>
+        <a href="muro.html" style="color: white; font-weight: 700; font-size: 13.5px; text-decoration: none; line-height: 1;">${usuario.username}</a>
+        <button type="button" class="btn-flecha-usuario" style="background: rgba(255,255,255,0.14); border: none; color: white; font-size: 11px; cursor: pointer; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">▾</button>
+        <div class="dropdown-usuario" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); background: var(--color-tarjeta); border: 1px solid var(--color-borde); border-radius: 9px; box-shadow: 0 6px 16px rgba(43,37,32,0.18); overflow: hidden; min-width: 170px; z-index: 200;">
+            <a href="estanterias.html" style="display: block; padding: 10px 14px; color: var(--color-texto); text-decoration: none; font-size: 0.85rem;">Mis Estanterías</a>
+            <a href="perfil.html" style="display: block; padding: 10px 14px; color: var(--color-texto); text-decoration: none; font-size: 0.85rem; border-top: 1px solid var(--color-borde);">Configuración</a>
+            <a href="#" class="btn-cerrar-sesion" style="display: block; padding: 10px 14px; color: var(--color-dislike); text-decoration: none; font-size: 0.85rem; border-top: 1px solid var(--color-borde);">Cerrar Sesión</a>
         </div>
     `;
 
@@ -60,6 +60,7 @@ function crearBotonModoCompacto() {
     btn.type = 'button';
     btn.className = 'btn-modo-compacto';
     btn.title = 'Cambiar densidad del feed';
+    btn.style.cssText = 'background: rgba(255,255,255,0.14); border: none; color: white; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;';
 
     function actualizarIcono() {
         const activo = document.body.classList.contains('modo-compacto');
@@ -85,11 +86,11 @@ function crearCampanaNotificaciones() {
     const contenedor = document.createElement('div');
     contenedor.style.cssText = 'position: relative; display: flex; align-items: center;';
     contenedor.innerHTML = `
-        <button type="button" class="btn-campana" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.1rem; padding: 6px; position: relative;">
+        <button type="button" class="btn-campana" style="background: rgba(255,255,255,0.14); border: none; color: white; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; position: relative; flex-shrink: 0;">
             🔔
-            <span class="badge-notificaciones" style="display: none; position: absolute; top: 0; right: 0; background: #c17b83; color: white; border-radius: 999px; font-size: 0.65rem; padding: 1px 5px; font-weight: bold;"></span>
+            <span class="badge-notificaciones" style="display: none; position: absolute; top: -3px; right: -3px; background: var(--color-acento); color: var(--color-texto); border-radius: 999px; font-size: 0.62rem; min-width: 16px; height: 16px; padding: 0 3px; font-weight: 700; align-items: center; justify-content: center; border: 2px solid var(--color-navy-oscuro); line-height: 1;"></span>
         </button>
-        <div class="panel-notificaciones" style="display: none; position: absolute; right: 0; top: 130%; background: white; color: #333; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); min-width: 280px; max-height: 350px; overflow-y: auto; z-index: 200;"></div>
+        <div class="panel-notificaciones" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); background: var(--color-tarjeta); color: var(--color-texto); border: 1px solid var(--color-borde); border-radius: 9px; box-shadow: 0 6px 16px rgba(43,37,32,0.18); min-width: 280px; max-height: 350px; overflow-y: auto; z-index: 200;"></div>
     `;
 
     const btn = contenedor.querySelector('.btn-campana');
@@ -122,7 +123,7 @@ function crearCampanaNotificaciones() {
     function pintarBadge(noLeidas) {
         if (noLeidas > 0) {
             badge.textContent = noLeidas > 9 ? '9+' : noLeidas;
-            badge.style.display = 'block';
+            badge.style.display = 'flex';
         } else {
             badge.style.display = 'none';
         }
@@ -131,11 +132,11 @@ function crearCampanaNotificaciones() {
     function crearItemNotificacion(n) {
         const item = document.createElement('a');
         item.href = n.destino || `muro.html?usuario=${encodeURIComponent(n.actor_username)}`;
-        item.style.cssText = `display: block; padding: 10px 15px; border-bottom: 1px solid #eee; text-decoration: none; color: #333; font-size: 0.83rem; ${n.leida ? '' : 'background: #eef2f7;'}`;
+        item.style.cssText = `display: block; padding: 10px 15px; border-bottom: 1px solid var(--color-borde); text-decoration: none; color: var(--color-texto); font-size: 0.83rem; ${n.leida ? '' : 'background: #eef2f7;'}`;
         const mensaje = document.createElement('div');
         mensaje.textContent = n.mensaje;
         const fecha = document.createElement('div');
-        fecha.style.cssText = 'font-size: 0.72rem; color: #999; margin-top: 2px;';
+        fecha.style.cssText = 'font-size: 0.72rem; color: var(--color-texto-suave); margin-top: 2px;';
         fecha.textContent = tiempoRelativo(n.created_at);
         item.appendChild(mensaje);
         item.appendChild(fecha);
@@ -166,7 +167,7 @@ function crearCampanaNotificaciones() {
         const notificaciones = data.notifications || [];
 
         if (notificaciones.length === 0) {
-            panel.innerHTML = '<p style="padding: 15px; margin: 0; color: #888; font-size: 0.85rem;">No tienes notificaciones todavía.</p>';
+            panel.innerHTML = '<p style="padding: 15px; margin: 0; color: var(--color-texto-suave); font-size: 0.85rem;">No tienes notificaciones todavía.</p>';
         } else {
             const lista = document.createElement('div');
             panel.appendChild(lista);
@@ -216,14 +217,14 @@ function crearCampanaNotificaciones() {
 function crearBuscador() {
     const contenedor = document.createElement('div');
     contenedor.className = 'buscador-header';
-    contenedor.style.cssText = 'position: relative; display: flex; align-items: center;';
+    contenedor.style.cssText = 'display: flex; align-items: center; height: 34px; background: rgba(255,255,255,0.14); border-radius: 999px; padding: 0 12px; gap: 7px;';
     contenedor.innerHTML = `
-        <input type="text" class="buscador-input" placeholder="Buscar libros, usuarios..."
-               style="padding: 8px 38px 8px 14px; border-radius: 999px; border: 1px solid #ccc; font-size: 0.85rem; background: white; color: #333;">
         <button type="button" class="buscador-boton" title="Buscar"
-                style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex;">
+                style="background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; flex-shrink: 0; font-size: 13px; opacity: 0.85;">
             🔍
         </button>
+        <input type="text" class="buscador-input" placeholder="Buscar libros, usuarios..."
+               style="border: none; background: transparent; font-size: 0.82rem; color: white; height: 100%;">
     `;
 
     const input = contenedor.querySelector('.buscador-input');

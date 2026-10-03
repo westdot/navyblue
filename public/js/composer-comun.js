@@ -12,17 +12,17 @@ function crearComposer({ onPost, onResena } = {}) {
 
     // --- Pestañas para elegir Postear / Reseñar ---
     const tabs = document.createElement('div');
-    tabs.style.cssText = 'display: flex; gap: 0; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; overflow: hidden;';
+    tabs.style.cssText = 'display: flex; gap: 4px; margin-bottom: 12px; background: var(--color-tarjeta); border: 1px solid var(--color-borde); border-radius: 999px; padding: 3px;';
 
     const btnTabPost = document.createElement('button');
     btnTabPost.type = 'button';
     btnTabPost.textContent = 'Postear';
-    btnTabPost.style.cssText = 'flex: 1; padding: 8px; border: none; cursor: pointer; background: #34517c; color: white;';
+    btnTabPost.style.cssText = 'flex: 1; padding: 7px; border: none; border-radius: 999px; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: var(--color-navy-oscuro); color: white;';
 
     const btnTabResena = document.createElement('button');
     btnTabResena.type = 'button';
     btnTabResena.textContent = 'Reseñar';
-    btnTabResena.style.cssText = 'flex: 1; padding: 8px; border: none; cursor: pointer; background: #eee; color: #333;';
+    btnTabResena.style.cssText = 'flex: 1; padding: 7px; border: none; border-radius: 999px; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: transparent; color: var(--color-texto-suave);';
 
     tabs.appendChild(btnTabPost);
     tabs.appendChild(btnTabResena);
@@ -40,7 +40,7 @@ function crearComposer({ onPost, onResena } = {}) {
     const inputTag = document.createElement('input');
     inputTag.type = 'text';
     inputTag.placeholder = 'Ej: Libro, Autor, Editorial...';
-    inputTag.style.cssText = 'padding: 5px; border-radius: 4px; border: 1px solid #ccc;';
+    inputTag.style.cssText = 'padding: 7px 10px; border-radius: 999px; border: 1px solid var(--color-borde); background: var(--color-tarjeta); font-size: 0.82rem;';
 
     const btnPublicarPost = document.createElement('button');
     btnPublicarPost.type = 'button';
@@ -121,7 +121,7 @@ function crearComposer({ onPost, onResena } = {}) {
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = placeholder;
-        input.style.cssText = 'width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;';
+        input.style.cssText = 'width: 100%; padding: 9px 11px; margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--color-borde); background: var(--color-tarjeta); box-sizing: border-box; font-size: 0.85rem;';
         return input;
     }
 
@@ -131,10 +131,10 @@ function crearComposer({ onPost, onResena } = {}) {
 
     const textareaResena = document.createElement('textarea');
     textareaResena.placeholder = 'Escribe tu reseña (opcional)...';
-    textareaResena.style.cssText = 'width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; min-height: 70px; resize: vertical; font-family: inherit; font-size: inherit;';
+    textareaResena.style.cssText = 'width: 100%; padding: 9px 11px; margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--color-borde); background: var(--color-tarjeta); box-sizing: border-box; min-height: 70px; resize: vertical; font-family: inherit; font-size: inherit;';
 
     const labelEstrellas = document.createElement('p');
-    labelEstrellas.style.cssText = 'font-size: 0.8rem; color: #666; margin: 0 0 4px 0;';
+    labelEstrellas.style.cssText = 'font-size: 0.8rem; color: var(--color-texto-suave); margin: 0 0 4px 0;';
     labelEstrellas.textContent = 'Tu valoración:';
 
     const selectorEstrellas = document.createElement('div');
@@ -263,18 +263,18 @@ function crearComposer({ onPost, onResena } = {}) {
     btnTabPost.addEventListener('click', () => {
         formPost.style.display = '';
         formResena.style.display = 'none';
-        btnTabPost.style.background = '#34517c';
+        btnTabPost.style.background = 'var(--color-navy-oscuro)';
         btnTabPost.style.color = 'white';
-        btnTabResena.style.background = '#eee';
-        btnTabResena.style.color = '#333';
+        btnTabResena.style.background = 'transparent';
+        btnTabResena.style.color = 'var(--color-texto-suave)';
     });
     btnTabResena.addEventListener('click', () => {
         formPost.style.display = 'none';
         formResena.style.display = '';
-        btnTabResena.style.background = '#34517c';
+        btnTabResena.style.background = 'var(--color-navy-oscuro)';
         btnTabResena.style.color = 'white';
-        btnTabPost.style.background = '#eee';
-        btnTabPost.style.color = '#333';
+        btnTabPost.style.background = 'transparent';
+        btnTabPost.style.color = 'var(--color-texto-suave)';
     });
 
     // Abre la pestaña "Reseñar" con título/autor/portada ya cargados (se usa,

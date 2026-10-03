@@ -34,7 +34,7 @@ function renderizarTextoConMenciones(texto) {
         const link = document.createElement('a');
         link.href = `muro.html?usuario=${encodeURIComponent(match[1])}`;
         link.textContent = '@' + match[1];
-        link.style.cssText = 'color: #5b6f8f; font-weight: bold; text-decoration: none;';
+        link.style.cssText = 'color: #3f5173; font-weight: bold; text-decoration: none;';
         link.addEventListener('click', (e) => e.stopPropagation()); // no abrir el detalle del post al pinchar la mención
         frag.appendChild(link);
         ultimo = regex.lastIndex;
@@ -137,20 +137,20 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = 'Escribe un comentario...';
-    input.style.cssText = 'flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #ccc; min-width: 0;';
+    input.style.cssText = 'flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--color-borde); min-width: 0;';
 
     const listaComentarios = document.createElement('div');
     listaComentarios.style.cssText = 'margin-top: 15px;';
 
     if (comentarios.length === 0) {
         const p = document.createElement('p');
-        p.style.cssText = 'font-size: 0.85rem; color: #888;';
+        p.style.cssText = 'font-size: 0.85rem; color: var(--color-texto-suave);';
         p.textContent = 'Todavía no hay comentarios.';
         listaComentarios.appendChild(p);
     } else {
         comentarios.forEach(c => {
             const div = document.createElement('div');
-            div.style.cssText = 'border-top: 1px solid #eee; padding: 8px 0;';
+            div.style.cssText = 'border-top: 1px solid var(--color-borde); padding: 8px 0;';
 
             const cabeceraC = document.createElement('div');
             cabeceraC.style.cssText = 'display: flex; align-items: center;';
@@ -191,7 +191,7 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
                 const btnResponder = document.createElement('button');
                 btnResponder.type = 'button';
                 btnResponder.textContent = 'Responder';
-                btnResponder.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.75rem; color: #5b6f8f; font-weight: bold;';
+                btnResponder.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.75rem; color: #3f5173; font-weight: bold;';
                 btnResponder.addEventListener('click', () => {
                     input.value = `@${c.username} `;
                     input.focus();
@@ -209,10 +209,10 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
                 textoRestante = c.content.slice(matchRespuesta[0].length);
 
                 const lineaRespuesta = document.createElement('p');
-                lineaRespuesta.style.cssText = 'margin: 4px 0 0 0; font-size: 0.78rem; color: #7a7061;';
+                lineaRespuesta.style.cssText = 'margin: 4px 0 0 0; font-size: 0.78rem; color: #8a8073;';
                 const linkMencion = document.createElement('a');
                 linkMencion.href = `muro.html?usuario=${encodeURIComponent(nombreMencionado)}`;
-                linkMencion.style.cssText = 'color: #5b6f8f; font-weight: bold; text-decoration: none;';
+                linkMencion.style.cssText = 'color: #3f5173; font-weight: bold; text-decoration: none;';
                 linkMencion.textContent = '@' + nombreMencionado;
                 linkMencion.addEventListener('click', (e) => e.stopPropagation());
                 lineaRespuesta.append('Respondiendo a ', linkMencion);
@@ -238,7 +238,7 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
     const btnEnviar = document.createElement('button');
     btnEnviar.type = 'submit';
     btnEnviar.textContent = 'Comentar';
-    btnEnviar.style.cssText = 'padding: 8px 12px; border-radius: 6px; border: none; background: #34517c; color: white; cursor: pointer; white-space: nowrap;';
+    btnEnviar.style.cssText = 'padding: 8px 12px; border-radius: 6px; border: none; background: var(--color-navy-oscuro); color: white; cursor: pointer; white-space: nowrap;';
 
     form.appendChild(input);
     form.appendChild(btnEnviar);
@@ -309,7 +309,7 @@ function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
     const btnVolver = document.createElement('button');
     btnVolver.type = 'button';
     btnVolver.textContent = '← Volver';
-    btnVolver.style.cssText = 'background: none; border: none; color: #34517c; cursor: pointer; font-weight: bold; margin-bottom: 12px; font-size: 0.9rem;';
+    btnVolver.style.cssText = 'background: none; border: none; color: var(--color-navy-oscuro); cursor: pointer; font-weight: bold; margin-bottom: 12px; font-size: 0.9rem;';
     btnVolver.addEventListener('click', () => cerrarDetallePost(contenedor));
     contenedor.appendChild(btnVolver);
 
@@ -338,7 +338,7 @@ function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
     texto.appendChild(renderizarTextoConMenciones(post.content));
 
     const fecha = document.createElement('p');
-    fecha.style.cssText = 'font-size: 0.75rem; color: #888; margin: 4px 0 8px 0;';
+    fecha.style.cssText = 'font-size: 0.75rem; color: var(--color-texto-suave); margin: 4px 0 8px 0;';
     fecha.textContent = formatearFechaCompleta(post.created_at);
 
     contenido.appendChild(header);
@@ -409,7 +409,7 @@ function renderDetalleResena(resena, comentarios, contenedor, usuarioActual) {
     const btnVolver = document.createElement('button');
     btnVolver.type = 'button';
     btnVolver.textContent = '← Volver';
-    btnVolver.style.cssText = 'background: none; border: none; color: #34517c; cursor: pointer; font-weight: bold; margin-bottom: 12px; font-size: 0.9rem;';
+    btnVolver.style.cssText = 'background: none; border: none; color: var(--color-navy-oscuro); cursor: pointer; font-weight: bold; margin-bottom: 12px; font-size: 0.9rem;';
     btnVolver.addEventListener('click', () => cerrarDetallePost(contenedor));
     contenedor.appendChild(btnVolver);
 
@@ -431,7 +431,7 @@ function renderDetalleResena(resena, comentarios, contenedor, usuarioActual) {
     info.appendChild(h2);
 
     const autorP = document.createElement('p');
-    autorP.style.cssText = 'font-size: 0.85rem; color: #7a7061; margin-bottom: 6px;';
+    autorP.style.cssText = 'font-size: 0.85rem; color: #8a8073; margin-bottom: 6px;';
     autorP.textContent = resena.autor;
     info.appendChild(autorP);
 
@@ -441,7 +441,7 @@ function renderDetalleResena(resena, comentarios, contenedor, usuarioActual) {
     info.appendChild(valoracionP);
 
     const porP = document.createElement('p');
-    porP.style.cssText = 'font-size: 0.8rem; color: #888; margin: 4px 0 4px 0;';
+    porP.style.cssText = 'font-size: 0.8rem; color: var(--color-texto-suave); margin: 4px 0 4px 0;';
     const linkUsuario = document.createElement('a');
     linkUsuario.href = `muro.html?usuario=${encodeURIComponent(resena.username)}`;
     linkUsuario.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
@@ -450,7 +450,7 @@ function renderDetalleResena(resena, comentarios, contenedor, usuarioActual) {
     info.appendChild(porP);
 
     const fecha = document.createElement('p');
-    fecha.style.cssText = 'font-size: 0.75rem; color: #999; margin-bottom: 8px;';
+    fecha.style.cssText = 'font-size: 0.75rem; color: var(--color-texto-suave); margin-bottom: 8px;';
     fecha.textContent = formatearFechaCompleta(resena.created_at);
     info.appendChild(fecha);
 

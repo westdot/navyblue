@@ -237,7 +237,7 @@
                     feedPosts.appendChild(crearPreguntaCard(item));
                 } else {
                     const envoltorio = document.createElement('div');
-                    envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid #eee;';
+                    envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid var(--color-borde);';
                     envoltorio.appendChild(crearResenaCard(item, miUsername));
                     feedPosts.appendChild(envoltorio);
                 }
@@ -433,7 +433,7 @@
         autorPregunta.textContent = pregunta.asker_username;
 
         const flecha = document.createElement('span');
-        flecha.style.cssText = 'color: #888; margin: 0 4px;';
+        flecha.style.cssText = 'color: var(--color-texto-suave); margin: 0 4px;';
         flecha.textContent = '→';
 
         const autorRespuesta = document.createElement('a');

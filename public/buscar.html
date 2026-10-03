@@ -28,7 +28,7 @@
             <!-- Barra de búsqueda (se puede refinar aquí mismo) -->
             <div style="position: relative; margin-bottom: 15px;">
                 <input type="text" id="buscar-input" placeholder="Buscar libros, usuarios..."
-                       style="width: 100%; box-sizing: border-box; padding: 10px 42px 10px 16px; border-radius: 999px; border: 1px solid #ccc; font-size: 0.95rem;">
+                       style="width: 100%; box-sizing: border-box; padding: 10px 42px 10px 16px; border-radius: 999px; border: 1px solid var(--color-borde); font-size: 0.95rem;">
                 <button type="button" id="buscar-boton" title="Buscar"
                         style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; font-size: 1.1rem;">
                     🔍
@@ -45,7 +45,7 @@
             </div>
 
             <div id="buscar-resultados">
-                <p style="color: #888;">Escribe algo y elige una categoría para buscar.</p>
+                <p style="color: var(--color-texto-suave);">Escribe algo y elige una categoría para buscar.</p>
             </div>
         </section>
     </main>
@@ -59,19 +59,19 @@
         .tab-categoria {
             padding: 7px 14px;
             border-radius: 999px;
-            border: 1px solid #ccc;
-            background: #eee;
-            color: #333;
+            border: 1px solid var(--color-borde);
+            background: var(--color-borde);
+            color: var(--color-texto);
             cursor: pointer;
             font-size: 0.85rem;
         }
         .tab-categoria.activa {
-            background: #34517c;
+            background: var(--color-navy-oscuro);
             color: white;
-            border-color: #34517c;
+            border-color: var(--color-navy-oscuro);
         }
         #buscar-resultados a:hover {
-            background: #f7f7f7;
+            background: var(--color-borde);
         }
     </style>
 
@@ -92,11 +92,11 @@
     async function buscar() {
         const q = inputBuscar.value.trim();
         if (!q) {
-            resultados.innerHTML = '<p style="color: #888;">Escribe algo para buscar.</p>';
+            resultados.innerHTML = '<p style="color: var(--color-texto-suave);">Escribe algo para buscar.</p>';
             return;
         }
 
-        resultados.innerHTML = '<p style="color: #888;">Buscando...</p>';
+        resultados.innerHTML = '<p style="color: var(--color-texto-suave);">Buscando...</p>';
 
         try {
             const response = await fetch(`/api/search?tipo=${encodeURIComponent(tipoActual)}&q=${encodeURIComponent(q)}`);
@@ -120,7 +120,7 @@
                 // Para usuarios, todo el bloque es un link que lleva a su perfil (muro.html).
                 // Para libros, un link a la ficha del libro (libro.html).
                 const div = document.createElement((esUsuario || esLibro) ? 'a' : 'div');
-                div.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee; text-decoration: none; color: inherit;';
+                div.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--color-borde); text-decoration: none; color: inherit;';
                 if (esUsuario) {
                     div.href = `muro.html?usuario=${encodeURIComponent(item.titulo)}`;
                     div.style.cursor = 'pointer';
@@ -133,7 +133,7 @@
                     const img = document.createElement('img');
                     img.src = item.portada_url;
                     img.alt = '';
-                    img.style.cssText = 'width: 38px; height: 54px; object-fit: cover; border-radius: 3px; flex-shrink: 0; background: #eee;';
+                    img.style.cssText = 'width: 38px; height: 54px; object-fit: cover; border-radius: 3px; flex-shrink: 0; background: var(--color-borde);';
                     div.appendChild(img);
                 }
 
@@ -145,7 +145,7 @@
                 textos.appendChild(titulo);
                 if (item.subtitulo) {
                     const sub = document.createElement('div');
-                    sub.style.cssText = 'font-size: 0.85rem; color: #666;';
+                    sub.style.cssText = 'font-size: 0.85rem; color: var(--color-texto-suave);';
                     sub.textContent = item.subtitulo;
                     textos.appendChild(sub);
                 }
@@ -153,7 +153,7 @@
                 resultados.appendChild(div);
             });
         } catch (error) {
-            resultados.innerHTML = '<p style="color: #888;">No se pudo buscar.</p>';
+            resultados.innerHTML = '<p style="color: var(--color-texto-suave);">No se pudo buscar.</p>';
         }
     }
 

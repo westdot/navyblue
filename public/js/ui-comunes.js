@@ -99,7 +99,7 @@ function crearScrollInfinito({ contenedor, cargarMas, raiz = null, centinelaEn =
     const centinela = document.createElement('div');
     centinela.className = 'scroll-infinito-centinela';
     // Altura fija: así el texto "Cargando más..." aparece/desaparece sin mover el contenido (importa en el chat)
-    centinela.style.cssText = 'height: 36px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; color: #999; flex-shrink: 0; box-sizing: border-box;';
+    centinela.style.cssText = 'height: 36px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; color: var(--color-texto-suave); flex-shrink: 0; box-sizing: border-box;';
 
     let cargando = false;
     let terminado = false;

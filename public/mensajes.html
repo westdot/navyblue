@@ -24,9 +24,9 @@
         <!-- COLUMNA IZQUIERDA: LISTA DE AMIGOS -->
         <aside class="columna-izquierda">
             <h2>Mensajes</h2>
-            <p style="font-size: 0.75rem; color: #888; margin: -8px 0 12px 0;">Solo puedes escribirle a tus amigos.</p>
+            <p style="font-size: 0.75rem; color: var(--color-texto-suave); margin: -8px 0 12px 0;">Solo puedes escribirle a tus amigos.</p>
             <div id="lista-conversaciones">
-                <p style="font-size: 14px; color: #666;">Cargando...</p>
+                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
             </div>
         </aside>
 
@@ -34,7 +34,7 @@
         <section class="columna-centro" id="panel-conversacion">
             <div id="estado-vacio-conversacion">
                 <h2>Mensajes</h2>
-                <p style="color: #888;">Elige un amigo de la lista para ver la conversación.</p>
+                <p style="color: var(--color-texto-suave);">Elige un amigo de la lista para ver la conversación.</p>
             </div>
 
             <div id="conversacion-activa" style="display: none;">
@@ -49,11 +49,11 @@
                     <textarea id="input-mensaje" maxlength="1000" placeholder="Escribe un mensaje..."
                         style="width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid var(--color-borde); font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 60px;"></textarea>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-                        <span id="contador-mensaje" style="font-size: 0.72rem; color: #999;">0 / 1000</span>
-                        <button type="button" id="btn-enviar-mensaje" style="padding: 8px 18px; border-radius: 999px; border: none; background: #5b6f8f; color: white; font-size: 0.85rem; cursor: pointer;">Enviar</button>
+                        <span id="contador-mensaje" style="font-size: 0.72rem; color: var(--color-texto-suave);">0 / 1000</span>
+                        <button type="button" id="btn-enviar-mensaje" style="padding: 8px 18px; border-radius: 999px; border: none; background: #3f5173; color: white; font-size: 0.85rem; cursor: pointer;">Enviar</button>
                     </div>
                     <p id="mensaje-estado" style="font-size: 0.75rem; margin-top: 6px;"></p>
-                    <p style="font-size: 0.7rem; color: #999; margin-top: 6px;">
+                    <p style="font-size: 0.7rem; color: var(--color-texto-suave); margin-top: 6px;">
                         Máximo 1000 caracteres y 1 mensaje por día en cada conversación (se habilita de nuevo al pasar la medianoche).
                     </p>
                 </div>
@@ -98,7 +98,7 @@
         }
         .conversacion-preview {
             font-size: 0.75rem;
-            color: #888;
+            color: var(--color-texto-suave);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -221,7 +221,7 @@
                 listaConversaciones.appendChild(btn);
             });
         } catch (error) {
-            listaConversaciones.innerHTML = '<p style="font-size: 14px; color: #666;">No se pudieron cargar tus conversaciones.</p>';
+            listaConversaciones.innerHTML = '<p style="font-size: 14px; color: var(--color-texto-suave);">No se pudieron cargar tus conversaciones.</p>';
         }
     }
 
@@ -248,7 +248,7 @@
         btnEnviarMensaje.disabled = !puedeEnviarHoy;
         btnEnviarMensaje.style.opacity = puedeEnviarHoy ? '1' : '0.6';
         btnEnviarMensaje.style.cursor = puedeEnviarHoy ? 'pointer' : 'not-allowed';
-        mensajeEstado.style.color = '#666';
+        mensajeEstado.style.color = 'var(--color-texto-suave)';
         mensajeEstado.textContent = puedeEnviarHoy ? '' : 'Ya le enviaste un mensaje hoy. Podrás volver a escribirle cuando empiece el próximo día.';
     }
 
@@ -269,7 +269,7 @@
         estadoVacio.style.display = 'none';
         conversacionActiva.style.display = 'block';
         tituloConversacion.textContent = username;
-        hiloMensajes.innerHTML = '<p style="color: #888; font-size: 0.85rem;">Cargando...</p>';
+        hiloMensajes.innerHTML = '<p style="color: var(--color-texto-suave); font-size: 0.85rem;">Cargando...</p>';
         inputMensaje.value = '';
         contadorMensaje.textContent = '0 / 1000';
         mensajeEstado.textContent = '';

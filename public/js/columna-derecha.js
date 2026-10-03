@@ -67,8 +67,8 @@ function crearResenaCard(resena, miUsername, compacta) {
 
     const autorP = document.createElement('p');
     autorP.style.cssText = compacta
-        ? 'font-size: 0.72rem; color: #666; margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'
-        : 'font-size: 0.8rem; color: #666; margin: 2px 0;';
+        ? 'font-size: 0.72rem; color: var(--color-texto-suave); margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'
+        : 'font-size: 0.8rem; color: var(--color-texto-suave); margin: 2px 0;';
     autorP.textContent = resena.autor;
     info.appendChild(autorP);
 
@@ -85,14 +85,14 @@ function crearResenaCard(resena, miUsername, compacta) {
     // mostramos justo al lado de las estrellas de la última reseña.
     if (resena.promedio_valoracion !== undefined && resena.promedio_valoracion !== null) {
         const separador = document.createElement('span');
-        separador.style.cssText = 'color: #bbb;';
+        separador.style.cssText = 'color: var(--color-texto-suave);';
         separador.textContent = '·';
         valoracionP.appendChild(separador);
 
         const promedioSpan = document.createElement('span');
         promedioSpan.style.cssText = compacta
-            ? 'font-size: 0.68rem; color: #888; display: flex; align-items: center; gap: 3px;'
-            : 'font-size: 0.75rem; color: #888; display: flex; align-items: center; gap: 4px;';
+            ? 'font-size: 0.68rem; color: var(--color-texto-suave); display: flex; align-items: center; gap: 3px;'
+            : 'font-size: 0.75rem; color: var(--color-texto-suave); display: flex; align-items: center; gap: 4px;';
         promedioSpan.title = 'Promedio de todas las reseñas de este libro';
         promedioSpan.append(compacta ? 'prom.' : 'Promedio del libro:');
         promedioSpan.appendChild(crearEstrellas(resena.promedio_valoracion));
@@ -109,16 +109,16 @@ function crearResenaCard(resena, miUsername, compacta) {
     if (resena.total_resenas && resena.total_resenas > 1) {
         const totalP = document.createElement('p');
         totalP.style.cssText = compacta
-            ? 'font-size: 0.68rem; color: #888; margin: 1px 0 0 0; font-weight: bold;'
-            : 'font-size: 0.75rem; color: #888; margin: 2px 0; font-weight: bold;';
+            ? 'font-size: 0.68rem; color: var(--color-texto-suave); margin: 1px 0 0 0; font-weight: bold;'
+            : 'font-size: 0.75rem; color: var(--color-texto-suave); margin: 2px 0; font-weight: bold;';
         totalP.textContent = `${resena.total_resenas} reseñas`;
         info.appendChild(totalP);
     }
 
     const porP = document.createElement('p');
     porP.style.cssText = compacta
-        ? 'font-size: 0.7rem; color: #888; margin: 2px 0 4px 0;'
-        : 'font-size: 0.75rem; color: #888; margin: 2px 0 6px 0;';
+        ? 'font-size: 0.7rem; color: var(--color-texto-suave); margin: 2px 0 4px 0;'
+        : 'font-size: 0.75rem; color: var(--color-texto-suave); margin: 2px 0 6px 0;';
     const linkUsuario = document.createElement('a');
     linkUsuario.href = `muro.html?usuario=${encodeURIComponent(resena.username)}`;
     linkUsuario.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
@@ -218,7 +218,7 @@ function crearResenaCard(resena, miUsername, compacta) {
             const linkCompleta = document.createElement('a');
             linkCompleta.href = `resena.html?id=${resena.id}`;
             linkCompleta.textContent = 'Leer reseña completa';
-            linkCompleta.style.cssText = 'color: #5b6f8f; font-weight: bold; text-decoration: none; font-size: 0.8rem;';
+            linkCompleta.style.cssText = 'color: #3f5173; font-weight: bold; text-decoration: none; font-size: 0.8rem;';
             linkCompleta.addEventListener('click', (e) => e.stopPropagation());
             textoP.appendChild(linkCompleta);
         } else {
@@ -239,7 +239,7 @@ function crearResenaCard(resena, miUsername, compacta) {
 }
 
 async function cargarResenasRecientes(contenedor) {
-    contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">Cargando...</p>';
+    contenedor.innerHTML = '<p style="font-size:0.85rem;color:var(--color-texto-suave);">Cargando...</p>';
     try {
         // Top 3 de libros con más reseñas (agrupado, no reseñas sueltas)
         const [resp, miUsername] = await Promise.all([
@@ -255,12 +255,12 @@ async function cargarResenasRecientes(contenedor) {
         }
         data.reviews.forEach(r => contenedor.appendChild(crearResenaCard(r, miUsername, true)));
     } catch (error) {
-        contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">No se pudieron cargar las reseñas.</p>';
+        contenedor.innerHTML = '<p style="font-size:0.85rem;color:var(--color-texto-suave);">No se pudieron cargar las reseñas.</p>';
     }
 }
 
 async function cargarTrending(contenedor) {
-    contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">Cargando...</p>';
+    contenedor.innerHTML = '<p style="font-size:0.85rem;color:var(--color-texto-suave);">Cargando...</p>';
     try {
         const resp = await fetch('/api/trending');
         const data = await resp.json();
@@ -290,7 +290,7 @@ async function cargarTrending(contenedor) {
         });
         contenedor.appendChild(ol);
     } catch (error) {
-        contenedor.innerHTML = '<p style="font-size:0.85rem;color:#888;">No se pudo cargar el trending.</p>';
+        contenedor.innerHTML = '<p style="font-size:0.85rem;color:var(--color-texto-suave);">No se pudo cargar el trending.</p>';
     }
 }
 
