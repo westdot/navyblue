@@ -1,4 +1,58 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body class="bloqueado">
+<style>
+/* PUERTA CON CONTRASEÑA (usa las variables de color de esta página) */
+body.bloqueado>:not(.puerta){display:none!important}
+.puerta{display:none;min-height:100vh;place-items:center;padding:24px;background:var(--bg);color:var(--fg);font-family:var(--body,system-ui,sans-serif)}
+body.bloqueado .puerta{display:grid}
+.puerta .caja{width:100%;max-width:380px;text-align:center;padding:34px 28px 28px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.puerta h2{font-family:var(--display,Georgia,serif);font-weight:600;font-size:1.5rem;margin:0 0 8px;letter-spacing:.04em}
+.puerta p{color:var(--muted);font-size:.92rem;margin:0 0 18px}
+.puerta input{box-sizing:border-box;width:100%;padding:12px;text-align:center;font:inherit;font-size:1.3rem;letter-spacing:.4em;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px}
+.puerta input:focus-visible,.puerta button:focus-visible,.puerta a:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.puerta input.error{border-color:#c0505f}
+.puerta .msg{min-height:1.4em;margin:8px 0 4px;color:#c0505f;font-size:.88rem}
+.puerta .acciones{display:flex;gap:10px;justify-content:center;margin-top:8px}
+.puerta .acciones button,.puerta .acciones a{padding:9px 20px;border-radius:50px;font:600 .9rem var(--body,system-ui,sans-serif);text-decoration:none;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--fg)}
+.puerta .acciones button{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.puerta .tiempo{margin-top:20px;height:6px;background:var(--line);border-radius:4px;overflow:hidden}
+.puerta .tiempo i{display:block;height:100%;width:100%;background:var(--focus);transition:width 1s linear}
+.puerta .seg{margin-top:8px;font-size:.82rem;color:var(--muted)}
+</style>
+<div class="puerta">
+  <div class="caja">
+    <h2>Licencia de Lector</h2>
+    <p>Esta página necesita una contraseña.</p>
+    <input id="clave" type="password" inputmode="numeric" autocomplete="off" maxlength="12" aria-label="Contraseña" autofocus>
+    <div class="msg" id="msg" role="alert"></div>
+    <div class="acciones">
+      <button type="button" id="entrar">Entrar</button>
+      <a href="index.html">Volver al inicio</a>
+    </div>
+    <div class="tiempo"><i id="barra-tiempo"></i></div>
+    <div class="seg" id="seg">Te quedan 30 segundos.</div>
+  </div>
+</div>
+<script>
+(function(){
+  var CLAVE='231404', SEGUNDOS=30, restante=SEGUNDOS;
+  var input=document.getElementById('clave'), msg=document.getElementById('msg'),
+      seg=document.getElementById('seg'), barra=document.getElementById('barra-tiempo');
+  var reloj=setInterval(function(){
+    restante--;
+    barra.style.width=(restante/SEGUNDOS*100)+'%';
+    seg.textContent='Te quedan '+restante+' segundo'+(restante===1?'':'s')+'.';
+    if(restante<=0){clearInterval(reloj);window.location.href='index.html';}
+  },1000);
+  function intentar(){
+    if(input.value===CLAVE){clearInterval(reloj);document.body.classList.remove('bloqueado');}
+    else{input.classList.add('error');msg.textContent='Contraseña incorrecta.';input.value='';input.focus();}
+  }
+  document.getElementById('entrar').addEventListener('click',intentar);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter')intentar();});
+  input.addEventListener('input',function(){input.classList.remove('error');msg.textContent='';});
+})();
+</script>
+
 <title>Licencia de Lector</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
