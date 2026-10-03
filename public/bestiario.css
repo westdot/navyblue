@@ -1,0 +1,201 @@
+/* BESTIARIO LATINOAMERICANO — demo
+   Paleta: el navy y el dorado de NavyBlue, pero invertidos hacia la noche
+   (fondo navy casi negro, papel crema como tinta) + brujería y Día de Muertos
+   (cempasúchil, violeta de hechizo, musgo). Todo pasa por estas variables. */
+:root {
+    --noche: #121827;
+    --noche-2: #1b2438;
+    --noche-3: #26314a;
+    --linea: #3a4766;
+    --hueso: #f1e9d8;
+    --hueso-suave: #aaa595;
+    --oro: #d9a24e;
+    --cempa: #e8892b;
+    --hechizo: #8a66b8;
+    --musgo: #7fa88b;
+    --sangre: #c17b83;
+    --serif: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--noche);
+    background-image: radial-gradient(ellipse at 85% -10%, rgba(138,102,184,.28), transparent 55%),
+                      radial-gradient(ellipse at 0% 40%, rgba(232,137,43,.10), transparent 50%);
+    color: var(--hueso);
+    line-height: 1.6;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--oro); outline-offset: 3px; }
+
+/* Barra superior (misma identidad que el header de NavyBlue) */
+.barra {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; background: #0d1220; border-bottom: 1px solid var(--linea);
+}
+.barra h1 { font-size: 1.1rem; letter-spacing: .12em; }
+.barra a.volver {
+    text-decoration: none; font-size: .9rem; font-weight: 600; padding: 7px 16px;
+    border: 1px solid var(--linea); border-radius: 50px; background: rgba(255,255,255,.06);
+}
+.barra a.volver:hover { background: rgba(255,255,255,.14); }
+
+.aviso-demo {
+    text-align: center; font-size: .85rem; padding: 8px 16px;
+    background: var(--cempa); color: #2a1706; font-weight: 600;
+}
+
+main { max-width: 1080px; margin: 0 auto; padding: 0 24px 80px; }
+section { margin-top: 84px; }
+h2 { font-family: var(--serif); font-size: clamp(1.6rem, 3.2vw, 2.3rem); line-height: 1.15; margin-bottom: 10px; }
+.bajada { color: var(--hueso-suave); max-width: 60ch; margin-bottom: 28px; }
+.pronto {
+    display: inline-block; font-size: .78rem; padding: 2px 10px; margin-left: 10px;
+    border: 1px dashed var(--oro); color: var(--oro); border-radius: 50px;
+    vertical-align: middle; font-family: inherit; font-weight: 600;
+}
+
+/* HERO */
+.hero { display: grid; grid-template-columns: 1.25fr 1fr; gap: 48px; align-items: center; padding-top: 64px; margin-top: 0; }
+.hero h2 { font-size: clamp(2.6rem, 7vw, 4.9rem); line-height: 1; margin-bottom: 20px; }
+.hero p { color: var(--hueso-suave); max-width: 46ch; font-size: 1.08rem; }
+.hero .brasa {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--cempa); box-shadow: 0 0 14px 4px rgba(232,137,43,.7);
+    margin-right: 10px; animation: llama 2.6s ease-in-out infinite;
+}
+@keyframes llama { 0%,100% { opacity: 1; } 45% { opacity: .55; } 60% { opacity: .9; } }
+
+/* Ficha de criatura */
+.ficha {
+    background: linear-gradient(160deg, #2b2147, var(--noche-2) 70%);
+    border: 2px solid var(--oro); border-radius: 14px; padding: 26px;
+    transform: rotate(2deg); box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 0 0 5px var(--noche);
+}
+.ficha .sello {
+    width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center;
+    font: 700 2.6rem var(--serif); color: var(--noche); background: var(--hechizo);
+    border: 3px double var(--hueso); margin-bottom: 14px;
+}
+.ficha h3 { font-family: var(--serif); font-size: 1.6rem; }
+.ficha .origen { color: var(--oro); font-size: .9rem; margin-bottom: 10px; }
+.ficha dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: .88rem; margin-top: 12px; color: var(--hueso-suave); }
+.ficha dt { color: var(--hueso); font-weight: 600; }
+
+/* ÁLBUM */
+.album { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.figurita {
+    aspect-ratio: 3 / 4; border-radius: 10px; padding: 12px 10px; text-align: center;
+    display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+}
+.figurita .inicial { font: 700 3rem/1 var(--serif); }
+.figurita b { font-family: var(--serif); font-size: .98rem; line-height: 1.15; }
+.figurita small { font-size: .72rem; opacity: .85; }
+.figurita.activa {
+    background: linear-gradient(170deg, var(--c), color-mix(in srgb, var(--c) 40%, #000));
+    border: 2px solid var(--hueso); color: #fff; box-shadow: 0 6px 16px rgba(0,0,0,.4);
+}
+.figurita.bloqueada {
+    background: repeating-linear-gradient(45deg, #1d2536, #1d2536 8px, #222c40 8px, #222c40 16px);
+    border: 2px dashed var(--linea); color: #5d6a86; filter: grayscale(1);
+}
+.figurita.bloqueada .inicial { color: #38435c; }
+.figurita.temporada { border-color: var(--cempa); color: #8a6a45; }
+.contador { margin-top: 18px; color: var(--hueso-suave); font-size: .92rem; }
+
+/* AVISTAMIENTOS + MAPA */
+.dos-col { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; align-items: start; }
+.testimonio { background: var(--noche-2); border: 1px solid var(--linea); border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; }
+.testimonio header { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--noche-3); color: var(--oro); }
+.testimonio .quien { font-weight: 600; font-size: .95rem; }
+.testimonio .donde { font-size: .8rem; color: var(--hueso-suave); }
+.testimonio .etiqueta { color: var(--hechizo); font-weight: 600; }
+.veredicto { margin-top: 14px; }
+.veredicto .barra-v { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--noche-3); }
+.veredicto .si { background: var(--musgo); }
+.veredicto .no { background: var(--sangre); }
+.veredicto .cifras { display: flex; justify-content: space-between; font-size: .82rem; margin-top: 6px; }
+.veredicto .cifras span:first-child { color: var(--musgo); }
+.veredicto .cifras span:last-child { color: var(--sangre); }
+.mapa { background: var(--noche-2); border: 1px solid var(--linea); border-radius: 12px; padding: 14px; }
+.mapa svg { width: 100%; height: auto; display: block; }
+.mapa .filtros { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip { font-size: .78rem; padding: 3px 12px; border-radius: 50px; border: 1px solid var(--linea); color: var(--hueso-suave); }
+.chip.on { background: var(--hechizo); border-color: var(--hechizo); color: #fff; }
+
+/* FACCIONES */
+.facciones { display: grid; gap: 12px; }
+.faccion { display: grid; grid-template-columns: 150px 1fr 60px; gap: 14px; align-items: center; }
+.faccion .nombre { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.faccion .pista { height: 14px; background: var(--noche-3); border-radius: 8px; overflow: hidden; }
+.faccion .pista i { display: block; height: 100%; border-radius: 8px; background: var(--c); }
+.faccion .pts { text-align: right; color: var(--hueso-suave); font-size: .88rem; }
+.emblema {
+    width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--oro);
+    background: radial-gradient(circle at 35% 35%, #fff3c4, var(--oro) 60%); box-shadow: 0 0 10px rgba(217,162,78,.8);
+}
+.temporada { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-bottom: 22px; font-size: .92rem; color: var(--hueso-suave); }
+.temporada b { color: var(--oro); }
+
+/* RANGOS: acá sí hay una secuencia real, por eso van conectados */
+.rangos { display: flex; list-style: none; position: relative; }
+.rangos::before { content: ""; position: absolute; top: 19px; left: 10%; right: 10%; height: 2px; background: var(--linea); }
+.rangos li { flex: 1; text-align: center; position: relative; padding: 0 6px; }
+.rangos .punto { width: 38px; height: 38px; margin: 0 auto 10px; border-radius: 50%; display: grid; place-items: center; background: var(--noche-3); border: 2px solid var(--linea); font-size: 1.1rem; }
+.rangos li.hecho .punto { background: var(--hechizo); border-color: var(--hueso); }
+.rangos li.aqui .punto { background: var(--cempa); border-color: var(--hueso); box-shadow: 0 0 14px rgba(232,137,43,.7); }
+.rangos b { font-family: var(--serif); display: block; }
+.rangos small { color: var(--hueso-suave); font-size: .8rem; }
+
+/* PRÓXIMAMENTE */
+.mas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.idea { background: var(--noche-2); border: 1px solid var(--linea); border-radius: 12px; padding: 18px 20px; }
+.idea h3 { font-family: var(--serif); font-size: 1.15rem; margin-bottom: 6px; color: var(--oro); }
+.idea p { font-size: .92rem; color: var(--hueso-suave); }
+.reproductor { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.reproductor .play { width: 30px; height: 30px; border-radius: 50%; background: var(--noche-3); display: grid; place-items: center; font-size: .7rem; color: var(--oro); }
+.reproductor .onda { flex: 1; height: 24px; background: repeating-linear-gradient(90deg, var(--hechizo) 0 3px, transparent 3px 7px);
+    -webkit-mask: linear-gradient(0deg, transparent 0, #000 0); opacity: .75; clip-path: polygon(0 60%,10% 20%,20% 70%,30% 10%,40% 80%,50% 30%,60% 90%,70% 15%,80% 65%,90% 25%,100% 55%,100% 100%,0 100%); }
+.cierre { margin-top: 84px; padding-top: 28px; border-top: 1px solid var(--linea); color: var(--hueso-suave); font-size: .9rem; }
+
+@media (max-width: 860px) {
+    .hero, .dos-col { grid-template-columns: 1fr; }
+    .ficha { transform: none; max-width: 340px; }
+    .album { grid-template-columns: repeat(3, 1fr); }
+    .mas { grid-template-columns: 1fr; }
+    .faccion { grid-template-columns: 110px 1fr 46px; }
+    .rangos { flex-direction: column; gap: 14px; }
+    .rangos::before { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .hero .brasa { animation: none; } }
+
+/* PUERTA CON CONTRASEÑA: mientras el body tiene .bloqueado solo se ve la puerta */
+body.bloqueado > :not(.puerta) { display: none; }
+.puerta { display: none; min-height: 100vh; place-items: center; padding: 24px; }
+body.bloqueado .puerta { display: grid; }
+.puerta .caja {
+    width: 100%; max-width: 380px; text-align: center; padding: 34px 28px 28px;
+    background: linear-gradient(160deg, #2b2147, var(--noche-2) 70%);
+    border: 2px solid var(--oro); border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 0 0 5px var(--noche);
+}
+.puerta h2 { font-size: 1.7rem; margin-bottom: 8px; }
+.puerta p { color: var(--hueso-suave); font-size: .92rem; margin-bottom: 18px; }
+.puerta input {
+    width: 100%; padding: 12px; text-align: center; font-size: 1.3rem; letter-spacing: .4em;
+    background: var(--noche); color: var(--hueso); border: 1px solid var(--linea); border-radius: 10px;
+}
+.puerta input.error { border-color: var(--sangre); }
+.puerta .msg { min-height: 1.4em; margin: 8px 0 4px; color: var(--sangre); font-size: .88rem; }
+.puerta .acciones { display: flex; gap: 10px; justify-content: center; margin-top: 8px; }
+.puerta .acciones button, .puerta .acciones a {
+    padding: 9px 20px; border-radius: 50px; font: 600 .9rem inherit; font-family: inherit;
+    text-decoration: none; cursor: pointer; border: 1px solid var(--linea); background: transparent; color: var(--hueso);
+}
+.puerta .acciones button { background: var(--oro); border-color: var(--oro); color: #2a1706; }
+.puerta .tiempo { margin-top: 20px; height: 6px; background: var(--noche-3); border-radius: 4px; overflow: hidden; }
+.puerta .tiempo i { display: block; height: 100%; width: 100%; background: var(--cempa); transition: width 1s linear; }
+.puerta .seg { margin-top: 8px; font-size: .82rem; color: var(--hueso-suave); }

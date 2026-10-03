@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bestiario Latinoamericano · NavyBlue</title>
+    <link rel="stylesheet" href="bestiario.css">
+</head>
+<body class="bloqueado">
+
+    <!-- PUERTA: pide la contraseña; si pasan 30 segundos, vuelve al inicio -->
+    <div class="puerta">
+        <div class="caja">
+            <h2>Bestiario</h2>
+            <p>Esta puerta necesita una contraseña.</p>
+            <input id="clave" type="password" inputmode="numeric" autocomplete="off" maxlength="12" aria-label="Contraseña" autofocus>
+            <div class="msg" id="msg" role="alert"></div>
+            <div class="acciones">
+                <button type="button" id="entrar">Entrar</button>
+                <a href="index.html">Volver al inicio</a>
+            </div>
+            <div class="tiempo"><i id="barra-tiempo"></i></div>
+            <div class="seg" id="seg">Te quedan 30 segundos.</div>
+        </div>
+    </div>
+
+    <div class="barra">
+        <h1>NAVYBLUE</h1>
+        <a class="volver" href="index.html">Volver al muro</a>
+    </div>
+    <div class="aviso-demo">Vista previa: todavía nada de esto funciona, es un adelanto de lo que viene.</div>
+
+    <main>
+
+        <!-- PORTADA -->
+        <section class="hero">
+            <div>
+                <h2><span class="brasa"></span>Bestiario Latinoamericano</h2>
+                <p>Las criaturas que tu abuela juraba haber visto, de toda la región. Descúbrelas, junta sus fichas, cuenta lo que viste y deja que la comunidad decida si te cree.</p>
+            </div>
+            <article class="ficha" aria-label="Ejemplo de ficha de criatura">
+                <div class="sello">L</div>
+                <h3>La Llorona</h3>
+                <p class="origen">México · Andina · Cono Sur</p>
+                <p>Una mujer de blanco que llora junto al agua buscando a sus hijos. Si la escuchas cerca, no te acerques a mirar.</p>
+                <dl>
+                    <dt>Aparece</dt><dd>Ríos, puentes y acequias, de noche</dd>
+                    <dt>Avistamientos</dt><dd>142 reportados</dd>
+                    <dt>Estado</dt><dd>Desbloqueada</dd>
+                </dl>
+            </article>
+        </section>
+
+        <!-- ÁLBUM -->
+        <section>
+            <h2>Álbum de figuritas <span class="pronto">Próximamente</span></h2>
+            <p class="bajada">Cada criatura que descubres se pinta a color. Las que te faltan esperan en gris, y algunas solo aparecen en fechas especiales.</p>
+            <div class="album">
+                <div class="figurita activa" style="--c:#4f7a5c"><span class="inicial">T</span><b>El Trauco</b><small>Chiloé, Chile</small></div>
+                <div class="figurita activa" style="--c:#6b4a9a"><span class="inicial">L</span><b>La Llorona</b><small>México y Andina</small></div>
+                <div class="figurita activa" style="--c:#2f5f86"><span class="inicial">C</span><b>El Caleuche</b><small>Chiloé, Chile</small></div>
+                <div class="figurita activa" style="--c:#8a5a2b"><span class="inicial">C</span><b>El Cadejo</b><small>Centroamérica</small></div>
+                <div class="figurita activa" style="--c:#9a4f3f"><span class="inicial">S</span><b>El Silbón</b><small>Venezuela</small></div>
+                <div class="figurita bloqueada"><span class="inicial">?</span><b>Sin descubrir</b><small>Cono Sur</small></div>
+                <div class="figurita bloqueada"><span class="inicial">?</span><b>Sin descubrir</b><small>Amazonía</small></div>
+                <div class="figurita bloqueada"><span class="inicial">?</span><b>Sin descubrir</b><small>Caribe</small></div>
+                <div class="figurita bloqueada temporada"><span class="inicial">?</span><b>Noche de San Juan</b><small>Solo el 23 de junio</small></div>
+                <div class="figurita bloqueada temporada"><span class="inicial">?</span><b>Día de Muertos</b><small>Solo el 1 y 2 de noviembre</small></div>
+                <div class="figurita bloqueada"><span class="inicial">?</span><b>Sin descubrir</b><small>Andina</small></div>
+                <div class="figurita bloqueada"><span class="inicial">?</span><b>Sin descubrir</b><small>México</small></div>
+            </div>
+            <p class="contador">5 de 12 criaturas descubiertas (cifras de ejemplo).</p>
+        </section>
+
+        <!-- AVISTAMIENTOS Y MAPA -->
+        <section>
+            <h2>Muro de avistamientos <span class="pronto">Próximamente</span></h2>
+            <p class="bajada">Un muro aparte donde se cuentan testimonios con nombre de lugar. En vez de un like, cada relato recibe el veredicto de la comunidad.</p>
+            <div class="dos-col">
+                <div>
+                    <article class="testimonio">
+                        <header>
+                            <div class="avatar">L</div>
+                            <div><div class="quien">lectora_nocturna</div><div class="donde">Quellón, Chiloé · hace 2 horas · <span class="etiqueta">El Caleuche</span></div></div>
+                        </header>
+                        <p>Anoche en el muelle vi una barca con luces y nadie al timón. Mi abuela dice que es el Caleuche y no me dejó salir más.</p>
+                        <div class="veredicto">
+                            <div class="barra-v" role="img" aria-label="78% le cree"><div class="si" style="width:78%"></div><div class="no" style="width:22%"></div></div>
+                            <div class="cifras"><span>Le creo · 78%</span><span>No le creo · 22%</span></div>
+                        </div>
+                    </article>
+                    <article class="testimonio">
+                        <header>
+                            <div class="avatar">M</div>
+                            <div><div class="quien">marea_baja</div><div class="donde">Guanajuato, México · ayer · <span class="etiqueta">La Llorona</span></div></div>
+                        </header>
+                        <p>Pasé por el callejón después de las doce y se oía a alguien llorando debajo del puente. Cuando miré, solo había un rebozo en el suelo.</p>
+                        <div class="veredicto">
+                            <div class="barra-v" role="img" aria-label="41% le cree"><div class="si" style="width:41%"></div><div class="no" style="width:59%"></div></div>
+                            <div class="cifras"><span>Le creo · 41%</span><span>No le creo · 59%</span></div>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="mapa">
+                    <div class="filtros">
+                        <span class="chip on">Todas</span><span class="chip">El Caleuche</span><span class="chip">La Llorona</span><span class="chip">El Cadejo</span>
+                    </div>
+                    <svg viewBox="0 0 360 440" role="img" aria-label="Mapa de ejemplo con focos de avistamientos por región">
+                        <defs>
+                            <radialGradient id="calor"><stop offset="0" stop-color="#e8892b" stop-opacity=".85"/><stop offset="1" stop-color="#e8892b" stop-opacity="0"/></radialGradient>
+                            <pattern id="puntos" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#3a4766"/></pattern>
+                        </defs>
+                        <rect width="360" height="440" fill="url(#puntos)"/>
+                        <circle cx="90" cy="70" r="62" fill="url(#calor)"/>
+                        <circle cx="270" cy="85" r="44" fill="url(#calor)"/>
+                        <circle cx="130" cy="150" r="34" fill="url(#calor)"/>
+                        <circle cx="140" cy="260" r="52" fill="url(#calor)"/>
+                        <circle cx="180" cy="380" r="58" fill="url(#calor)"/>
+                        <g fill="#8a66b8" stroke="#f1e9d8" stroke-width="2">
+                            <circle cx="84" cy="64" r="6"/><circle cx="104" cy="82" r="6"/><circle cx="266" cy="82" r="6"/>
+                            <circle cx="128" cy="150" r="6"/><circle cx="136" cy="256" r="6"/><circle cx="152" cy="274" r="6"/>
+                            <circle cx="176" cy="372" r="6"/><circle cx="190" cy="392" r="6"/>
+                        </g>
+                        <g fill="#f1e9d8" font-size="13" font-family="Georgia, serif">
+                            <text x="20" y="28">México</text><text x="246" y="30">Caribe</text>
+                            <text x="150" y="132">Centroamérica</text><text x="170" y="250">Andina</text><text x="215" y="412">Cono Sur</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- FACCIONES -->
+        <section>
+            <h2>Facciones y temporadas <span class="pronto">Próximamente</span></h2>
+            <p class="bajada">Cada región cultural compite por actividad. Cuando termina la temporada el ranking vuelve a cero, y la ganadora lleva un emblema hasta la siguiente. Cada facción tiene además su propio muro privado.</p>
+            <div class="temporada"><span><b>Temporada 1</b> · quedan 41 días</span><span>Ranking de ejemplo</span></div>
+            <div class="facciones">
+                <div class="faccion" style="--c:#e8892b"><span class="nombre"><span class="emblema" title="Emblema de la temporada"></span>México</span><div class="pista"><i style="width:91%"></i></div><span class="pts">910</span></div>
+                <div class="faccion" style="--c:#8a66b8"><span class="nombre">Cono Sur</span><div class="pista"><i style="width:85%"></i></div><span class="pts">850</span></div>
+                <div class="faccion" style="--c:#7fa88b"><span class="nombre">Andina</span><div class="pista"><i style="width:78%"></i></div><span class="pts">780</span></div>
+                <div class="faccion" style="--c:#d9a24e"><span class="nombre">Caribe</span><div class="pista"><i style="width:64%"></i></div><span class="pts">640</span></div>
+                <div class="faccion" style="--c:#c17b83"><span class="nombre">Centroamérica</span><div class="pista"><i style="width:52%"></i></div><span class="pts">520</span></div>
+            </div>
+        </section>
+
+        <!-- RANGOS -->
+        <section>
+            <h2>Rangos de cazador de leyendas <span class="pronto">Próximamente</span></h2>
+            <p class="bajada">Subes de rango con tu actividad acumulada: avistamientos, veredictos, fichas y expediciones.</p>
+            <ol class="rangos">
+                <li class="hecho"><div class="punto">✓</div><b>Novato</b><small>Recién llegas</small></li>
+                <li class="aqui"><div class="punto">●</div><b>Testigo</b><small>Estás aquí (ejemplo)</small></li>
+                <li><div class="punto"></div><b>Investigador</b><small>Casos documentados</small></li>
+                <li><div class="punto"></div><b>Cronista</b><small>Tus relatos se citan</small></li>
+                <li><div class="punto"></div><b>Leyenda viva</b><small>La cima</small></li>
+            </ol>
+        </section>
+
+        <!-- MÁS IDEAS -->
+        <section>
+            <h2>Lo que viene después <span class="pronto">Próximamente</span></h2>
+            <p class="bajada">Más piezas del Bestiario que se irán sumando.</p>
+            <div class="mas">
+                <article class="idea"><h3>Expediente por criatura</h3><p>Cuando varios avistamientos coinciden, se arma el caso mejor documentado de esa leyenda.</p></article>
+                <article class="idea"><h3>Expediciones grupales</h3><p>Un avistamiento especial al que se suman varios amigos para investigar juntos.</p></article>
+                <article class="idea"><h3>Criaturas de la comunidad</h3><p>Un avistamiento muy popular puede graduarse y convertirse en criatura oficial, creada por ustedes.</p></article>
+                <article class="idea">
+                    <h3>Leyendas narradas</h3>
+                    <p>Cada historia con una narración corta, porque el folclore nació en la voz.</p>
+                    <div class="reproductor" aria-hidden="true"><span class="play">▶</span><span class="onda"></span></div>
+                </article>
+                <article class="idea"><h3>Criaturas de temporada</h3><p>Algunas leyendas solo se desbloquean en fechas como la Noche de San Juan o el Día de Muertos.</p></article>
+                <article class="idea"><h3>Conectado con tus libros</h3><p>Reseñar un libro con una leyenda etiquetada desbloquea cosas aquí, y un post del muro puede citar un avistamiento.</p></article>
+            </div>
+        </section>
+
+        <p class="cierre">Esta página es solo una maqueta para ver hacia dónde va el Bestiario. Las criaturas, relatos y cifras son de ejemplo.</p>
+    </main>
+
+
+    <script>
+        (function () {
+            var CLAVE = '231404';
+            var SEGUNDOS = 30;
+            var restante = SEGUNDOS;
+            var input = document.getElementById('clave');
+            var msg = document.getElementById('msg');
+            var seg = document.getElementById('seg');
+            var barra = document.getElementById('barra-tiempo');
+
+            var reloj = setInterval(function () {
+                restante--;
+                barra.style.width = (restante / SEGUNDOS * 100) + '%';
+                seg.textContent = 'Te quedan ' + restante + ' segundo' + (restante === 1 ? '' : 's') + '.';
+                if (restante <= 0) {
+                    clearInterval(reloj);
+                    window.location.href = 'index.html';
+                }
+            }, 1000);
+
+            function intentar() {
+                if (input.value === CLAVE) {
+                    clearInterval(reloj);
+                    document.body.classList.remove('bloqueado');
+                } else {
+                    input.classList.add('error');
+                    msg.textContent = 'Contraseña incorrecta.';
+                    input.value = '';
+                    input.focus();
+                }
+            }
+            document.getElementById('entrar').addEventListener('click', intentar);
+            input.addEventListener('keydown', function (e) { if (e.key === 'Enter') intentar(); });
+            input.addEventListener('input', function () { input.classList.remove('error'); msg.textContent = ''; });
+        })();
+    </script>
+
+</body>
+</html>
