@@ -1,0 +1,414 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Licencia de Lector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Jost:wght@400;500;600&display=swap">
+<style>
+/* Concepto: una mesa de trabajo quieta. El carnet es el único objeto con carácter; la página solo lo sostiene. */
+:root{
+  --bg:#e9edf4; --panel:#f6f8fb; --fg:#13203a; --muted:#52607d; --line:#c9d1e0;
+  --accent:#1d3159; --on-accent:#f6f1e4; --focus:#b5832f;
+  --nv-gold:#e2c081; --nv-cream:#f1e8d6; --nv-label:#b4c0dc; --nv-bar:#ece4d2;
+  --display:'Cinzel','Trajan Pro',Georgia,serif;
+  --body:'Jost',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a101c; --panel:#111b2e; --fg:#e7ecf6; --muted:#98a5c2; --line:#26365a;
+    --accent:#d9b36b; --on-accent:#14203a; --focus:#e8c680; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a101c; --panel:#111b2e; --fg:#e7ecf6; --muted:#98a5c2; --line:#26365a;
+  --accent:#d9b36b; --on-accent:#14203a; --focus:#e8c680; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.page{max-width:1120px;margin-inline:auto;padding-block:32px 64px;padding-inline:16px;display:flex;flex-direction:column;gap:36px}
+h1,h2,p{margin:0}
+.kicker{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:500}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(28px,5vw,40px);letter-spacing:.06em;text-transform:uppercase;margin-top:6px;text-wrap:balance}
+.lede{color:var(--muted);max-width:60ch;margin-top:10px}
+h2{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:.14em;text-transform:uppercase}
+
+/* Controles */
+.controls{display:flex;flex-direction:column;gap:18px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.field input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0;width:100%}
+.signs{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:14px;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 14px 6px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:background .15s,border-color .15s}
+.chip .g{font-size:16px;line-height:1;color:var(--muted)}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chip[aria-pressed="true"] .g{color:var(--on-accent)}
+.hint{font-size:13px;color:var(--muted);min-height:1.4em}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* Escenario */
+.stage{display:flex;flex-wrap:wrap;gap:36px 40px;align-items:flex-start}
+.slot{display:flex;flex-direction:column;gap:12px;min-width:0}
+.slot.sv{flex:0 1 340px}
+.slot.sh{flex:1 1 440px;max-width:640px}
+.cap{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:500}
+
+/* Galería */
+.gallery{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:26px 18px}
+.gi{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
+.gi .gcard{width:100%;max-width:210px;cursor:pointer;border-radius:12px;outline:2px solid transparent;outline-offset:5px;transition:outline-color .15s}
+.gi.on .gcard{outline-color:var(--accent)}
+.gbtn{font:inherit;font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:none;border:0;padding:4px 8px;cursor:pointer}
+.gi.on .gbtn{color:var(--fg)}
+
+/* ===== Carnet ===== */
+.cardwrap{container-type:inline-size;width:100%}
+.cardwrap.v{max-width:340px}
+.cardwrap.h{max-width:640px}
+.card{
+  --u:calc(100cqw / 100);
+  position:relative;overflow:hidden;width:100%;line-height:1;
+  border-radius:calc(var(--u)*5);color:var(--nv-cream);font-family:var(--body);
+  background:radial-gradient(130% 75% at 50% 14%,#3c5179 0%,#273a60 40%,#1a2542 72%,#121a31 100%);
+  box-shadow:0 calc(var(--u)*2.2) calc(var(--u)*6) rgba(6,10,22,.42),inset 0 0 0 1px rgba(226,192,129,.32);
+}
+.card.v{aspect-ratio:100/148}
+.card.h{aspect-ratio:100/65}
+.card>*{position:relative}
+.card .sky{position:absolute;inset:0;width:100%;height:100%}
+.card .frame{position:absolute;inset:calc(var(--u)*2.6);border:1px solid rgba(226,192,129,.34);border-radius:calc(var(--u)*3);pointer-events:none}
+.card .eyebrow{font-size:calc(var(--u)*2.4);letter-spacing:.42em;text-transform:uppercase;color:var(--nv-label);margin:0}
+.card .title{font-family:var(--display);font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--nv-gold);margin:0}
+.card .compass svg{display:block;width:100%;height:auto}
+.card .name{font-family:var(--display);font-weight:600;color:var(--nv-cream);white-space:nowrap;width:100%;text-shadow:0 0 calc(var(--u)*1.6) rgba(18,26,49,.95),0 0 calc(var(--u)*3) rgba(18,26,49,.8)}
+.card .name .fit{display:inline-block}
+.card .handle{color:#bcc7e0;margin:0;letter-spacing:.04em;text-shadow:0 0 calc(var(--u)*1.6) rgba(18,26,49,.95)}
+.card .rank{display:flex;align-items:center}
+.card .tier{display:grid;place-items:center;font-family:var(--display);font-weight:700;color:#fff;background:linear-gradient(145deg,#7c869c,#505a70);border:1px solid rgba(255,255,255,.38);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.35);white-space:nowrap}
+.card .tier[data-t="F"]{background:linear-gradient(145deg,#939db3,#5a647c)}
+.card .tier[data-t="E"]{background:linear-gradient(145deg,#86ad90,#4a7358)}
+.card .tier[data-t="D"]{background:linear-gradient(145deg,#68a9cf,#2f6f96)}
+.card .tier[data-t="C"]{background:linear-gradient(145deg,#55bbae,#23786f)}
+.card .tier[data-t="B"]{background:linear-gradient(145deg,#dcae66,#9a6a24)}
+.card .tier[data-t="A"]{background:linear-gradient(145deg,#e68562,#a8412a)}
+.card .tier[data-t="S"]{background:linear-gradient(145deg,#b588f7,#6a35c8)}
+.card .tier[data-t="SS"]{background:linear-gradient(145deg,#df78cb,#8a2a86)}
+.card .tier[data-t="SSS"]{background:linear-gradient(145deg,#fbe39a,#c28a1f);color:#3a2606;border-color:rgba(255,244,205,.7)}
+.card .rankname{font-weight:500;letter-spacing:.06em;color:var(--nv-cream)}
+.card hr{border:0;margin:0;background:linear-gradient(90deg,transparent,rgba(226,192,129,.55) 18%,rgba(226,192,129,.55) 82%,transparent)}
+.card .info{display:grid;text-align:left;align-items:stretch}
+.card .cl{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;min-width:0}
+.card .cr{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.card .it{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.card .k{text-transform:uppercase;letter-spacing:.16em;color:var(--nv-label);white-space:nowrap}
+.card .vv{font-weight:600;color:#f7efde;white-space:nowrap}
+.card .qr{background:var(--nv-cream);aspect-ratio:1;flex:none;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.card .qr svg{display:block;width:100%;height:100%;fill:#16213d}
+.card .id{letter-spacing:.2em;color:var(--nv-gold);font-weight:500;white-space:nowrap}
+
+/* Vertical */
+.card.v{display:flex;flex-direction:column;align-items:center;text-align:center;padding:calc(var(--u)*6) calc(var(--u)*8) calc(var(--u)*5)}
+.v .eyebrow{font-size:calc(var(--u)*2.4)}
+.v .title{font-size:calc(var(--u)*4.2);margin-top:calc(var(--u)*1.6)}
+.v .compass{width:calc(var(--u)*48);margin-top:calc(var(--u)*5)}
+.v .name{font-size:calc(var(--u)*8*var(--ns,1));margin-top:calc(var(--u)*3.4)}
+.v .handle{font-size:calc(var(--u)*3.6);margin-top:calc(var(--u)*1.8)}
+.v .rank{gap:calc(var(--u)*2.4);margin-top:calc(var(--u)*3.2)}
+.v .tier{width:calc(var(--u)*7);height:calc(var(--u)*7);border-radius:calc(var(--u)*1.7);font-size:calc(var(--u)*4.4*var(--tl,1))}
+.v .rankname{font-size:calc(var(--u)*3.5)}
+.v hr{width:100%;height:calc(var(--u)*.3);margin-block:calc(var(--u)*3.6) calc(var(--u)*3.2)}
+.v .info{grid-template-columns:auto calc(var(--u)*25);column-gap:calc(var(--u)*9);justify-content:center;margin-bottom:auto}
+.v .cl{gap:calc(var(--u)*3)}
+.v .k{font-size:calc(var(--u)*2.4)}
+.v .vv{font-size:calc(var(--u)*4.4);margin-top:calc(var(--u)*.9)}
+.v .qr{width:calc(var(--u)*25);margin-top:calc(var(--u)*3);padding:calc(var(--u)*1.7);border-radius:calc(var(--u)*1.6)}
+.v .id{font-size:calc(var(--u)*2.2);letter-spacing:.1em;margin-top:calc(var(--u)*1.6)}
+
+/* Horizontal */
+.card.h{display:grid;grid-template-columns:calc(var(--u)*40) minmax(0,1fr);align-items:center;padding:calc(var(--u)*4.2) calc(var(--u)*9) calc(var(--u)*4.2) 0}
+.h .compass{width:calc(var(--u)*30);justify-self:center}
+.h .main{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0}
+.h .eyebrow{font-size:calc(var(--u)*2)}
+.h .title{font-size:calc(var(--u)*3.1);margin-top:calc(var(--u)*1)}
+.h .name{font-size:calc(var(--u)*5.2*var(--ns,1));margin-top:calc(var(--u)*1.5)}
+.h .handle{font-size:calc(var(--u)*2.8);margin-top:calc(var(--u)*1.2)}
+.h .rank{gap:calc(var(--u)*1.8);margin-top:calc(var(--u)*1.7)}
+.h .tier{width:calc(var(--u)*5);height:calc(var(--u)*5);border-radius:calc(var(--u)*1.2);font-size:calc(var(--u)*3.1*var(--tl,1))}
+.h .rankname{font-size:calc(var(--u)*2.7)}
+.h hr{width:100%;height:calc(var(--u)*.22);margin-block:calc(var(--u)*2) calc(var(--u)*1.8)}
+.h .info{width:100%;grid-template-columns:minmax(0,1fr) calc(var(--u)*21);column-gap:calc(var(--u)*3)}
+.h .cl{gap:calc(var(--u)*1.6)}
+.h .k{font-size:calc(var(--u)*1.9)}
+.h .vv{font-size:calc(var(--u)*3.1);margin-top:calc(var(--u)*.6)}
+.h .qr{width:calc(var(--u)*16);margin-top:calc(var(--u)*1.6);padding:calc(var(--u)*1.2);border-radius:calc(var(--u)*1.1)}
+.h .id{font-size:calc(var(--u)*2);letter-spacing:.1em;margin-top:calc(var(--u)*1)}
+
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="gGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4dba6"/><stop offset=".38" stop-color="#c99c58"/>
+      <stop offset=".7" stop-color="#8d6633"/><stop offset="1" stop-color="#e8c585"/>
+    </linearGradient>
+    <radialGradient id="gSphere" cx=".35" cy=".28" r=".95">
+      <stop offset="0" stop-color="#5069a0"/><stop offset=".55" stop-color="#2d4069"/><stop offset="1" stop-color="#17223d"/>
+    </radialGradient>
+    <radialGradient id="gStar">
+      <stop offset="0" stop-color="#fff3d6" stop-opacity=".85"/><stop offset="1" stop-color="#fff3d6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>
+
+<main class="page">
+  <header>
+    <p class="kicker">NavyBlue · Prueba de diseño</p>
+    <h1>Licencia de Lector</h1>
+    <p class="lede">El fondo de cada carnet es la constelación del signo de su dueño. Escribe una fecha de nacimiento o elige un signo.</p>
+  </header>
+
+  <section class="controls" aria-label="Datos del carnet">
+    <div class="fields">
+      <div class="field"><label for="f-nombre">Nombre</label><input id="f-nombre" type="text" maxlength="30" value="yop" autocomplete="off"></div>
+      <div class="field"><label for="f-user">Usuario</label><input id="f-user" type="text" maxlength="24" value="takato" autocomplete="off"></div>
+      <div class="field"><label for="f-libros">Libros leídos</label><input id="f-libros" type="number" min="0" max="9999" step="1" value="127" inputmode="numeric"></div>
+      <div class="field"><label for="f-nac">Fecha de nacimiento</label><input id="f-nac" type="date"></div>
+    </div>
+    <div class="signs" id="chips" role="group" aria-label="Signo zodiacal"></div>
+    <p class="hint" id="hint" aria-live="polite"></p>
+  </section>
+
+  <section class="stage" aria-label="Vista previa">
+    <div class="slot sv"><h2 class="cap">Vertical · celular</h2><div id="pv"></div></div>
+    <div class="slot sh"><h2 class="cap">Horizontal · PC</h2><div id="ph"></div></div>
+  </section>
+
+  <section aria-label="Dame tu fuerza pegaso" style="display:flex;flex-direction:column;gap:20px">
+    <h2>Dame tu fuerza pegaso</h2>
+    <ul class="gallery" id="gallery"></ul>
+  </section>
+</main>
+
+<script>
+const SIGNOS=['aries','tauro','geminis','cancer','leo','virgo','libra','escorpio','sagitario','capricornio','acuario','piscis'];
+const NOM={aries:'Aries',tauro:'Tauro',geminis:'Géminis',cancer:'Cáncer',leo:'Leo',virgo:'Virgo',libra:'Libra',escorpio:'Escorpio',sagitario:'Sagitario',capricornio:'Capricornio',acuario:'Acuario',piscis:'Piscis'};
+const GLI={aries:'♈',tauro:'♉',geminis:'♊',cancer:'♋',leo:'♌',virgo:'♍',libra:'♎',escorpio:'♏',sagitario:'♐',capricornio:'♑',acuario:'♒',piscis:'♓'};
+const TXT='︎'; /* fuerza el glifo como texto y no como emoji */
+
+/* Estrellas: [ascensión recta en horas, declinación en grados, brillo]. Se proyectan al cargar. */
+const SKY={
+ aries:{s:{h:[2.119,23.46,2.2],b:[1.911,20.81,1.8],m:[1.892,19.29,1.6],c:[2.847,27.26,1.2]},
+  l:[['m','b'],['b','h'],['h','c']]},
+ tauro:{s:{al:[4.599,16.51,2.4],be:[5.438,28.61,2],ze:[5.627,21.14,1.5],ep:[4.477,19.18,1.4],d1:[4.382,17.54,1.3],ga:[4.330,15.63,1.5],th:[4.478,15.87,1.4],la:[4.011,12.49,1.2],xi:[3.45,9.73,1],om:[3.405,9.03,1],pl:[3.79,24.11,1.4]},
+  l:[['ze','al'],['al','th'],['th','ga'],['ga','d1'],['d1','ep'],['ep','be'],['ga','la'],['la','xi'],['xi','om']]},
+ geminis:{s:{ca:[7.577,31.89,2.1],po:[7.755,28.03,2.3],al:[6.628,16.40,1.9],me:[6.732,25.13,1.5],te:[6.383,22.51,1.4],pr:[6.248,22.51,1.3],wa:[7.335,21.98,1.6],mk:[7.069,20.57,1.5],ka:[7.740,24.40,1.2],la:[7.301,16.54,1.1],ta:[7.185,30.25,1.2]},
+  l:[['ca','po'],['ca','ta'],['ta','me'],['me','te'],['te','pr'],['po','ka'],['ka','wa'],['wa','mk'],['mk','al'],['wa','la']]},
+ cancer:{s:{ac:[8.975,11.86,1.3],be:[8.275,9.19,1.3],de:[8.745,18.15,1.6],ga:[8.721,21.47,1.5],io:[8.778,28.76,1.2],pr:[8.668,19.67,1]},
+  l:[['be','de'],['de','ga'],['ga','io'],['de','ac']]},
+ leo:{s:{re:[10.139,11.97,2.4],et:[10.122,16.76,1],ga:[10.333,19.84,1.8],ze:[10.278,23.42,1.2],mu:[9.879,26.01,1.3],ep:[9.764,23.77,1.4],de:[11.235,20.52,1.7],be:[11.818,14.57,2],th:[11.237,15.43,1.4]},
+  l:[['re','et'],['et','ga'],['ga','ze'],['ze','mu'],['mu','ep'],['ga','de'],['de','be'],['be','th'],['th','de'],['th','re']]},
+ virgo:{s:{sp:[13.420,-11.16,2.4],po:[12.694,-1.45,1.9],vi:[13.036,10.96,1.6],za:[11.845,1.76,1.5],he:[13.578,-0.60,1.5],de:[12.927,3.40,1.4],et:[12.331,-0.67,1.3],th:[13.166,-5.54,1.2],ta:[14.027,1.54,1.1],l9:[14.766,1.89,1]},
+  l:[['za','et'],['et','po'],['po','de'],['de','vi'],['po','th'],['th','sp'],['po','he'],['he','ta'],['ta','l9']]},
+ libra:{s:{be:[15.283,-9.38,1.8],al:[14.848,-16.04,1.9],ga:[15.592,-14.79,1.6],si:[15.068,-25.28,1.3],up:[15.617,-28.14,1.2]},
+  l:[['al','be'],['be','ga'],['ga','up'],['up','si'],['si','al'],['al','ga']]},
+ escorpio:{s:{gr:[16.091,-19.81,1.6],ds:[16.005,-22.62,1.8],pi:[15.982,-26.11,1.4],rh:[15.948,-29.21,1.1],si:[16.353,-25.59,1.5],an:[16.490,-26.43,2.5],ta:[16.598,-28.22,1.3],ep:[16.837,-34.29,1.8],mu:[16.865,-38.05,1.4],ze:[16.910,-42.36,1.6],et:[17.203,-43.24,1.4],th:[17.620,-42.99,1.8],io:[17.793,-40.13,1.3],ka:[17.708,-39.03,1.4],la:[17.560,-37.10,2.1],up:[17.513,-37.30,1.7]},
+  l:[['gr','ds'],['ds','pi'],['pi','rh'],['ds','si'],['si','an'],['an','ta'],['ta','ep'],['ep','mu'],['mu','ze'],['ze','et'],['et','th'],['th','io'],['io','ka'],['ka','la'],['la','up']]},
+ sagitario:{s:{ke:[18.403,-34.38,1.9],kd:[18.350,-29.83,1.7],kl:[18.466,-25.42,1.6],ph:[18.762,-26.99,1.3],nu:[18.922,-26.30,2.1],as:[19.043,-29.88,1.7],ta:[19.115,-27.67,1.3],ga:[18.097,-30.42,1.6],et:[18.294,-36.76,1.1]},
+  l:[['ga','kd'],['kd','kl'],['kl','ph'],['ph','nu'],['nu','ta'],['ta','as'],['as','ke'],['ke','kd'],['kd','ph'],['ke','et']]},
+ capricornio:{s:{al:[20.300,-12.54,1.5],be:[20.350,-14.78,1.7],ps:[20.767,-25.27,1.2],om:[20.863,-26.92,1.2],ze:[21.445,-22.41,1.3],de:[21.783,-16.13,2],ga:[21.668,-16.66,1.6],io:[21.367,-16.83,1.3],th:[21.098,-17.23,1.4]},
+  l:[['al','be'],['be','ps'],['ps','om'],['om','ze'],['ze','de'],['de','ga'],['ga','io'],['io','th'],['th','al']]},
+ acuario:{s:{sb:[21.526,-5.57,2],sm:[22.096,-0.32,2.1],sa:[22.361,-1.39,1.5],ze:[22.480,-0.02,1.3],et:[22.589,-0.12,1.2],pi:[22.421,1.38,1.1],la:[22.877,-7.58,1.2],ta:[22.796,-13.59,1.2],de:[22.911,-15.82,1.5],ep:[20.795,-9.50,1.4]},
+  l:[['ep','sb'],['sb','sm'],['sm','sa'],['sa','ze'],['ze','pi'],['ze','et'],['et','la'],['la','ta'],['ta','de']]},
+ piscis:{s:{ga:[23.287,3.28,1.2],ka:[23.449,1.26,1.1],la:[23.702,1.78,1.1],io:[23.666,5.63,1.2],te:[23.463,6.38,1.2],om:[23.990,6.86,1.1],de:[24.811,7.58,1.2],ep:[25.047,7.89,1.3],ze:[25.228,7.58,1.2],mu:[25.511,6.14,1.2],nu:[25.683,5.49,1.2],xi:[25.892,3.19,1],al:[26.034,2.76,1.6],o:[25.763,9.16,1.2],et:[25.525,15.35,1.5]},
+  l:[['ga','ka'],['ka','la'],['la','io'],['io','te'],['te','ga'],['io','om'],['om','de'],['de','ep'],['ep','ze'],['ze','mu'],['mu','nu'],['nu','xi'],['xi','al'],['nu','o'],['o','et']]}
+};
+
+/* Proyección sobre el cielo: este a la izquierda, norte arriba, encajada en una caja de 100x100 */
+function proyectar(c){
+  const ids=Object.keys(c.s);
+  const ra=ids.map(k=>c.s[k][0]*15), de=ids.map(k=>c.s[k][1]);
+  const ra0=(Math.min(...ra)+Math.max(...ra))/2, de0=(Math.min(...de)+Math.max(...de))/2;
+  const k=Math.cos(de0*Math.PI/180);
+  const xy=ids.map((_,i)=>[-(ra[i]-ra0)*k,-(de[i]-de0)]);
+  const xs=xy.map(p=>p[0]), ys=xy.map(p=>p[1]);
+  const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+  const esc=76/Math.max(x1-x0,y1-y0), cx=(x0+x1)/2, cy=(y0+y1)/2;
+  const pts={};
+  ids.forEach((id,i)=>{pts[id]=[50+(xy[i][0]-cx)*esc,50+(xy[i][1]-cy)*esc,c.s[id][2]]});
+  return {pts,l:c.l};
+}
+const PROJ={}; SIGNOS.forEach(s=>PROJ[s]=proyectar(SKY[s]));
+
+function signoDeFecha(iso){
+  const m=parseInt(iso.slice(5,7),10), d=parseInt(iso.slice(8,10),10);
+  if(!m||!d) return null;
+  if((m==3&&d>=21)||(m==4&&d<=19)) return 'aries';
+  if((m==4&&d>=20)||(m==5&&d<=20)) return 'tauro';
+  if((m==5&&d>=21)||(m==6&&d<=20)) return 'geminis';
+  if((m==6&&d>=21)||(m==7&&d<=22)) return 'cancer';
+  if((m==7&&d>=23)||(m==8&&d<=22)) return 'leo';
+  if((m==8&&d>=23)||(m==9&&d<=22)) return 'virgo';
+  if((m==9&&d>=23)||(m==10&&d<=22)) return 'libra';
+  if((m==10&&d>=23)||(m==11&&d<=21)) return 'escorpio';
+  if((m==11&&d>=22)||(m==12&&d<=21)) return 'sagitario';
+  if((m==12&&d>=22)||(m==1&&d<=19)) return 'capricornio';
+  if((m==1&&d>=20)||(m==2&&d<=18)) return 'acuario';
+  return 'piscis';
+}
+
+/* Rangos: el umbral y la letra solo viven aquí. En el carnet se muestra la letra y el nombre. */
+const RANGOS=[[500,'SSS','Cazador de Leyendas'],[250,'SS','Gran Cazador'],[100,'S','Maestro Cazador'],[88,'A','Cazador de Élite'],[70,'B','Buscador de Tesoros'],[50,'C','Cazador'],[35,'D','Explorador'],[25,'E','Rastreador'],[10,'F','Aspirante']];
+function rangoDe(n){
+  const r=RANGOS.find(x=>n>=x[0]);
+  return r?{t:r[1],n:r[2]}:{t:'–',n:'Sin rango'};
+}
+
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function hash(s){let h=2166136261;for(const ch of String(s)){h^=ch.codePointAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+function brujula(ini){
+  let ticks='';
+  for(let i=0;i<48;i++){
+    const a=i*7.5*Math.PI/180, big=i%6===0, r1=big?65:69, r2=73;
+    ticks+=`<line x1="${(Math.sin(a)*r1).toFixed(2)}" y1="${(-Math.cos(a)*r1).toFixed(2)}" x2="${(Math.sin(a)*r2).toFixed(2)}" y2="${(-Math.cos(a)*r2).toFixed(2)}" stroke-width="${big?1.7:1}"/>`;
+  }
+  const punta=[0,90,180,270].map(a=>`<path d="M0 -106 L5 -91 L0 -86 L-5 -91Z" transform="rotate(${a})"/>`).join('');
+  return `<svg viewBox="-108 -108 216 216" aria-hidden="true">
+    <circle r="94" fill="none" stroke="#c9a468" stroke-opacity=".55"/>
+    <circle r="84" fill="none" stroke="url(#gGold)" stroke-width="8"/>
+    <circle r="79.5" fill="none" stroke="#6e4f26" stroke-opacity=".6" stroke-width=".8"/>
+    <g stroke="#f0dcb0" stroke-opacity=".78" stroke-linecap="round">${ticks}</g>
+    <g fill="url(#gGold)">${punta}</g>
+    <circle r="64" fill="url(#gSphere)" stroke="url(#gGold)" stroke-width="1.8"/>
+    <circle r="58" fill="none" stroke="#fff" stroke-opacity=".07"/>
+    <text y="17.5" text-anchor="middle" font-family="Cinzel,Georgia,serif" font-size="50" font-weight="600" fill="#f1e6d0" letter-spacing="2">${esc(ini)}</text>
+    <g transform="translate(0 88)">
+      <circle r="12" fill="#1c2845" stroke="url(#gGold)" stroke-width="2"/>
+      <g fill="none" stroke="#e8c585" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M-7 -4Q-3.5 -6 0 -3.5L0 6Q-3.5 4 -7 6Z"/><path d="M7 -4Q3.5 -6 0 -3.5L0 6Q3.5 4 7 6Z"/>
+      </g>
+    </g>
+  </svg>`;
+}
+
+/* Marcador de posición: NO es un QR real y no se puede escanear.
+   Más adelante el backend genera el QR que lleva al muro de la persona y se pone aquí en su lugar. */
+function qrMarcador(){
+  const n=25, r=rng(20261003); let m='';
+  const enFinder=(x,y)=>(x<8&&y<8)||(x>=n-8&&y<8)||(x<8&&y>=n-8);
+  for(let y=0;y<n;y++) for(let x=0;x<n;x++){ if(!enFinder(x,y)&&r()<.48) m+=`<rect x="${x}" y="${y}" width="1" height="1"/>`; }
+  [[0,0],[n-7,0],[0,n-7]].forEach(([x,y])=>{
+    m+=`<path fill-rule="evenodd" d="M${x} ${y}h7v7h-7zM${x+1} ${y+1}v5h5v-5z"/><rect x="${x+2}" y="${y+2}" width="3" height="3"/>`;
+  });
+  return `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" aria-hidden="true">${m}</svg>`;
+}
+
+function cielo(fmt,signo){
+  const V=fmt==='v', H=V?148:65, cx=V?50:20, cy=V?43.2:32.5, caja=V?80:44;
+  const r=rng(hash(signo)+(V?1:2));
+  let anillos='';
+  for(let k=9;k<150;k+=7) anillos+=`<circle cx="${cx}" cy="${cy}" r="${k}" />`;
+  let fondo='';
+  const n=V?38:20;
+  for(let i=0;i<n;i++){
+    fondo+=`<circle cx="${(r()*100).toFixed(1)}" cy="${(r()*H).toFixed(1)}" r="${(0.2+r()*0.35).toFixed(2)}" fill="#fff3d6" fill-opacity="${(0.15+r()*0.35).toFixed(2)}"/>`;
+  }
+  const P=PROJ[signo];
+  let d='';
+  P.l.forEach(([a,b])=>{const A=P.pts[a],B=P.pts[b]; d+=`M${A[0].toFixed(2)} ${A[1].toFixed(2)}L${B[0].toFixed(2)} ${B[1].toFixed(2)}`});
+  let est='';
+  Object.values(P.pts).forEach(([x,y,m])=>{
+    const rr=0.8+m*0.5;
+    est+=`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(rr*3.4).toFixed(2)}" fill="url(#gStar)" fill-opacity=".55"/><circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${rr.toFixed(2)}" fill="#fff3d6"/>`;
+  });
+  const k=caja/100;
+  return `<svg class="sky" viewBox="0 0 100 ${H}" aria-hidden="true">
+    <g fill="none" stroke="#fff" stroke-opacity=".035" stroke-width=".22">${anillos}</g>
+    ${fondo}
+    <g transform="translate(${(cx-caja/2).toFixed(2)} ${(cy-caja/2).toFixed(2)}) scale(${k})">
+      <path d="${d}" fill="none" stroke="#e2c081" stroke-opacity=".55" stroke-width=".5" stroke-linecap="round"/>
+      ${est}
+    </g>
+  </svg>`;
+}
+
+function carnet(fmt,signo,d){
+  const ini=Array.from(d.nombre.trim().split(/\s+/).filter(Boolean).slice(0,2).map(w=>Array.from(w)[0]).join('').toUpperCase()).join('')||'NB';
+  const id='NB-'+String(100000+hash(d.user||d.nombre)%900000);
+  const idTxt=`${id} · ${GLI[signo]}${TXT}`;
+  const aria=`Licencia de lector de ${d.nombre}, @${d.user}, signo ${NOM[signo]}, rango ${rangoDe(d.libros).n}`;
+  const stats=`<div class="info">
+    <div class="cl">
+      <div class="it"><span class="k">Libros leídos</span><span class="vv">${d.libros}</span></div>
+      <div class="it"><span class="k">Género favorito</span><span class="vv">Fantasía épica</span></div>
+      <div class="it"><span class="k">Insignias</span><span class="vv">12</span></div>
+    </div>
+    <div class="cr">
+      <div class="it"><span class="k">Cazador desde</span><span class="vv">2026</span></div>
+      <div class="qr">${qrMarcador()}</div>
+      <span class="id">${esc(idTxt)}</span>
+    </div>
+  </div>`;
+  const rg=rangoDe(d.libros), tl=rg.t.length>=3?.64:rg.t.length===2?.82:1;
+  const rango=`<div class="rank"><span class="tier" data-t="${esc(rg.t)}" style="--tl:${tl}">${esc(rg.t)}</span><span class="rankname">${esc(rg.n)}</span></div>`;
+  const nombre=`<div class="name"><span class="fit">${esc(d.nombre)}</span></div>`;
+  const handle=`<p class="handle">@${esc(d.user)}</p>`;
+  const cab=`<p class="eyebrow">Asociación NavyBlue</p><p class="title">Licencia de lector</p>`;
+  if(fmt==='v'){
+    return `<div class="cardwrap v"><article class="card v" role="img" aria-label="${esc(aria)}" data-sign="${signo}">
+      ${cielo('v',signo)}<div class="frame"></div>
+      ${cab}
+      <div class="compass">${brujula(ini)}</div>
+      ${nombre}${handle}${rango}<hr>${stats}
+    </article></div>`;
+  }
+  return `<div class="cardwrap h"><article class="card h" role="img" aria-label="${esc(aria)}" data-sign="${signo}">
+    ${cielo('h',signo)}<div class="frame"></div>
+    <div class="compass">${brujula(ini)}</div>
+    <div class="main">
+      ${cab}${nombre}${handle}${rango}<hr>${stats}
+    </div>
+  </article></div>`;
+}
+
+const estado={nombre:'takato',user:'takato',signo:'virgo',libros:'127'};
+const $=id=>document.getElementById(id);
+
+function ajustarNombres(){
+  document.querySelectorAll('.card .name').forEach(n=>{
+    n.style.setProperty('--ns','1');
+    const f=n.firstElementChild, w=f.getBoundingClientRect().width, a=n.clientWidth;
+    if(a>0&&w>a) n.style.setProperty('--ns',(a/w*0.97).toFixed(3));
+  });
+}
+
+function dibujar(){
+  const d={nombre:estado.nombre.trim()||'Lector Anónimo',user:(estado.user.trim().replace(/^@+/,'')||'lector'),libros:Math.min(9999,Math.max(0,parseInt(estado.libros,10)||0))};
+  $('pv').innerHTML=carnet('v',estado.signo,d);
+  $('ph').innerHTML=carnet('h',estado.signo,d);
+  $('gallery').innerHTML=SIGNOS.map(s=>`<li class="gi${s===estado.signo?' on':''}"><div class="gcard" data-sign="${s}">${carnet('v',s,d)}</div><button type="button" class="gbtn" data-sign="${s}" aria-pressed="${s===estado.signo}">${NOM[s]}</button></li>`).join('');
+  document.querySelectorAll('#chips .chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.sign===estado.signo)));
+  ajustarNombres();
+}
+
+function elegir(signo,desdeFecha){
+  estado.signo=signo;
+  if(!desdeFecha){ $('f-nac').value=''; $('hint').textContent=`Signo elegido: ${NOM[signo]}.`; }
+  else $('hint').textContent=`Con esa fecha el signo es ${NOM[signo]}.`;
+  dibujar();
+}
+
+$('chips').innerHTML=SIGNOS.map(s=>`<button type="button" class="chip" data-sign="${s}" aria-pressed="false"><span class="g" aria-hidden="true">${GLI[s]}${TXT}</span>${NOM[s]}</button>`).join('');
+$('chips').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(b) elegir(b.dataset.sign,false)});
+$('gallery').addEventListener('click',e=>{const t=e.target.closest('[data-sign]'); if(t&&t.dataset.sign) elegir(t.dataset.sign,false)});
+$('f-nombre').addEventListener('input',e=>{estado.nombre=e.target.value; dibujar()});
+$('f-user').addEventListener('input',e=>{estado.user=e.target.value; dibujar()});
+$('f-libros').addEventListener('input',e=>{estado.libros=e.target.value; dibujar()});
+$('f-nac').addEventListener('change',e=>{const s=e.target.value?signoDeFecha(e.target.value):null; if(s) elegir(s,true)});
+
+dibujar();
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(ajustarNombres);
+</script>
+
+</body></html>
