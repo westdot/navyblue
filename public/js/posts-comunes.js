@@ -34,7 +34,7 @@ function renderizarTextoConMenciones(texto) {
         const link = document.createElement('a');
         link.href = `muro.html?usuario=${encodeURIComponent(match[1])}`;
         link.textContent = '@' + match[1];
-        link.style.cssText = 'color: #3f5173; font-weight: bold; text-decoration: none;';
+        link.style.cssText = 'color: var(--color-navy); font-weight: bold; text-decoration: none;';
         link.addEventListener('click', (e) => e.stopPropagation()); // no abrir el detalle del post al pinchar la mención
         frag.appendChild(link);
         ultimo = regex.lastIndex;
@@ -137,7 +137,7 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = 'Escribe un comentario...';
-    input.style.cssText = 'flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--color-borde); min-width: 0;';
+    input.style.cssText = 'flex: 1; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--color-borde); background: var(--color-tarjeta); font-size: 0.85rem; min-width: 0;';
 
     const listaComentarios = document.createElement('div');
     listaComentarios.style.cssText = 'margin-top: 15px;';
@@ -149,8 +149,16 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
         listaComentarios.appendChild(p);
     } else {
         comentarios.forEach(c => {
+            // Cada comentario: avatar a la izquierda + burbuja con el contenido.
             const div = document.createElement('div');
-            div.style.cssText = 'border-top: 1px solid var(--color-borde); padding: 8px 0;';
+            div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-start;';
+
+            const avatarC = document.createElement('div');
+            avatarC.textContent = c.username.slice(0, 2).toUpperCase();
+            avatarC.style.cssText = 'width: 28px; height: 28px; border-radius: 50%; background: var(--color-navy-oscuro); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; flex-shrink: 0;';
+
+            const burbuja = document.createElement('div');
+            burbuja.style.cssText = 'flex: 1; min-width: 0; background: var(--color-tarjeta); border: 1px solid var(--color-borde); border-radius: 9px; padding: 8px 11px;';
 
             const cabeceraC = document.createElement('div');
             cabeceraC.style.cssText = 'display: flex; align-items: center;';
@@ -167,7 +175,7 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
                 btnBorrarComentario.type = 'button';
                 btnBorrarComentario.title = 'Eliminar comentario';
                 btnBorrarComentario.textContent = '🗑️';
-                btnBorrarComentario.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.8rem;';
+                btnBorrarComentario.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 6px; font-size: 0.78rem; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;';
                 btnBorrarComentario.addEventListener('click', async () => {
                     if (!(await confirmarAccion('¿Eliminar este comentario?'))) return;
                     try {
@@ -191,7 +199,7 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
                 const btnResponder = document.createElement('button');
                 btnResponder.type = 'button';
                 btnResponder.textContent = 'Responder';
-                btnResponder.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.75rem; color: #3f5173; font-weight: bold;';
+                btnResponder.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.75rem; color: var(--color-navy); font-weight: bold;';
                 btnResponder.addEventListener('click', () => {
                     input.value = `@${c.username} `;
                     input.focus();
@@ -209,23 +217,25 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
                 textoRestante = c.content.slice(matchRespuesta[0].length);
 
                 const lineaRespuesta = document.createElement('p');
-                lineaRespuesta.style.cssText = 'margin: 4px 0 0 0; font-size: 0.78rem; color: #8a8073;';
+                lineaRespuesta.style.cssText = 'margin: 4px 0 0 0; font-size: 0.78rem; color: var(--color-texto-suave);';
                 const linkMencion = document.createElement('a');
                 linkMencion.href = `muro.html?usuario=${encodeURIComponent(nombreMencionado)}`;
-                linkMencion.style.cssText = 'color: #3f5173; font-weight: bold; text-decoration: none;';
+                linkMencion.style.cssText = 'color: var(--color-navy); font-weight: bold; text-decoration: none;';
                 linkMencion.textContent = '@' + nombreMencionado;
                 linkMencion.addEventListener('click', (e) => e.stopPropagation());
                 lineaRespuesta.append('Respondiendo a ', linkMencion);
-                div.appendChild(cabeceraC);
-                div.appendChild(lineaRespuesta);
+                burbuja.appendChild(cabeceraC);
+                burbuja.appendChild(lineaRespuesta);
             } else {
-                div.appendChild(cabeceraC);
+                burbuja.appendChild(cabeceraC);
             }
 
             const textoC = document.createElement('p');
             textoC.style.cssText = 'margin: 4px 0 0 0; font-size: 0.85rem;';
             textoC.appendChild(renderizarTextoConMenciones(textoRestante));
-            div.appendChild(textoC);
+            burbuja.appendChild(textoC);
+            div.appendChild(avatarC);
+            div.appendChild(burbuja);
             listaComentarios.appendChild(div);
         });
     }
@@ -238,7 +248,7 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
     const btnEnviar = document.createElement('button');
     btnEnviar.type = 'submit';
     btnEnviar.textContent = 'Comentar';
-    btnEnviar.style.cssText = 'padding: 8px 12px; border-radius: 6px; border: none; background: var(--color-navy-oscuro); color: white; cursor: pointer; white-space: nowrap;';
+    btnEnviar.style.cssText = 'padding: 9px 16px; border-radius: 999px; border: none; background: var(--color-navy-oscuro); color: white; cursor: pointer; white-space: nowrap; font-size: 0.85rem; font-weight: 600;';
 
     form.appendChild(input);
     form.appendChild(btnEnviar);
@@ -431,7 +441,7 @@ function renderDetalleResena(resena, comentarios, contenedor, usuarioActual) {
     info.appendChild(h2);
 
     const autorP = document.createElement('p');
-    autorP.style.cssText = 'font-size: 0.85rem; color: #8a8073; margin-bottom: 6px;';
+    autorP.style.cssText = 'font-size: 0.85rem; color: var(--color-texto-suave); margin-bottom: 6px;';
     autorP.textContent = resena.autor;
     info.appendChild(autorP);
 

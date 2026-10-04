@@ -270,25 +270,25 @@ async function cargarTrending(contenedor) {
             contenedor.appendChild(crearEstadoVacio('Todavía no hay temas en tendencia.'));
             return;
         }
-        const ol = document.createElement('ol');
-        ol.style.cssText = 'padding-left: 18px; margin: 0;';
-        data.trending.forEach(t => {
-            const li = document.createElement('li');
-            li.style.cssText = 'margin-bottom: 6px; font-size: 0.85rem;';
+        const lista = document.createElement('div');
+        lista.style.cssText = 'display: flex; flex-direction: column; gap: 6px;';
+        data.trending.forEach((t, i) => {
             const link = document.createElement('a');
             link.href = `tendencia.html?tag=${encodeURIComponent(t.tag)}`;
-            link.style.cssText = 'color: inherit; text-decoration: none;';
             link.title = `Ver publicaciones de #${t.tag}`;
-            const strong = document.createElement('strong');
-            strong.textContent = `#${t.tag}`;
-            link.appendChild(strong);
-            link.append(` · ${t.cantidad} publicaci${t.cantidad === 1 ? 'ón' : 'ones'}`);
-            link.addEventListener('mouseenter', () => { strong.style.textDecoration = 'underline'; });
-            link.addEventListener('mouseleave', () => { strong.style.textDecoration = 'none'; });
-            li.appendChild(link);
-            ol.appendChild(li);
+            link.style.cssText = i === 0
+                ? 'display: flex; align-items: center; justify-content: space-between; gap: 8px; text-decoration: none; background: var(--color-navy-oscuro); color: white; border-radius: 999px; padding: 7px 12px; font-size: 0.82rem; font-weight: 700;'
+                : 'display: flex; align-items: center; justify-content: space-between; gap: 8px; text-decoration: none; background: var(--color-tarjeta); color: var(--color-texto); border: 1px solid var(--color-borde); border-radius: 999px; padding: 7px 12px; font-size: 0.82rem; font-weight: 600;';
+            const nombreTag = document.createElement('span');
+            nombreTag.textContent = `#${t.tag}`;
+            const cantidad = document.createElement('span');
+            cantidad.style.cssText = i === 0 ? 'opacity: 0.85; font-weight: 400; font-size: 0.75rem;' : 'color: var(--color-texto-suave); font-weight: 400; font-size: 0.75rem;';
+            cantidad.textContent = t.cantidad;
+            link.appendChild(nombreTag);
+            link.appendChild(cantidad);
+            lista.appendChild(link);
         });
-        contenedor.appendChild(ol);
+        contenedor.appendChild(lista);
     } catch (error) {
         contenedor.innerHTML = '<p style="font-size:0.85rem;color:var(--color-texto-suave);">No se pudo cargar el trending.</p>';
     }

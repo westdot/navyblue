@@ -269,7 +269,7 @@ h2 {
 
 .tag-libro {
     font-size: 0.85rem;
-    color: #666;
+    color: var(--color-texto-suave);
     cursor: pointer;
 }
 
@@ -295,7 +295,7 @@ h2 {
     display: flex;
     gap: 12px;
     padding: 15px 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--color-borde);
 }
 
 .post-avatar {
@@ -352,7 +352,7 @@ h2 {
 .post-acciones button {
     background: none;
     border: none;
-    color: #666;
+    color: var(--color-texto-suave);
     cursor: pointer;
     font-size: 0.85rem;
     padding: 6px 12px; /* Añade espacio para que el hover se vea como una píldora */
@@ -518,12 +518,12 @@ footer a {
     right: 20px;
     font-size: 24px;
     font-weight: bold;
-    color: #999;
+    color: var(--color-texto-suave);
     cursor: pointer;
 }
 
 .cerrar-modal:hover {
-    color: #333;
+    color: var(--color-texto);
 }
 
 .modal-content h2 {
@@ -621,7 +621,7 @@ footer a {
 
 .post-autor {
     font-weight: bold;
-    color: #333; /* Cambia esto si el texto de tu web es de otro color */
+    color: var(--color-texto); /* Cambia esto si el texto de tu web es de otro color */
 }
 
 .post-user, .post-tiempo {
@@ -797,7 +797,7 @@ body.modo-compacto .resena-card {
     vertical-align: middle;
 }
 .estrellas-base {
-    color: #ccc;
+    color: var(--color-borde);
 }
 .estrellas-llenas {
     position: absolute;
@@ -805,7 +805,7 @@ body.modo-compacto .resena-card {
     left: 0;
     overflow: hidden;
     white-space: nowrap;
-    color: #c08a4e;
+    color: var(--color-acento);
 }
 
 /* Selector de estrellas al publicar una reseña: cada estrella se divide en
@@ -817,7 +817,7 @@ body.modo-compacto .resena-card {
     margin-right: 2px;
 }
 .selector-estrella .estrella-vacia {
-    color: #ccc;
+    color: var(--color-borde);
 }
 .selector-estrella .estrella-llena {
     position: absolute;
@@ -826,7 +826,7 @@ body.modo-compacto .resena-card {
     width: 0%;
     overflow: hidden;
     white-space: nowrap;
-    color: #c08a4e;
+    color: var(--color-acento);
 }
 
 /* ====================================================== */
