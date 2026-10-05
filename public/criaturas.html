@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criaturas · Bestiario Latinoamericano</title>
+    <link rel="stylesheet" href="bestiario.css">
+    <link rel="stylesheet" href="criaturas.css">
+</head>
+<body>
+    <div class="barra">
+        <h1>NAVYBLUE</h1>
+        <nav class="enlaces">
+            <a class="volver" href="bestiario.html">Bestiario</a>
+            <a class="volver" href="index.html">Volver al muro</a>
+        </nav>
+    </div>
+
+    <main>
+        <section class="cab" style="margin-top:0">
+            <h2>Criaturas de la región</h2>
+            <p class="bajada">Leyendas y seres del folclore de toda Latinoamérica. Filtra por región o busca por nombre o país.</p>
+            <div class="herramientas" id="filtros">
+                <input id="buscar" type="search" placeholder="Buscar criatura o país" aria-label="Buscar">
+            </div>
+            <p class="cuenta" id="cuenta"></p>
+            <div class="cuadricula" id="lista"></div>
+        </section>
+    </main>
+
+    <script>
+        var REG = {
+            A: ['Andina', '#7fa88b'], C: ['Cono Sur', '#8a66b8'], K: ['Caribe', '#d9a24e'],
+            M: ['México', '#e8892b'], G: ['Centroamérica', '#c17b83']
+        };
+        // [nombre, región, países, descripción corta]
+        var D = [
+            ['Pishtaco','A','Perú, Bolivia','Hombre que roba la grasa de sus víctimas en los caminos solitarios.'],
+            ['Kharisiri','A','Bolivia, Perú','Extrae la grasa de los viajeros dormidos; primo aymara del pishtaco.'],
+            ['Supay','A','Perú, Bolivia','Señor del mundo de abajo; habita las minas y recibe ofrendas.'],
+            ['Ekeko','A','Bolivia','Figura de la abundancia que se carga de miniaturas para atraer fortuna.'],
+            ['Amaru','A','Perú, Bolivia','Serpiente alada de los Andes que une los mundos de arriba y de abajo.'],
+            ['Tunche','A','Perú','Espíritu del bosque cuyo silbido en la noche anuncia una muerte.'],
+            ['Chullachaqui','A','Perú, Ecuador','Duende de pies desiguales que toma forma de conocido para perder al viajero.'],
+            ['Yacumama','A','Perú, Ecuador','Serpiente gigante, madre de las aguas, que traga barcas enteras.'],
+            ['Madremonte','A','Colombia','Espíritu de la selva que castiga a quien maltrata la naturaleza.'],
+            ['Patasola','A','Colombia','Mujer de una sola pierna que atrae a cazadores hacia lo profundo del monte.'],
+            ['Mohán','A','Colombia','Hombre de río, de larga cabellera, que seduce y ahoga a los pescadores.'],
+            ['La Tunda','A','Colombia, Ecuador','Mujer del Pacífico que hechiza a la gente y se la lleva al monte.'],
+            ['Trauco','C','Chile','Hombrecillo de Chiloé a quien se culpa de embarazos misteriosos.'],
+            ['Pincoya','C','Chile','Joven de la costa de Chiloé que baila en la orilla y anuncia la abundancia del mar.'],
+            ['Millalobo','C','Chile','Rey de los lobos marinos y esposo de la Pincoya.'],
+            ['Caleuche','C','Chile','Barco fantasma de Chiloé que navega de noche, lleno de música y luces.'],
+            ['Invunche','C','Chile','Guardián deforme de la cueva de los brujos de Chiloé.'],
+            ['Camahueto','C','Chile','Becerro con un cuerno que sale del agua y abre cauces a su paso.'],
+            ['Alicanto','C','Chile','Ave del desierto que come metales y brilla de noche, guiando a los mineros.'],
+            ['Colo Colo','C','Chile','Criatura nacida de un huevo de gallo que enferma a quien duerme cerca.'],
+            ['Chonchón','C','Chile','Cabeza de brujo que vuela de noche con sus orejas como alas.'],
+            ['Anchimallén','C','Chile','Duende mapuche de fuego que se transforma en bola luminosa.'],
+            ['Calchona','C','Chile','Bruja que se transforma en oveja para asustar a los viajeros.'],
+            ['Piuchén','C','Chile','Serpiente alada de la tradición mapuche que chupa la sangre a la gente.'],
+            ['Lobizón','C','Argentina, Paraguay, Uruguay','Séptimo hijo varón que se transforma en bestia las noches de luna.'],
+            ['Pombero','C','Paraguay, Argentina','Duende de la noche que protege a los animales y castiga a los curiosos.'],
+            ['Yasy Yateré','C','Paraguay, Argentina','Duende rubio de la siesta que rapta niños en el monte.'],
+            ['Kurupí','C','Paraguay','Ser del monte de enorme fuerza y apetito, de la tradición guaraní.'],
+            ['Mboi Tu\'ĩ','C','Paraguay','Serpiente con cabeza de loro y voz horripilante, guardiana de los esteros.'],
+            ['Luz Mala','C','Argentina, Uruguay','Luz que sube de la tierra en el campo, marca un tesoro o un alma en pena.'],
+            ['El Familiar','C','Argentina','Perro negro que acompaña a las empresas del demonio.'],
+            ['Nahuelito','C','Argentina','Monstruo del lago Nahuel Huapi, comparado con un plesiosaurio.'],
+            ['Curupira','C','Brasil','Niño del bosque de pies al revés, protector que desorienta a los cazadores.'],
+            ['Saci Pererê','C','Brasil','Travieso de una pierna y gorro rojo que provoca remolinos y desorden.'],
+            ['Iara','C','Brasil','Sirena de río que atrae a los hombres con su canto.'],
+            ['Boitatá','C','Brasil','Serpiente de fuego que vigila los campos y castiga a quien los quema.'],
+            ['Mapinguari','C','Brasil','Criatura peluda de la Amazonía con un solo ojo y olor insoportable.'],
+            ['Boto encantado','C','Brasil','Delfín rosado que de noche toma forma de joven apuesto.'],
+            ['Chupacabras','K','Puerto Rico','Criatura que ataca ganado y deja a los animales sin sangre.'],
+            ['Ciguapa','K','República Dominicana','Mujer de pelo largo y pies al revés que vive en las montañas.'],
+            ['Güije','K','Cuba','Espíritu pequeño de ríos y lagunas que asusta a quien nada de noche.'],
+            ['Madre de Aguas','K','Cuba','Serpiente enorme que protege ríos y lagunas y concede riquezas.'],
+            ['El Silbón','K','Venezuela','Hombre con un saco de huesos cuyo silbido avisa su cercanía.'],
+            ['La Sayona','K','Venezuela','Mujer vengativa de los llanos que castiga a los hombres infieles.'],
+            ['Hombre Caimán','K','Colombia','Pescador que se transformó en caimán tras beber un brebaje.'],
+            ['La Candileja','K','Colombia, Venezuela','Bola de fuego que persigue a quien sale de noche por los campos.'],
+            ['Zombi','K','Haití','Cuerpo sin voluntad levantado por un hechicero en la tradición vudú.'],
+            ['La Llorona','M','México','Mujer de blanco que llora por sus hijos junto al agua.'],
+            ['Nahual','M','México','Brujo capaz de tomar la forma de un animal.'],
+            ['Chaneque','M','México','Duendes guardianes de la naturaleza que asustan a los intrusos.'],
+            ['Charro Negro','M','México','Jinete misterioso que ofrece tratos con el diablo en los caminos.'],
+            ['Xtabay','M','México','Mujer del Yucatán que atrae hombres bajo la ceiba y los pierde.'],
+            ['Alux','M','México','Duendes mayas protectores de las milpas, que se vuelven traviesos.'],
+            ['Tlanchana','M','México','Mujer serpiente de los ríos del Valle de Toluca.'],
+            ['La Mulata de Córdoba','M','México','Hechicera de Veracruz que escapa de sus captores en un barco dibujado.'],
+            ['La Planchada','M','México','Enfermera fantasma que aparece en pasillos de hospitales.'],
+            ['Tzitzimime','M','México','Seres astrales de la tradición mexica que amenazan con devorar el mundo.'],
+            ['El Cadejo','G','Guatemala, El Salvador, Honduras, Nicaragua, Costa Rica','Perro espectral, blanco protector o negro dañino, que sigue a los noctámbulos.'],
+            ['El Sombrerón','G','Guatemala','Hombre pequeño de enorme sombrero que enamora a las muchachas con su guitarra.'],
+            ['La Siguanaba','G','El Salvador, Guatemala, Honduras','Mujer hermosa de espaldas y horrible de frente que atrae a los hombres.'],
+            ['El Cipitío','G','El Salvador','Niño eterno de sombrero grande que ensucia y juega con las cenizas.'],
+            ['Carreta Nagua','G','Nicaragua','Carreta fantasma que recorre las calles de noche y anuncia una muerte.'],
+            ['Tulevieja','G','Costa Rica','Mujer convertida en ave con alas de sombra que ronda a los bebedores.'],
+            ['La Cegua','G','Costa Rica, Nicaragua','Mujer que se transforma en yegua o calavera para asustar a los hombres.'],
+            ['El Padre sin Cabeza','G','Costa Rica, Nicaragua','Sacerdote decapitado que recorre calles oscuras reclamando oraciones.']
+        ];
+        var activo = 'T', filtros = document.getElementById('filtros'), lista = document.getElementById('lista');
+        var buscar = document.getElementById('buscar'), cuenta = document.getElementById('cuenta');
+
+        function chip(k, texto) {
+            var b = document.createElement('button');
+            b.type = 'button'; b.className = 'chip'; b.dataset.k = k; b.textContent = texto;
+            b.setAttribute('aria-pressed', k === activo);
+            filtros.insertBefore(b, buscar);
+        }
+        chip('T', 'Todas');
+        Object.keys(REG).forEach(function (k) { chip(k, REG[k][0]); });
+
+        function pintar() {
+            var q = buscar.value.trim().toLowerCase();
+            var v = D.filter(function (c) {
+                return (activo === 'T' || c[1] === activo) &&
+                    (!q || (c[0] + ' ' + c[2]).toLowerCase().indexOf(q) > -1);
+            });
+            cuenta.textContent = 'Mostrando ' + v.length + ' de ' + D.length + ' criaturas.';
+            lista.innerHTML = v.length ? v.map(function (c) {
+                return '<article class="cr" style="--c:' + REG[c[1]][1] + '"><h3>' + c[0] + '</h3>' +
+                    '<div class="de">' + REG[c[1]][0] + ' · ' + c[2] + '</div><p>' + c[3] + '</p></article>';
+            }).join('') : '<p class="vacio">No hay criaturas con ese filtro.</p>';
+        }
+        filtros.addEventListener('click', function (e) {
+            var b = e.target.closest('button.chip'); if (!b) return;
+            activo = b.dataset.k;
+            filtros.querySelectorAll('button.chip').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+            pintar();
+        });
+        buscar.addEventListener('input', pintar);
+        pintar();
+    </script>
+</body>
+</html>

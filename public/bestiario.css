@@ -41,6 +41,7 @@ a { color: inherit; }
     border: 1px solid var(--linea); border-radius: 50px; background: rgba(255,255,255,.06);
 }
 .barra a.volver:hover { background: rgba(255,255,255,.14); }
+.barra .enlaces { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
 .aviso-demo {
     text-align: center; font-size: .85rem; padding: 8px 16px;
