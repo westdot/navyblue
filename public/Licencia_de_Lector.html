@@ -1,58 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body class="bloqueado">
-<style>
-/* PUERTA CON CONTRASEÑA (usa las variables de color de esta página) */
-body.bloqueado>:not(.puerta){display:none!important}
-.puerta{display:none;min-height:100vh;place-items:center;padding:24px;background:var(--bg);color:var(--fg);font-family:var(--body,system-ui,sans-serif)}
-body.bloqueado .puerta{display:grid}
-.puerta .caja{width:100%;max-width:380px;text-align:center;padding:34px 28px 28px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
-.puerta h2{font-family:var(--display,Georgia,serif);font-weight:600;font-size:1.5rem;margin:0 0 8px;letter-spacing:.04em}
-.puerta p{color:var(--muted);font-size:.92rem;margin:0 0 18px}
-.puerta input{box-sizing:border-box;width:100%;padding:12px;text-align:center;font:inherit;font-size:1.3rem;letter-spacing:.4em;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px}
-.puerta input:focus-visible,.puerta button:focus-visible,.puerta a:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
-.puerta input.error{border-color:#c0505f}
-.puerta .msg{min-height:1.4em;margin:8px 0 4px;color:#c0505f;font-size:.88rem}
-.puerta .acciones{display:flex;gap:10px;justify-content:center;margin-top:8px}
-.puerta .acciones button,.puerta .acciones a{padding:9px 20px;border-radius:50px;font:600 .9rem var(--body,system-ui,sans-serif);text-decoration:none;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--fg)}
-.puerta .acciones button{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.puerta .tiempo{margin-top:20px;height:6px;background:var(--line);border-radius:4px;overflow:hidden}
-.puerta .tiempo i{display:block;height:100%;width:100%;background:var(--focus);transition:width 1s linear}
-.puerta .seg{margin-top:8px;font-size:.82rem;color:var(--muted)}
-</style>
-<div class="puerta">
-  <div class="caja">
-    <h2>Licencia de Lector</h2>
-    <p>Esta página necesita una contraseña.</p>
-    <input id="clave" type="password" inputmode="numeric" autocomplete="off" maxlength="12" aria-label="Contraseña" autofocus>
-    <div class="msg" id="msg" role="alert"></div>
-    <div class="acciones">
-      <button type="button" id="entrar">Entrar</button>
-      <a href="index.html">Volver al inicio</a>
-    </div>
-    <div class="tiempo"><i id="barra-tiempo"></i></div>
-    <div class="seg" id="seg">Te quedan 30 segundos.</div>
-  </div>
-</div>
-<script>
-(function(){
-  var CLAVE='231404', SEGUNDOS=30, restante=SEGUNDOS;
-  var input=document.getElementById('clave'), msg=document.getElementById('msg'),
-      seg=document.getElementById('seg'), barra=document.getElementById('barra-tiempo');
-  var reloj=setInterval(function(){
-    restante--;
-    barra.style.width=(restante/SEGUNDOS*100)+'%';
-    seg.textContent='Te quedan '+restante+' segundo'+(restante===1?'':'s')+'.';
-    if(restante<=0){clearInterval(reloj);window.location.href='index.html';}
-  },1000);
-  function intentar(){
-    if(input.value===CLAVE){clearInterval(reloj);document.body.classList.remove('bloqueado');}
-    else{input.classList.add('error');msg.textContent='Contraseña incorrecta.';input.value='';input.focus();}
-  }
-  document.getElementById('entrar').addEventListener('click',intentar);
-  input.addEventListener('keydown',function(e){if(e.key==='Enter')intentar();});
-  input.addEventListener('input',function(){input.classList.remove('error');msg.textContent='';});
-})();
-</script>
-
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Licencia de Lector</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -158,6 +104,9 @@ h2{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:.14e
 .card .vv{font-weight:600;color:#f7efde;white-space:nowrap}
 .card .qr{background:var(--nv-cream);aspect-ratio:1;flex:none;box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .card .qr svg{display:block;width:100%;height:100%;fill:#16213d}
+.card .medals{display:flex}
+.card .medal{display:grid;place-items:center;flex:none;border-radius:50%;border:1px solid rgba(226,192,129,.6);color:var(--nv-gold)}
+.card .medal svg{width:58%;height:58%;display:block}
 .card .id{letter-spacing:.2em;color:var(--nv-gold);font-weight:500;white-space:nowrap}
 
 /* Vertical */
@@ -177,6 +126,8 @@ h2{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:.14e
 .v .vv{font-size:calc(var(--u)*4.4);margin-top:calc(var(--u)*.9)}
 .v .qr{width:calc(var(--u)*25);margin-top:calc(var(--u)*3);padding:calc(var(--u)*1.7);border-radius:calc(var(--u)*1.6)}
 .v .id{font-size:calc(var(--u)*2.2);letter-spacing:.1em;margin-top:calc(var(--u)*1.6)}
+.v .medals{gap:calc(var(--u)*2);margin-top:calc(var(--u)*1.8)}
+.v .medal{width:calc(var(--u)*5.6);height:calc(var(--u)*5.6)}
 
 /* Horizontal */
 .card.h{display:grid;grid-template-columns:calc(var(--u)*40) minmax(0,1fr);align-items:center;padding:calc(var(--u)*4.2) calc(var(--u)*9) calc(var(--u)*4.2) 0}
@@ -196,8 +147,41 @@ h2{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:.14e
 .h .vv{font-size:calc(var(--u)*3.1);margin-top:calc(var(--u)*.6)}
 .h .qr{width:calc(var(--u)*16);margin-top:calc(var(--u)*1.6);padding:calc(var(--u)*1.2);border-radius:calc(var(--u)*1.1)}
 .h .id{font-size:calc(var(--u)*2);letter-spacing:.1em;margin-top:calc(var(--u)*1)}
+.h .medals{gap:calc(var(--u)*1.4);margin-top:calc(var(--u)*1.2)}
+.h .medal{width:calc(var(--u)*4.4);height:calc(var(--u)*4.4)}
 
+
+/* Puerta de contraseña: mismo flujo que el Bestiario (clave + 30 segundos) */
+:root{--door-bg1:#2a3d63;--door-bg2:#0e1527;--door-card:#16213d;--door-input:#0e1730;--door-line:rgba(226,192,129,.4);--door-fg:#f1e8d6;--door-muted:#b4c0dc;--door-gold:#e2c081;--door-err:#ffb4a8;--door-on-gold:#2a1c05}
+.puerta{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:radial-gradient(120% 80% at 50% 20%,var(--door-bg1) 0%,var(--door-bg2) 70%);color:var(--door-fg);font-family:var(--body)}
+.puerta[hidden]{display:none}
+.puerta:not([hidden]) ~ .page{visibility:hidden}
+body:has(.puerta:not([hidden])){overflow:hidden}
+.caja{width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;text-align:center;background:var(--door-card);border:1px solid var(--door-line);border-radius:16px;padding:28px 24px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.caja h2{font-family:var(--display);font-size:20px;letter-spacing:.18em;color:var(--door-gold);text-wrap:balance}
+.caja p{color:var(--door-muted)}
+.caja input{font:inherit;font-size:22px;letter-spacing:.4em;text-align:center;color:var(--door-fg);background:var(--door-input);border:1px solid var(--door-line);border-radius:10px;padding:12px;width:100%;min-width:0}
+.caja input.error{border-color:var(--door-err)}
+.caja input:disabled{opacity:.5}
+.caja .msg{min-height:1.4em;font-size:14px;color:var(--door-err)}
+.caja button{font:inherit;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--door-on-gold);background:var(--door-gold);border:0;border-radius:10px;padding:12px;cursor:pointer}
+.caja :focus-visible{outline:2px solid var(--door-gold);outline-offset:2px}
+.caja .tiempo{height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.caja .tiempo i{display:block;height:100%;width:100%;background:var(--door-gold);transition:width 1s linear}
+.caja .seg{font-size:13px;color:var(--door-muted)}
 </style>
+
+<div class="puerta" id="puerta" role="dialog" aria-modal="true" aria-labelledby="puerta-t">
+  <div class="caja">
+    <h2 id="puerta-t">Licencia de Lector</h2>
+    <p>Esta puerta necesita una contraseña.</p>
+    <input id="clave" type="password" inputmode="numeric" autocomplete="off" maxlength="12" aria-label="Contraseña" autofocus>
+    <div class="msg" id="msg" role="alert"></div>
+    <button type="button" id="entrar">Entrar</button>
+    <div class="tiempo"><i id="barra-tiempo"></i></div>
+    <div class="seg" id="seg">Te quedan 30 segundos.</div>
+  </div>
+</div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
@@ -223,9 +207,9 @@ h2{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:.14e
 
   <section class="controls" aria-label="Datos del carnet">
     <div class="fields">
-      <div class="field"><label for="f-nombre">Nombre</label><input id="f-nombre" type="text" maxlength="30" value="yop" autocomplete="off"></div>
-      <div class="field"><label for="f-user">Usuario</label><input id="f-user" type="text" maxlength="24" value="takato" autocomplete="off"></div>
-      <div class="field"><label for="f-libros">Libros leídos</label><input id="f-libros" type="number" min="0" max="9999" step="1" value="127" inputmode="numeric"></div>
+      <div class="field"><label for="f-nombre">Nombre</label><input id="f-nombre" type="text" maxlength="30" value="Valentina Rojas" autocomplete="off"></div>
+      <div class="field"><label for="f-user">Usuario</label><input id="f-user" type="text" maxlength="24" value="valen.lee" autocomplete="off"></div>
+      <div class="field"><label for="f-libros">Libros leídos</label><input id="f-libros" type="number" min="0" max="9999" step="1" value="47" inputmode="numeric"></div>
       <div class="field"><label for="f-nac">Fecha de nacimiento</label><input id="f-nac" type="date"></div>
     </div>
     <div class="signs" id="chips" role="group" aria-label="Signo zodiacal"></div>
@@ -237,8 +221,8 @@ h2{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:.14e
     <div class="slot sh"><h2 class="cap">Horizontal · PC</h2><div id="ph"></div></div>
   </section>
 
-  <section aria-label="Dame tu fuerza pegaso" style="display:flex;flex-direction:column;gap:20px">
-    <h2>Dame tu fuerza pegaso</h2>
+  <section aria-label="Los doce signos" style="display:flex;flex-direction:column;gap:20px">
+    <h2>Los 12 signos</h2>
     <ul class="gallery" id="gallery"></ul>
   </section>
 </main>
@@ -321,6 +305,17 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 function hash(s){let h=2166136261;for(const ch of String(s)){h^=ch.codePointAt(0);h=Math.imul(h,16777619)}return h>>>0}
 function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
+/* Boceto: por ahora son 4 insignias de muestra.
+   Más adelante el backend entrega, de las insignias que tiene el perfil, las 4 que menos personas han conseguido a nivel global. */
+const IC={
+  star:'<path d="M12 3.5l2.5 5.6 6 .6-4.5 4 1.4 6-5.4-3.2-5.4 3.2 1.4-6-4.5-4 6-.6z"/>',
+  spark:'<path d="M12 3c.9 5 4 8.1 9 9-5 .9-8.1 4-9 9-.9-5-4-8.1-9-9 5-.9 8.1-4 9-9z"/>',
+  moon:'<path d="M15.5 3.5A9 9 0 1 0 20.5 16 7.5 7.5 0 0 1 15.5 3.5z"/>',
+  pen:'<path d="M5 19l1-4.2L16.6 4.2a1.6 1.6 0 0 1 2.2 0l1 1a1.6 1.6 0 0 1 0 2.2L9.2 18z"/><path d="M14.5 6.3l3.2 3.2"/>'
+};
+const RARAS=['star','spark','moon','pen'];
+const medals=()=>RARAS.map(k=>`<span class="medal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">${IC[k]}</svg></span>`).join('');
+
 function brujula(ini){
   let ticks='';
   for(let i=0;i<48;i++){
@@ -396,10 +391,10 @@ function carnet(fmt,signo,d){
     <div class="cl">
       <div class="it"><span class="k">Libros leídos</span><span class="vv">${d.libros}</span></div>
       <div class="it"><span class="k">Género favorito</span><span class="vv">Fantasía épica</span></div>
-      <div class="it"><span class="k">Insignias</span><span class="vv">12</span></div>
+      <div class="it"><span class="k">Insignias</span><span class="vv">12</span><span class="medals" role="img" aria-label="Las 4 insignias más raras del perfil">${medals()}</span></div>
     </div>
     <div class="cr">
-      <div class="it"><span class="k">Cazador desde</span><span class="vv">2026</span></div>
+      <div class="it"><span class="k">Navy desde</span><span class="vv">2026</span></div>
       <div class="qr">${qrMarcador()}</div>
       <span class="id">${esc(idTxt)}</span>
     </div>
@@ -426,7 +421,7 @@ function carnet(fmt,signo,d){
   </article></div>`;
 }
 
-const estado={nombre:'takato',user:'takato',signo:'virgo',libros:'127'};
+const estado={nombre:'Valentina Rojas',user:'valen.lee',signo:'aries',libros:'47'};
 const $=id=>document.getElementById(id);
 
 function ajustarNombres(){
@@ -463,6 +458,56 @@ $('f-nac').addEventListener('change',e=>{const s=e.target.value?signoDeFecha(e.t
 
 dibujar();
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(ajustarNombres);
+</script>
+
+<script>
+(function(){
+  var CLAVE='231404', SEGUNDOS=30, restante=SEGUNDOS, reloj=null;
+  var puerta=document.getElementById('puerta'), page=document.querySelector('.page');
+  var input=document.getElementById('clave'), msg=document.getElementById('msg'), seg=document.getElementById('seg');
+  var barra=document.getElementById('barra-tiempo'), btn=document.getElementById('entrar');
+  page.inert=true;
+
+  function pintar(){
+    barra.style.width=(restante/SEGUNDOS*100)+'%';
+    seg.textContent='Te quedan '+restante+' segundo'+(restante===1?'':'s')+'.';
+  }
+  function iniciar(){
+    clearInterval(reloj);
+    restante=SEGUNDOS;
+    input.disabled=false; input.value=''; input.classList.remove('error');
+    msg.textContent=''; btn.textContent='Entrar'; btn.dataset.modo='entrar';
+    barra.style.transition='none'; pintar(); void barra.offsetWidth; barra.style.transition='';
+    reloj=setInterval(tick,1000);
+    input.focus();
+  }
+  function tick(){
+    restante--; pintar();
+    if(restante<=0){
+      clearInterval(reloj);
+      input.disabled=true; input.value='';
+      msg.textContent='Se acabó el tiempo.';
+      seg.textContent='Tiempo agotado.';
+      btn.textContent='Intentar de nuevo'; btn.dataset.modo='reintentar';
+    }
+  }
+  function intentar(){
+    if(btn.dataset.modo==='reintentar'){ iniciar(); return; }
+    if(input.value===CLAVE){
+      clearInterval(reloj);
+      puerta.hidden=true; page.inert=false;
+      if(typeof ajustarNombres==='function') ajustarNombres();
+    }else{
+      input.classList.add('error');
+      msg.textContent='Contraseña incorrecta.';
+      input.value=''; input.focus();
+    }
+  }
+  btn.addEventListener('click',intentar);
+  input.addEventListener('keydown',function(e){ if(e.key==='Enter') intentar(); });
+  input.addEventListener('input',function(){ input.classList.remove('error'); msg.textContent=''; });
+  iniciar();
+})();
 </script>
 
 </body></html>
