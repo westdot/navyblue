@@ -1,0 +1,1086 @@
+/* RESET BÁSICO */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* =====================================================
+   PALETA DARK ACADEMIA: navy suavizado + fondo "papel" + acento cálido
+   ===================================================== */
+:root {
+    --color-papel: #1a1512;          /* Fondo muy oscuro, casi negro con tinte café */
+    --color-tarjeta: #241d18;        /* Café grisáceo oscuro para las columnas */
+    --color-borde: #3a2f26;          /* Bordes apenas visibles, tono madera oscura */
+    
+    --color-texto: #e8e1d5;          /* Color pergamino/marfil para lectura cómoda */
+    --color-texto-suave: #a3998f;    /* Texto secundario atenuado */
+
+    --color-navy: #4a3b2e;           /* Tonos secundarios (ahora son cafés rojizos) */
+    --color-navy-oscuro: #14100e;    /* Para el header (casi negro) */
+    --color-navy-claro: #2f261f;     /* Para hovers y fondos de input */
+    --color-navy-texto: #e8e1d5;     /* Texto sobre hovers */
+
+    --color-acento: #8c6b4a;         /* Dorado envejecido/bronce (botones primarios) */
+    --color-acento-oscuro: #6b5035;
+
+    --color-like: #6b8268;           /* Verde pino viejo */
+    --color-like-fondo: #272d24;
+    --color-dislike: #8b534d;        /* Ladrillo viejo */
+    --color-dislike-fondo: #30211f;
+}
+
+body {
+    /* Familia tipográfica Dark Academia */
+    font-family: 'Lora', 'Georgia', serif; 
+    background-color: var(--color-papel);
+    /* Textura de papel antiguo muy sutil */
+    background-image:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 4px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 4px);
+    color: var(--color-texto);
+    line-height: 1.5;
+    padding-top: 110px; /* ¡NUEVO! Compensa el espacio del header fijo para que no tape el contenido */
+}
+
+/* HEADER FIJO CON TRANSICIÓN SUAVE */
+header {
+    position: fixed; /* CAMBIO: De sticky a fixed. Esto evita que modifique la altura de la página al achicarse */
+    top: 0;
+    left: 0;
+    width: 100%; /* Al ser fixed, necesita que le digamos que ocupe todo el ancho */
+    z-index: 1000;
+    background-color: var(--color-navy-oscuro);
+    color: var(--color-texto);
+    padding: 20px;
+    border-bottom: 2px solid var(--color-acento-oscuro);
+    transition: padding 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
+                box-shadow 0.3s ease, 
+                background-color 0.3s ease;
+    will-change: padding;
+}
+/* CONTENEDOR DE BOTONES (A LA DERECHA Y EN LÍNEA) */
+.header-acciones {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Espacio entre cada botón */
+}
+
+/* ESTILO PÍLDORA */
+.btn-pill {
+    background-color: rgba(140, 107, 74, 0.1); 
+    color: var(--color-texto);
+    padding: 8px 18px;
+    border-radius: 4px; 
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--color-borde);
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* EFECTO HOVER AL PASAR EL MOUSE */
+.btn-pill:hover {
+    background-color: var(--color-navy-claro);
+    border-color: var(--color-acento);
+}
+
+/* BOTÓN DESTACADO (INICIAR SESIÓN) */
+.btn-pill.btn-destacado {
+    background-color: var(--color-acento);
+    color: var(--color-navy-oscuro);
+    border-color: var(--color-acento);
+}
+
+.btn-pill.btn-destacado:hover {
+    background-color: var(--color-acento-oscuro);
+    color: var(--color-texto);
+}
+/* EFECTO CUANDO EL HEADER SE ACHICA */
+header.shrink {
+    padding: 10px 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+}
+
+header.shrink .header-title h1 {
+    font-size: 1.3rem;
+    transition: font-size 0.3s ease;
+}
+
+header.shrink .header-title p {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    margin: 0;
+    transition: all 0.25s ease-out; /* Desaparición progresiva del subtítulo */
+}
+
+header .header-title p {
+    font-style: italic;
+    opacity: 1;
+    max-height: 50px;
+    transition: all 0.3s ease-in;
+}
+
+/* COLUMNAS LATERALES FIJAS (STICKY) */
+.columna-izquierda, 
+.columna-derecha {
+    position: sticky;
+    top: 90px; /* Distancia respecto al techo para no solaparse con el header */
+    align-self: start; /* Permite que la columna mantenga su altura y pueda fijarse */
+    background: var(--color-tarjeta);
+    border-radius: 6px;
+    padding: 20px;
+    border: 1px solid var(--color-borde);
+    max-height: calc(100vh - 110px); /* Evita que la barra lateral sobrepase la pantalla */
+    overflow-y: auto; /* Permite scroll interno en la columna si es muy larga */
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header-title h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2em;
+    letter-spacing: 3px;
+    color: var(--color-acento);
+}
+
+/* CONTENEDOR TRES COLUMNAS (GRILLA) */
+.contenedor-principal {
+    display: grid;
+    grid-template-columns: 240px 1fr 280px;
+    gap: 24px;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+/* VARIANTE DE 4 COLUMNAS (usada en el Muro) */
+.contenedor-principal.cuatro-columnas {
+    grid-template-columns: 240px 240px 1fr 480px;
+    column-gap: 10px;
+    max-width: 1500px;
+}
+
+/* ESTILOS DE COLUMNAS (TARJETAS) */
+.columna-izquierda, .columna-centro, .columna-derecha {
+    background: var(--color-tarjeta);
+    border-radius: 6px;
+    padding: 20px;
+    border: 1px solid var(--color-borde);
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.5); /* Sombra pesada */
+}
+
+h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--color-acento);
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--color-borde);
+    padding-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Divisor tipo "lomo de libro" — reemplaza los <hr> sueltos */
+.divisor-lomo {
+    height: 8px;
+    margin: 22px 0;
+    border-radius: 4px;
+    background: repeating-linear-gradient(
+        90deg,
+        var(--color-navy) 0px, var(--color-navy) 6px,
+        var(--color-navy-oscuro) 6px, var(--color-navy-oscuro) 8px
+    );
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* COLUMNA IZQUIERDA: MENÚ INTERACTIVO */
+.lista-categorias {
+    list-style: none;
+}
+.columna-izquierda h2 {
+    text-align: left;
+}
+.lista-categorias li {
+    margin-bottom: 10px;
+}
+
+.lista-categorias a {
+    text-decoration: none;
+    color: var(--color-texto-suave);
+    font-weight: 500;
+    display: block;
+    padding: 10px 12px;
+    border-radius: 4px; 
+    margin-bottom: 2px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease-in-out; /* Transición suave */
+}
+
+.lista-categorias a:hover {
+    background-color: var(--color-navy-claro);
+    color: var(--color-texto);
+    border-left: 3px solid var(--color-acento); /* Detalle elegante en hover */
+    padding-left: 16px; /* ¡Efecto dinámico! El texto se desplaza a la derecha */
+}
+
+/* COLUMNA CENTRO: FEED ESTILO TWITTER */
+.publicar-box {
+    background-color: var(--color-navy-claro);
+    border: 1px solid var(--color-borde);
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 25px;
+}
+.columna-centro h2 {
+    text-align: center;
+}
+.publicar-box textarea {
+    width: 100%;
+    height: 80px;
+    border: none;
+    resize: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 1.1rem;
+    color: var(--color-texto);
+}
+
+.publicar-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    border-top: 1px solid var(--color-borde);
+    padding-top: 8px;
+}
+
+.tag-libro {
+    font-size: 0.85rem;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+}
+
+.btn-publicar {
+    background-color: var(--color-acento);
+    color: var(--color-navy-oscuro);
+    border: none;
+    padding: 8px 24px;
+    border-radius: 2px;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Sombra sutil base */
+    transition: all 0.2s ease-in-out; /* Transición suave */
+}
+
+.btn-publicar:hover {
+    background-color: var(--color-acento-oscuro);
+    color: var(--color-texto);
+    transform: translateY(-2px); /* Se levanta ligeramente hacia arriba */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.7); /* La sombra crece */
+}
+
+.post-card {
+    display: flex;
+    gap: 15px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--color-borde);
+}
+
+.post-avatar {
+    font-size: 24px;
+    background: var(--color-navy-claro);
+    border: 1px solid var(--color-borde);
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.post-contenido {
+    flex: 1;
+}
+
+.post-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.post-autor {
+    font-family: 'Playfair Display', serif;
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--color-acento);
+}
+
+.post-user {
+    color: var(--color-texto-suave);
+    font-size: 0.85rem;
+}
+
+.post-texto {
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+    color: var(--color-texto);
+}
+
+.post-libro-badge {
+    display: inline-block;
+    background-color: transparent;
+    color: var(--color-texto-suave);
+    border: 1px solid var(--color-borde);
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-size: 0.85rem;
+    font-style: italic;
+    margin-bottom: 12px;
+}
+
+.post-acciones {
+    display: flex;
+    gap: 15px;
+}
+
+.post-acciones button {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 6px 12px; /* Añade espacio para que el hover se vea como una píldora */
+    border-radius: 4px; /* Bordes redondeados */
+    transition: all 0.2s ease-in-out; /* Hace que el cambio de color sea suave */
+    display: flex;
+    align-items: center;
+}
+/* EFECTO HOVER: BOTÓN COMENTAR (1er botón - navy) */
+.post-acciones button:nth-child(1):hover {
+    background-color: var(--color-navy-claro);
+    border-color: var(--color-borde);
+    color: var(--color-texto);
+}
+
+/* EFECTO HOVER: BOTÓN REPOSTEAR (2do botón - verde suave) */
+.post-acciones button:nth-child(2):hover {
+    background-color: var(--color-like-fondo);
+    color: var(--color-like);
+}
+
+/* EFECTO HOVER: BOTÓN LIKE (3er botón - terracota suave) */
+.post-acciones button:nth-child(3):hover {
+    background-color: var(--color-dislike-fondo);
+    color: var(--color-dislike);
+}
+/* COLUMNA DERECHA: RESEÑAS RECIENTES */
+.lista-resenas {
+    padding-right: 2px;
+}
+.lista-trending {
+    max-height: 150px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+.resena-card {
+    display: flex;
+    gap: 12px;
+    background: var(--color-navy-claro);
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid var(--color-borde);
+    margin-bottom: 15px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    position: relative;
+}
+
+.resena-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 10px 10px 0;
+    border-color: transparent var(--color-tarjeta) transparent transparent;
+    filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.4));
+}
+
+.resena-card img {
+    border-radius: 2px;
+    border: 1px solid var(--color-borde);
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    object-fit: cover;
+}
+
+/* Versión compacta */
+.resena-card-compacta {
+    padding: 8px;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+.resena-card-compacta img {
+    width: 52px;
+    height: 74px;
+}
+
+.resena-info h3 {
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+}
+
+.resena-info p {
+    font-size: 0.85rem;
+}
+
+.valoracion {
+    color: var(--color-acento);
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+/* FOOTER */
+footer {
+    background-color: var(--color-navy-oscuro);
+    color: white;
+    text-align: center;
+    padding: 20px;
+    margin-top: 30px;
+    font-size: 0.9rem;
+}
+
+footer a {
+    color: var(--color-acento); /* dorado suave, legible sobre navy oscuro */
+}
+
+/* RESPONSIVO EN PANTALLAS PEQUEÑAS */
+@media (max-width: 850px) {
+    .contenedor-principal,
+    .contenedor-principal.cuatro-columnas {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ==================================================== */
+/* MODAL / CASETA DE INICIO DE SESIÓN                   */
+/* ==================================================== */
+.modal-overlay {
+    display: none; /* Está oculto por defecto */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
+    z-index: 2000; /* Lo pone por encima del header que tiene 1000 */
+    justify-content: center;
+    align-items: center;
+}
+
+/* Esta clase se añade con JavaScript para hacerlo visible */
+.modal-overlay.activo {
+    display: flex; 
+}
+
+.modal-content {
+    background-color: var(--color-tarjeta);
+    padding: 35px;
+    border-radius: 6px;
+    border: 1px solid var(--color-acento-oscuro);
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    color: var(--color-texto);
+    animation: aparecer 0.3s ease-out; /* Pequeña animación al abrir */
+}
+
+@keyframes aparecer {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.cerrar-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+}
+
+.cerrar-modal:hover {
+    color: var(--color-texto);
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.form-grupo {
+    margin-bottom: 15px;
+}
+
+.form-grupo label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--color-texto-suave);
+}
+
+.form-grupo input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--color-borde);
+    border-radius: 4px;
+    font-size: 1rem;
+    outline: none;
+    background: var(--color-navy-claro);
+    color: var(--color-texto);
+}
+
+.form-grupo input:focus {
+    border-color: var(--color-acento);
+}
+
+.link-olvido {
+    display: block;
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--color-acento);
+    text-decoration: none;
+    margin-bottom: 20px;
+}
+
+.link-olvido:hover {
+    text-decoration: underline;
+}
+
+.form-control {
+    border: 1px solid var(--color-borde);
+    border-radius: 4px;
+    background: var(--color-tarjeta);
+    color: var(--color-texto);
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: border-color 0.15s;
+}
+.form-control:focus {
+    outline: none;
+    border-color: var(--color-acento);
+}
+
+.btn-entrar {
+    width: 100%;
+    background-color: var(--color-acento);
+    color: var(--color-navy-oscuro);
+    border: none;
+    padding: 12px;
+    border-radius: 2px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    font-family: 'Playfair Display', serif;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-entrar:hover {
+    background-color: var(--color-acento-oscuro);
+    color: var(--color-texto);
+}
+
+/* --- Estilos para el Header de cada Publicación (Estilo Twitter) --- */
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.post-info-izquierda {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+}
+
+.post-autor {
+    font-weight: bold;
+    color: var(--color-texto); /* Cambia esto si el texto de tu web es de otro color */
+}
+
+.post-user, .post-tiempo {
+    color: var(--color-texto-suave);
+    font-size: 0.9em;
+}
+
+/* ====================================================== */
+/* DIÁLOGOS PROPIOS (reemplazan confirm()/alert() del navegador) */
+/* ====================================================== */
+.dialogo-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+}
+.dialogo-overlay.activo {
+    display: flex;
+}
+.dialogo-caja {
+    background-color: var(--color-tarjeta);
+    border: 1px solid var(--color-acento-oscuro);
+    padding: 24px;
+    border-radius: 6px;
+    width: 90%;
+    max-width: 340px;
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.8);
+    color: var(--color-texto);
+    animation: aparecer 0.2s ease-out;
+    text-align: center;
+}
+.dialogo-caja p {
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+.dialogo-botones {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.dialogo-botones button {
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+}
+.dialogo-btn-cancelar {
+    background-color: var(--color-navy-claro);
+    color: var(--color-texto);
+    border: 1px solid var(--color-borde);
+}
+.dialogo-btn-confirmar {
+    background-color: var(--color-dislike);
+    color: white;
+}
+.dialogo-btn-ok {
+    background-color: var(--color-acento);
+    color: var(--color-navy-oscuro);
+}
+
+/* ====================================================== */
+/* ESTADOS VACÍOS ILUSTRADOS (en vez de solo texto suelto) */
+/* ====================================================== */
+.estado-vacio {
+    text-align: center;
+    padding: 18px 10px;
+    color: var(--color-texto-suave);
+}
+.estado-vacio svg {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 8px;
+    opacity: 0.55;
+}
+.estado-vacio p {
+    font-size: 0.85rem;
+}
+
+/* ====================================================== */
+/* MODO COMPACTO (togglable desde el header) */
+/* ====================================================== */
+body.modo-compacto .post-card {
+    padding: 8px 0;
+    gap: 8px;
+}
+body.modo-compacto .post-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+}
+body.modo-compacto .post-texto {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+body.modo-compacto .post-acciones button {
+    padding: 4px 8px;
+    font-size: 0.78rem;
+}
+body.modo-compacto .resena-card {
+    padding: 6px;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.btn-modo-compacto {
+    background: none;
+    border: none;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 6px;
+    opacity: 0.85;
+}
+.btn-modo-compacto:hover {
+    opacity: 1;
+    color: var(--color-texto);
+}
+
+/* ====================================================== */
+/* PESTAÑAS EN MÓVIL (reemplazan la vista apilada de 3 columnas) */
+/* ====================================================== */
+.tabs-mobile {
+    display: none;
+    gap: 6px;
+    margin: 0 15px 15px 15px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.tabs-mobile button {
+    flex: 1;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--color-borde);
+    background: var(--color-tarjeta);
+    color: var(--color-texto-suave);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.tabs-mobile button.activa {
+    background: var(--color-acento);
+    color: var(--color-navy-oscuro);
+    border-color: var(--color-acento);
+}
+
+@media (max-width: 850px) {
+    .tabs-mobile {
+        display: flex;
+    }
+    .contenedor-principal > .columna-izquierda,
+    .contenedor-principal > .columna-centro,
+    .contenedor-principal > .columna-derecha {
+        display: none;
+    }
+    .contenedor-principal > .col-mobile-activa {
+        display: block;
+    }
+}
+
+/* --- Estrellas con soporte de medias estrellas --- */
+.estrellas-rating {
+    position: relative;
+    display: inline-block;
+    white-space: nowrap;
+    line-height: 1;
+    vertical-align: middle;
+}
+.estrellas-base {
+    color: var(--color-borde);
+}
+.estrellas-llenas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--color-acento);
+}
+
+/* Selector de estrellas al publicar una reseña */
+.selector-estrella {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    margin-right: 2px;
+}
+.selector-estrella .estrella-vacia {
+    color: var(--color-borde);
+}
+.selector-estrella .estrella-llena {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--color-acento);
+}
+
+/* ====================================================== */
+/* FONDO DE PORTADA DEL MURO (fondo-muro)                  */
+/* ====================================================== */
+.fondo-muro {
+    position: relative;
+    height: 306px; /* 180px * 1.7 */
+    background-size: cover;
+    background-position: center;
+}
+
+/* Flechita junto a la foto de perfil */
+.foto-menu-flecha {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--color-navy-oscuro);
+    color: var(--color-acento);
+    border: 2px solid var(--color-tarjeta);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    z-index: 5;
+}
+.foto-menu-flecha:hover {
+    background: var(--color-navy);
+}
+
+.foto-menu-dropdown {
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    margin-top: 6px;
+    background: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    z-index: 6;
+    min-width: 170px;
+}
+.foto-menu-dropdown.activo {
+    display: block;
+}
+.foto-menu-dropdown label,
+.foto-menu-dropdown button {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    color: var(--color-texto);
+    cursor: pointer;
+    white-space: nowrap;
+    background: none;
+    border: none;
+    text-align: left;
+    font-family: inherit;
+}
+.foto-menu-dropdown label:hover,
+.foto-menu-dropdown button:hover {
+    background: var(--color-navy-claro);
+    color: var(--color-texto);
+}
+.foto-menu-dropdown label:not(:last-child),
+.foto-menu-dropdown button:not(:last-child) {
+    border-bottom: 1px solid var(--color-borde);
+}
+
+/* Grilla de 12 pasteles para el color de fondo del muro */
+.panel-color-fondo {
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    margin-top: 6px;
+    background: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+    padding: 12px;
+    z-index: 6;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    width: 176px;
+}
+.panel-color-fondo.activo {
+    display: grid;
+}
+.fondo-color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.fondo-color-swatch:hover {
+    transform: scale(1.1);
+}
+.fondo-color-swatch.activo {
+    border-color: var(--color-acento);
+    box-shadow: 0 0 0 2px var(--color-tarjeta), 0 0 0 4px var(--color-acento);
+}
+
+/* ====================================================== */
+/* VISOR DE IMAGEN AMPLIADA (foto de perfil / portada, click) */
+/* ====================================================== */
+.visor-imagen-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 4000;
+    justify-content: center;
+    align-items: center;
+}
+.visor-imagen-overlay.activo {
+    display: flex;
+}
+.visor-imagen-caja {
+    position: relative;
+    width: 50vw;
+    height: 50vh;
+    background: var(--color-tarjeta);
+    border-radius: 4px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    animation: aparecer 0.2s ease-out;
+}
+.visor-imagen-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 2px;
+}
+.visor-imagen-cerrar {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-navy-oscuro);
+    color: var(--color-acento);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+
+/* Ancho del buscador del header */
+.buscador-input {
+    width: 190px;
+}
+.buscador-input::placeholder {
+    color: rgba(232, 225, 213, 0.65);
+}
+
+/* ============================================================ */
+/* RESPONSIVO PARA CELULAR                                      */
+/* ============================================================ */
+@media (max-width: 600px) {
+    header {
+        padding: 12px 14px;
+    }
+    .header-content {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    .header-title {
+        flex: 1 1 100%;
+        text-align: center;
+    }
+    .header-title h1 {
+        font-size: 1.4em;
+    }
+    .header-title p {
+        display: none; 
+    }
+    .header-acciones {
+        flex: 1 1 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        row-gap: 6px;
+        gap: 8px;
+    }
+    .btn-pill {
+        padding: 7px 12px;
+        font-size: 0.8rem;
+    }
+    .buscador-input {
+        width: 110px;
+    }
+    .contenedor-principal {
+        margin: 12px auto;
+        padding: 0 10px;
+        gap: 12px;
+    }
+    .columna-izquierda, .columna-centro, .columna-derecha {
+        padding: 12px;
+    }
+    .panel-notificaciones {
+        min-width: 240px !important;
+        max-width: calc(100vw - 20px) !important;
+    }
+    .dropdown-usuario {
+        min-width: 140px !important;
+    }
+    .fondo-muro {
+        height: 238px; 
+    }
+    .visor-imagen-caja {
+        width: 92vw;
+        height: 70vh;
+    }
+}
+
+@media (max-width: 420px) {
+    .buscador-input {
+        width: 85px;
+        font-size: 0.8rem;
+    }
+    .header-title h1 {
+        font-size: 1.2em;
+    }
+    .post-card, .resena-card {
+        gap: 8px;
+    }
+    .post-acciones {
+        gap: 6px;
+    }
+    .post-acciones button {
+        padding: 6px 8px;
+        font-size: 0.78rem;
+    }
+}

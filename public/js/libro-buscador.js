@@ -23,7 +23,7 @@ function activarBuscadorLibro({ inputTitulo, inputAutor, inputPortada, inputPagi
     envoltorio.appendChild(inputTitulo);
 
     const lista = document.createElement('div');
-    lista.style.cssText = 'display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-borde); border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; z-index: 80; margin-top: 2px;';
+    lista.style.cssText = 'display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--color-tarjeta); border: 1px solid var(--color-borde); border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; z-index: 80; margin-top: 2px;';
     envoltorio.appendChild(lista);
 
     let temporizador = null;
@@ -126,7 +126,7 @@ function activarBuscadorTag(inputTag) {
     envoltorio.appendChild(inputTag);
 
     const lista = document.createElement('div');
-    lista.style.cssText = 'display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--color-borde); border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; z-index: 80; margin-top: 2px;';
+    lista.style.cssText = 'display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--color-tarjeta); border: 1px solid var(--color-borde); border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto; z-index: 80; margin-top: 2px;';
     envoltorio.appendChild(lista);
 
     let temporizador = null;

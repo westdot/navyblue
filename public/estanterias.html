@@ -6,6 +6,7 @@
     <title>Mis Estanterías - NAVYBLUE</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%232f3e56'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23f6f1e7'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%23b9823f'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
+    <script>(function(){try{if(localStorage.getItem('tema')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 </head>
 <body>
 
@@ -33,7 +34,7 @@
             </div>
 
             <button type="button" id="btn-nueva-estanteria"
-                    style="width: 100%; padding: 10px; border-radius: 999px; border: 1px dashed var(--color-navy-oscuro); background: none; color: var(--color-navy-oscuro); cursor: pointer; font-size: 0.9rem; margin-top: 10px;">
+                    style="width: 100%; padding: 10px; border-radius: 999px; border: 1px dashed var(--color-navy-oscuro); background: none; color: var(--color-enlace); cursor: pointer; font-size: 0.9rem; margin-top: 10px;">
                 + Nueva estantería
             </button>
         </section>
@@ -150,7 +151,7 @@
         const btnCancelar = document.createElement('button');
         btnCancelar.type = 'button';
         btnCancelar.textContent = 'Cancelar';
-        btnCancelar.style.cssText = 'padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-borde); background: white; color: var(--color-texto-suave); font-size: 0.78rem; cursor: pointer;';
+        btnCancelar.style.cssText = 'padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-borde); background: var(--color-tarjeta); color: var(--color-texto-suave); font-size: 0.78rem; cursor: pointer;';
 
         const mensaje = document.createElement('p');
         mensaje.style.cssText = 'font-size: 0.78rem; margin-top: 6px;';
@@ -313,7 +314,7 @@
         if (nombreNorm === 'terminado') {
             const chip = document.createElement('span');
             chip.textContent = '🎯 cuenta para tu meta';
-            chip.style.cssText = 'font-size: 0.68rem; color: #7a705f; background: #f7ecd9; border-radius: 999px; padding: 2px 8px; white-space: nowrap;';
+            chip.style.cssText = 'font-size: 0.68rem; color: var(--color-texto-suave); background: var(--color-acento-fondo); border-radius: 999px; padding: 2px 8px; white-space: nowrap;';
             header.appendChild(chip);
         }
 
@@ -381,7 +382,7 @@
         const btnMostrarForm = document.createElement('button');
         btnMostrarForm.type = 'button';
         btnMostrarForm.textContent = '+ Agregar libro';
-        btnMostrarForm.style.cssText = 'margin-top: 10px; background: none; border: none; color: var(--color-navy-oscuro); cursor: pointer; font-size: 0.85rem; font-weight: bold;';
+        btnMostrarForm.style.cssText = 'margin-top: 10px; background: none; border: none; color: var(--color-enlace); cursor: pointer; font-size: 0.85rem; font-weight: bold;';
 
         const formAgregar = crearFormularioLibro(estante.id, cargarEstanterias);
         btnMostrarForm.addEventListener('click', () => {

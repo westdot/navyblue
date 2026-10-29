@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navybluerageagainstthemachism - Dark Academia</title>
+    <!-- Favicon adaptado a tonos oscuros -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2314100e'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23e8e1d5'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%238c6b4a'/%3E%3C/svg%3E">
+    <!-- Fuentes Dark Academia -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles2.css">
+</head>
+<body>
+
+    <!-- TÍTULO PRINCIPAL Y OPCIONES -->
+    <header id="inicio-header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>NAVYBLUE</h1>
+                <p>victimas</p>
+            </div>
+
+            <!-- LOS 3 BOTONES AGRUPADOS A LA DERECHA --> 
+            <div class="header-acciones">
+                <a href="#" id="btn-abrir-login" class="btn-pill btn-destacado">Iniciar Sesión</a>
+                <a href="registro.html" class="btn-pill">Registrarse</a>
+                <a href="#opciones" class="btn-pill">Opciones</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ESTRUCTURA PRINCIPAL EN 3 COLUMNAS (SEGÚN TU BOCETO) -->
+    <main class="contenedor-principal" style="grid-template-columns: 240px 1fr 320px;">
+
+        <!-- COLUMNA IZQUIERDA: MENÚ INTERACTIVO -->
+        <aside class="columna-izquierda">
+            <h2>Menú</h2>
+            <ul class="lista-categorias">
+                <li><a href="https://open-slum.org/" target="_blank">Anita</a></li>
+                <li><a href="mensajes.html">Mensajes</a></li>
+                <li><a href="estanterias.html">Estanterías</a></li>
+                <li><a href="Licencia_de_Lector.html">Licencia</a></li>
+                <li><a href="bestiario.html">Bestiario</a></li>
+                <li><a href="insignias.html" id="link-menu-insignias">Insignias</a></li>
+                <li><a href="perfil.html">Opciones de perfil</a></li>
+                <li>&nbsp;</li>
+                <li>&nbsp;</li>
+                <li>&nbsp;</li>
+            </ul>
+        </aside>
+
+        <!-- COLUMNA CENTRO: FEED DE OPINIONES (ESTILO TWITTER PARA LIBROS) -->
+        <section class="columna-centro">
+            <h2>Muro</h2>
+
+            <!-- Caja para publicar: se arma con JS (composer-comun.js), con pestañas Postear/Reseñar -->
+            <div id="composer-mount"></div>
+
+            <!-- Feed / Lista de publicaciones -->
+            <div class="feed-posts">
+
+            </div>
+        </section>
+
+        <!-- COLUMNA DERECHA: se arma con JS (columna-derecha.js): Reseñas Recientes + Trending -->
+        <aside class="columna-derecha">
+        </aside>
+
+    </main>
+
+    <!-- CAJA FLOTANTE (MODAL) DE INICIO DE SESIÓN -->
+    <div id="modal-login" class="modal-overlay">
+        <div class="modal-content">
+            <span class="cerrar-modal" id="btn-cerrar-login">&times;</span>
+            <h2>Iniciar Sesión</h2>
+            <form>
+                <div class="form-grupo">
+                    <label for="email-login">Correo electrónico</label>
+                    <input type="email" id="email-login" placeholder="Ingresa tu correo" required>
+                </div>
+                <div class="form-grupo">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
+                </div>
+                <a href="#" class="link-olvido">Olvidé mi contraseña</a>
+                <button type="submit" class="btn-entrar">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PIE DE PÁGINA -->
+    <footer>
+        <p>Desarrollado por: mis dos cojones</p>
+    </footer>
+    <!-- cript pa achicar el header -->
+    <script src="js/ui-comunes.js"></script>
+    <script src="js/header-comun.js"></script>
+    <script src="js/posts-comunes.js"></script>
+    <script src="js/columna-derecha.js"></script>
+    <script src="js/libro-buscador.js"></script>
+    <script src="js/composer-comun.js"></script>
+    <script src="js/mobile-tabs.js"></script>
+    <script>
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('inicio-header');
+            
+            // Ahora necesitas bajar más (120px) para que se achique
+            if (window.scrollY > 120) {
+                header.classList.add('shrink');
+            } 
+            // Y debes subir casi hasta el tope (menos de 10px) para que vuelva a agrandarse
+            else if (window.scrollY < 10) {
+                header.classList.remove('shrink');
+            }
+        });
+    
+    // ==========================================
+        // NUEVO SCRIPT PARA LA CAJA DE INICIO DE SESIÓN
+        // ==========================================
+        const btnAbrirLogin = document.getElementById('btn-abrir-login');
+        const modalLogin = document.getElementById('modal-login');
+        const btnCerrarLogin = document.getElementById('btn-cerrar-login');
+
+        // Al hacer clic en Iniciar Sesión, abre la caja
+        btnAbrirLogin.addEventListener('click', function(e) {
+            e.preventDefault(); // Evita que la página salte hacia arriba
+            modalLogin.classList.add('activo');
+        });
+
+        // Al hacer clic en la X, la cierra
+        btnCerrarLogin.addEventListener('click', function() {
+            modalLogin.classList.remove('activo');
+        });
+
+        // Al hacer clic en cualquier parte oscura fuera de la caja, también la cierra
+        window.addEventListener('click', function(e) {
+            if (e.target === modalLogin) {
+                modalLogin.classList.remove('activo');
+            }
+        });
+
+        // ==========================================
+    // SCRIPT DE INICIO DE SESIÓN (LOGIN)
+    // ==========================================
+    const modalForm = modalLogin.querySelector('form');
+    
+    // Creamos un elemento para mostrar mensajes dentro del modal
+    const mensajeLogin = document.createElement('p');
+    mensajeLogin.style.cssText = 'margin-top: 10px; text-align: center; font-weight: bold; font-size: 14px;';
+    modalForm.appendChild(mensajeLogin);
+
+    modalForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('email-login').value;
+        const password = modalForm.querySelector('input[type="password"]').value;
+
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                mensajeLogin.style.color = 'green';
+                mensajeLogin.textContent = '¡Inicio de sesión exitoso!';
+                
+                // Guardamos los datos del usuario en el navegador
+                localStorage.setItem('usuarioLogueado', JSON.stringify({
+                    name: data.name,
+                    username: data.username
+                }));
+
+                setTimeout(() => {
+                    modalLogin.classList.remove('activo');
+                    montarHeaderComun({ reemplazarBotonesInvitado: true }); // Actualiza la barra superior
+                }, 1000);
+            } else {
+                mensajeLogin.style.color = 'red';
+                mensajeLogin.textContent = data.error || 'Credenciales inválidas.';
+            }
+        } catch (error) {
+            mensajeLogin.style.color = 'red';
+            mensajeLogin.textContent = 'No se pudo conectar con el servidor.';
+        }
+    });
+
+    // El header (título como botón de inicio, menú de usuario y buscador) vive en header-comun.js
+    window.addEventListener('DOMContentLoaded', async () => {
+        const sesion = await montarHeaderComun({ reemplazarBotonesInvitado: true });
+        // El link de "Insignias" del menú necesita saber de quién mostrarlas
+        if (sesion && sesion.loggedIn) {
+            const linkInsignias = document.getElementById('link-menu-insignias');
+            if (linkInsignias) linkInsignias.href = `insignias.html?usuario=${encodeURIComponent(sesion.user.username)}`;
+        }
+    });
+
+    // ==========================================
+    // SCRIPT PARA EL MURO DE PUBLICACIONES
+    // ==========================================
+    const feedPosts = document.querySelector('.feed-posts');
+
+    // ==========================================
+    // FEED CON SCROLL INFINITO
+    // ==========================================
+    // El feed mezcla posts, reseñas y preguntas públicas, cada una con su endpoint
+    // paginado. crearPaginadorMezclado (ui-comunes.js) las trae por páginas y las
+    // entrega ya ordenadas por fecha; crearScrollInfinito pide la siguiente página
+    // cuando la persona se acerca al final.
+    const paginadorFeed = crearPaginadorMezclado([
+        { tipo: 'post', url: '/api/posts', clave: 'posts' },
+        { tipo: 'reseña', url: '/api/reviews', clave: 'reviews' },
+        { tipo: 'pregunta', url: '/api/questions', clave: 'questions' }
+    ], 15);
+
+    let sesionFeed = null;
+    let primeraPaginaFeed = true;
+
+    // Trae la siguiente página del feed y la pinta. Devuelve true si aún hay más.
+    async function cargarMasFeed() {
+        if (!sesionFeed) {
+            const respSesion = await fetch('/api/session');
+            sesionFeed = await respSesion.json();
+        }
+        const miId = sesionFeed.loggedIn ? sesionFeed.user.id : null;
+        const miUsername = sesionFeed.loggedIn ? sesionFeed.user.username : null;
+
+        const { items, hayMas, obsoleto } = await paginadorFeed.siguiente();
+        if (obsoleto) return false; // el feed se reinició mientras cargaba
+
+        if (items.length > 0) {
+            if (primeraPaginaFeed) feedPosts.innerHTML = ''; // Limpiamos el feed estático de prueba
+            items.forEach(item => {
+                if (item._tipo === 'post') {
+                    feedPosts.appendChild(crearPostCard(item, miId));
+                } else if (item._tipo === 'pregunta') {
+                    feedPosts.appendChild(crearPreguntaCard(item));
+                } else {
+                    const envoltorio = document.createElement('div');
+                    envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid var(--color-borde);';
+                    envoltorio.appendChild(crearResenaCard(item, miUsername));
+                    feedPosts.appendChild(envoltorio);
+                }
+            });
+        }
+        primeraPaginaFeed = false;
+        return hayMas;
+    }
+
+    const scrollFeed = crearScrollInfinito({
+        contenedor: feedPosts,
+        cargarMas: cargarMasFeed,
+        mensajeFin: 'Llegaste al final 📚'
+    });
+
+    // Vuelve a cargar el feed desde el principio (ej. después de publicar algo nuevo)
+    function cargarPosts() {
+        paginadorFeed.reiniciar();
+        primeraPaginaFeed = true;
+        feedPosts.innerHTML = '';
+        scrollFeed.reiniciar();
+    }
+
+    //funcion para el tiempo de los post supongo
+    // Función para calcular hace cuánto se publicó (Estilo Twitter)
+    function obtenerTiempoRelativo(fechaServidor) {
+        if (!fechaServidor) return 'Ahora';
+
+        // Si la fecha del servidor viene como texto plano sin zona horaria, 
+        // la convertimos a formato ISO UTC para que el navegador no se equivoque.
+        let fechaLimpia = fechaServidor;
+        if (typeof fechaServidor === 'string' && !fechaServidor.endsWith('Z') && !fechaServidor.includes('+')) {
+            fechaLimpia = fechaServidor.replace(' ', 'T') + 'Z';
+        }
+
+        const fechaPost = new Date(fechaLimpia);
+        const ahora = new Date();
+        const diferenciaSegundos = Math.floor((ahora - fechaPost) / 1000);
+
+        // Si es menor a un minuto
+        if (diferenciaSegundos < 60) {
+            return 'Ahora';
+        }
+        
+        // Minutos (de 1m hasta 60m)
+        const diferenciaMinutos = Math.floor(diferenciaSegundos / 60);
+        if (diferenciaMinutos <= 60) {
+            return `${diferenciaMinutos}m`;
+        }
+        
+        // Horas (de 1h hasta 24h)
+        const diferenciaHoras = Math.floor(diferenciaMinutos / 60);
+        if (diferenciaHoras < 24) {
+            return `${diferenciaHoras}h`;
+        }
+        
+        // Días
+        const diferenciaDias = Math.floor(diferenciaHoras / 24);
+        return `${diferenciaDias}d`;
+    }
+
+    // Construye la tarjeta de un post usando textContent (no innerHTML) para el
+    // contenido que viene de otros usuarios, así nadie puede publicar HTML/JS
+    // que se ejecute en la pantalla de los demás (XSS).
+    function crearPostCard(post, miId) {
+        const article = document.createElement('article');
+        article.className = 'post-card';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'post-avatar';
+        avatar.textContent = '✍️';
+
+        const contenido = document.createElement('div');
+        contenido.className = 'post-contenido';
+
+        // --- INICIO DEL HEADER (Nombre, @usuario y tiempo) ---
+        const header = document.createElement('div');
+        header.className = 'post-header';
+
+        const infoIzquierda = document.createElement('div');
+        infoIzquierda.className = 'post-info-izquierda';
+
+        const autor = document.createElement('a');
+        autor.className = 'post-autor';
+        autor.href = `muro.html?usuario=${encodeURIComponent(post.username)}`;
+        autor.style.cssText = 'text-decoration: none; color: inherit;';
+        autor.textContent = post.username;
+        autor.addEventListener('click', (e) => e.stopPropagation()); // no abrir el detalle del post
+
+        const userTag = document.createElement('span');
+        userTag.className = 'post-user';
+        userTag.textContent = `@${post.username}`;
+
+        infoIzquierda.appendChild(autor);
+        infoIzquierda.appendChild(userTag);
+
+        const tiempo = document.createElement('span');
+        tiempo.className = 'post-tiempo';
+        // Le pasamos la fecha que viene de tu base de datos. 
+        // Normalmente se llama 'createdat', 'fecha' o 'timestamp'
+        tiempo.textContent = obtenerTiempoRelativo(post.created_at);
+        tiempo.style.cursor = 'pointer';
+        tiempo.title = 'Abrir esta publicación';
+        // Clic en la hora: abre el post en su propia página (a diferencia del
+        // resto de la tarjeta, que abre el detalle acá mismo en la columna derecha)
+        tiempo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.location.href = `post.html?id=${post.id}`;
+        });
+
+        header.appendChild(infoIzquierda);
+        header.appendChild(tiempo);
+
+        // Botón de eliminar: solo aparece en tus propios posts
+        if (miId && post.user_id === miId) {
+            const btnEliminar = document.createElement('button');
+            btnEliminar.type = 'button';
+            btnEliminar.title = 'Eliminar publicación';
+            btnEliminar.textContent = '🗑️';
+            btnEliminar.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.9rem;';
+            btnEliminar.addEventListener('click', async (e) => {
+                e.stopPropagation(); // que no abra el detalle al borrar
+                if (!(await confirmarAccion('¿Eliminar esta publicación?'))) return;
+                try {
+                    const resp = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' });
+                    if (resp.ok) {
+                        article.remove();
+                    } else {
+                        const data = await resp.json().catch(() => ({}));
+                        mostrarAviso(data.error || 'No se pudo eliminar la publicación.');
+                    }
+                } catch (error) {
+                    mostrarAviso('No se pudo conectar con el servidor.');
+                }
+            });
+            header.appendChild(btnEliminar);
+        }
+        // --- FIN DEL HEADER ---
+
+        const texto = document.createElement('p');
+        texto.className = 'post-texto';
+        texto.appendChild(renderizarTextoConMenciones(post.content));
+
+        const badge = document.createElement('div');
+        badge.className = 'post-libro-badge';
+        const em = document.createElement('em');
+        em.textContent = post.tag;
+        badge.append('📚 ', em);
+
+        // Ensamblaje final
+        contenido.appendChild(header);
+        contenido.appendChild(texto);
+        contenido.appendChild(badge);
+        contenido.appendChild(crearBarraAcciones(post, () => {
+            abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
+        }));
+
+        article.appendChild(avatar);
+        article.appendChild(contenido);
+
+        // Clic en cualquier parte en blanco del post (o la hora) abre el detalle.
+        // Los botones de arriba ya cortan la propagación, así que no interfieren.
+        article.style.cursor = 'pointer';
+        article.addEventListener('click', () => {
+            abrirDetallePost(post.id, document.querySelector('.columna-derecha'));
+        });
+
+        return article;
+    }
+
+    // Construye la tarjeta de una pregunta pública (alguien le preguntó algo a
+    // otra persona). Usa textContent para el contenido, igual que crearPostCard.
+    function crearPreguntaCard(pregunta) {
+        const article = document.createElement('article');
+        article.className = 'post-card';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'post-avatar';
+        avatar.textContent = '❓';
+
+        const contenido = document.createElement('div');
+        contenido.className = 'post-contenido';
+
+        const header = document.createElement('div');
+        header.className = 'post-header';
+
+        const infoIzquierda = document.createElement('div');
+        infoIzquierda.className = 'post-info-izquierda';
+
+        const autorPregunta = document.createElement('a');
+        autorPregunta.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
+        autorPregunta.href = `muro.html?usuario=${encodeURIComponent(pregunta.asker_username)}`;
+        autorPregunta.textContent = pregunta.asker_username;
+
+        const flecha = document.createElement('span');
+        flecha.style.cssText = 'color: var(--color-texto-suave); margin: 0 4px;';
+        flecha.textContent = '→';
+
+        const autorRespuesta = document.createElement('a');
+        autorRespuesta.style.cssText = 'text-decoration: none; color: inherit; font-weight: bold;';
+        autorRespuesta.href = `muro.html?usuario=${encodeURIComponent(pregunta.asked_username)}`;
+        autorRespuesta.textContent = pregunta.asked_username;
+
+        infoIzquierda.append(autorPregunta, flecha, autorRespuesta);
+
+        const tiempo = document.createElement('span');
+        tiempo.className = 'post-tiempo';
+        tiempo.textContent = obtenerTiempoRelativo(pregunta.created_at);
+
+        header.appendChild(infoIzquierda);
+        header.appendChild(tiempo);
+
+        const texto = document.createElement('p');
+        texto.className = 'post-texto';
+        texto.textContent = pregunta.content;
+
+        const badge = document.createElement('div');
+        badge.className = 'post-libro-badge';
+        const em = document.createElement('em');
+        em.textContent = 'Pregunta pública';
+        badge.append('❓ ', em);
+
+        contenido.appendChild(header);
+        contenido.appendChild(texto);
+        contenido.appendChild(badge);
+
+        article.appendChild(avatar);
+        article.appendChild(contenido);
+        return article;
+    }
+
+    // Montar el composer + la columna derecha (el feed lo carga el scroll infinito)
+    window.addEventListener('DOMContentLoaded', () => {
+        // (el feed se carga solo: el scroll infinito pide la primera página apenas aparece)
+
+        const columnaDerecha = document.querySelector('.columna-derecha');
+        cargarColumnaDerecha(columnaDerecha);
+
+        document.getElementById('composer-mount').appendChild(crearComposer({
+            onPost: cargarPosts,
+            onResena: () => cargarColumnaDerecha(columnaDerecha)
+        }));
+
+        activarTabsMobile([
+            { selector: '.columna-izquierda', texto: 'Menú' },
+            { selector: '.columna-centro', texto: 'Muro' },
+            { selector: '.columna-derecha', texto: 'Reseñas' }
+        ]);
+    });
+
+    </script>
+
+</body>
+</html>

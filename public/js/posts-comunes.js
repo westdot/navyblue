@@ -34,7 +34,7 @@ function renderizarTextoConMenciones(texto) {
         const link = document.createElement('a');
         link.href = `muro.html?usuario=${encodeURIComponent(match[1])}`;
         link.textContent = '@' + match[1];
-        link.style.cssText = 'color: var(--color-navy); font-weight: bold; text-decoration: none;';
+        link.style.cssText = 'color: var(--color-enlace); font-weight: bold; text-decoration: none;';
         link.addEventListener('click', (e) => e.stopPropagation()); // no abrir el detalle del post al pinchar la mención
         frag.appendChild(link);
         ultimo = regex.lastIndex;
@@ -199,7 +199,7 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
                 const btnResponder = document.createElement('button');
                 btnResponder.type = 'button';
                 btnResponder.textContent = 'Responder';
-                btnResponder.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.75rem; color: var(--color-navy); font-weight: bold;';
+                btnResponder.style.cssText = 'background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 0.75rem; color: var(--color-enlace); font-weight: bold;';
                 btnResponder.addEventListener('click', () => {
                     input.value = `@${c.username} `;
                     input.focus();
@@ -220,7 +220,7 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
                 lineaRespuesta.style.cssText = 'margin: 4px 0 0 0; font-size: 0.78rem; color: var(--color-texto-suave);';
                 const linkMencion = document.createElement('a');
                 linkMencion.href = `muro.html?usuario=${encodeURIComponent(nombreMencionado)}`;
-                linkMencion.style.cssText = 'color: var(--color-navy); font-weight: bold; text-decoration: none;';
+                linkMencion.style.cssText = 'color: var(--color-enlace); font-weight: bold; text-decoration: none;';
                 linkMencion.textContent = '@' + nombreMencionado;
                 linkMencion.addEventListener('click', (e) => e.stopPropagation());
                 lineaRespuesta.append('Respondiendo a ', linkMencion);
@@ -276,11 +276,21 @@ function crearBloqueComentarios(comentarios, usuarioActual, opciones) {
 
 // Abre el detalle de un post (con sus comentarios) dentro de `contenedor`
 // (la columna derecha), guardando lo que había antes para poder volver.
+// En celular la columna donde se muestra el detalle queda arriba del feed (la
+// grilla se apila): al abrir un detalle, llevamos la vista hasta ahí.
+function mostrarDetalleEnCelular(contenedor) {
+    if (window.matchMedia && window.matchMedia('(max-width: 900px)').matches) {
+        contenedor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
 async function abrirDetallePost(postId, contenedor) {
     if (contenedor._contenidoOriginal === undefined) {
         contenedor._contenidoOriginal = contenedor.innerHTML;
     }
 
+    contenedor.classList.add('modo-detalle');
+    mostrarDetalleEnCelular(contenedor);
     contenedor.innerHTML = '<p>Cargando publicación...</p>';
 
     try {
@@ -304,6 +314,7 @@ async function abrirDetallePost(postId, contenedor) {
 }
 
 function cerrarDetallePost(contenedor) {
+    contenedor.classList.remove('modo-detalle');
     // Preferimos una función que vuelva a armar el contenido real (con sus
     // listeners funcionando) antes que un simple string de HTML guardado.
     if (typeof contenedor._volverCallback === 'function') {
@@ -319,7 +330,7 @@ function renderDetallePost(post, comentarios, contenedor, usuarioActual) {
     const btnVolver = document.createElement('button');
     btnVolver.type = 'button';
     btnVolver.textContent = '← Volver';
-    btnVolver.style.cssText = 'background: none; border: none; color: var(--color-navy-oscuro); cursor: pointer; font-weight: bold; margin-bottom: 12px; font-size: 0.9rem;';
+    btnVolver.style.cssText = 'background: none; border: none; color: var(--color-enlace); cursor: pointer; font-weight: bold; margin-bottom: 12px; font-size: 0.9rem;';
     btnVolver.addEventListener('click', () => cerrarDetallePost(contenedor));
     contenedor.appendChild(btnVolver);
 
@@ -391,6 +402,8 @@ async function abrirDetalleResena(resenaId, contenedor) {
         contenedor._contenidoOriginal = contenedor.innerHTML;
     }
 
+    contenedor.classList.add('modo-detalle');
+    mostrarDetalleEnCelular(contenedor);
     contenedor.innerHTML = '<p>Cargando reseña...</p>';
 
     try {
@@ -419,7 +432,7 @@ function renderDetalleResena(resena, comentarios, contenedor, usuarioActual) {
     const btnVolver = document.createElement('button');
     btnVolver.type = 'button';
     btnVolver.textContent = '← Volver';
-    btnVolver.style.cssText = 'background: none; border: none; color: var(--color-navy-oscuro); cursor: pointer; font-weight: bold; margin-bottom: 12px; font-size: 0.9rem;';
+    btnVolver.style.cssText = 'background: none; border: none; color: var(--color-enlace); cursor: pointer; font-weight: bold; margin-bottom: 12px; font-size: 0.9rem;';
     btnVolver.addEventListener('click', () => cerrarDetallePost(contenedor));
     contenedor.appendChild(btnVolver);
 

@@ -6,6 +6,7 @@
     <title>Navybluerageagainstthemachism</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%232f3e56'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23f6f1e7'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%23b9823f'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
+    <script>(function(){try{if(localStorage.getItem('tema')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 </head>
 <body>
 
@@ -27,41 +28,40 @@
     </header>
 
     <!-- ESTRUCTURA PRINCIPAL EN 3 COLUMNAS (SEGÚN TU BOCETO) -->
-    <main class="contenedor-principal" style="grid-template-columns: 240px 1fr 320px;">
+    <main class="bento bento-inicio">
 
-        <!-- COLUMNA IZQUIERDA: MENÚ INTERACTIVO -->
-        <aside class="columna-izquierda">
-            <h2>Menú</h2>
-            <ul class="lista-categorias">
-                <li><a href="https://open-slum.org/" target="_blank">Anita</a></li>
-                <li><a href="mensajes.html">Mensajes</a></li>
-                <li><a href="estanterias.html">Estanterías</a></li>
-                <li><a href="Licencia_de_Lector.html">Licencia</a></li>
-                <li><a href="bestiario.html">Bestiario</a></li>
-                <li><a href="insignias.html" id="link-menu-insignias">Insignias</a></li>
-                <li><a href="perfil.html">Opciones de perfil</a></li>
-                <li>&nbsp;</li>
-                <li>&nbsp;</li>
-                <li>&nbsp;</li>
-            </ul>
-        </aside>
+        <!-- Tarjeta de bienvenida: tus números y tus lecturas en curso (se arma por JS) -->
+        <section class="bento-card hero-inicio area-hero" id="hero-inicio"></section>
 
-        <!-- COLUMNA CENTRO: FEED DE OPINIONES (ESTILO TWITTER PARA LIBROS) -->
-        <section class="columna-centro">
-            <h2>Muro</h2>
+        <!-- Izquierda: menú y meta del año -->
+        <div class="bento-col area-izq">
+            <section class="bento-card orden-2">
+                <h2>Menú</h2>
+                <ul class="lista-categorias">
+                    <li id="menu-mi-muro" style="display: none;"><a href="muro.html">Mi muro</a></li>
+                    <li><a href="https://open-slum.org/" target="_blank">Anita</a></li>
+                    <li><a href="mensajes.html">Mensajes</a></li>
+                    <li><a href="estanterias.html">Estanterías</a></li>
+                    <li><a href="insignias.html" id="link-menu-insignias">Insignias</a></li>
+                    <li><a href="perfil.html">Opciones de perfil</a></li>
+                </ul>
+            </section>
+            <section class="bento-card orden-3 solo-escritorio" id="tarjeta-meta" style="display: none;">
+                <h2>Mi meta de lectura</h2>
+                <div id="meta-inicio" class="meta-anillo"></div>
+            </section>
+        </div>
 
-            <!-- Caja para publicar: se arma con JS (composer-comun.js), con pestañas Postear/Reseñar -->
-            <div id="composer-mount"></div>
-
-            <!-- Feed / Lista de publicaciones -->
-            <div class="feed-posts">
-
-            </div>
+        <!-- Centro: composer y publicaciones (cada publicación es su propia tarjeta) -->
+        <section class="area-feed orden-6">
+            <h2 class="solo-lectores">Muro</h2>
+            <div id="composer-mount" class="bento-card"></div>
+            <div class="feed-posts"></div>
         </section>
 
-        <!-- COLUMNA DERECHA: se arma con JS (columna-derecha.js): Reseñas Recientes + Trending -->
-        <aside class="columna-derecha">
-        </aside>
+        <!-- Derecha: reseñas recientes y tendencias (dos tarjetas). Esta columna también
+             es donde se abre el detalle de un post al hacer clic en él. -->
+        <div class="bento-col area-der columna-derecha" data-bento></div>
 
     </main>
 
@@ -239,11 +239,15 @@
                     feedPosts.appendChild(crearPreguntaCard(item));
                 } else {
                     const envoltorio = document.createElement('div');
-                    envoltorio.style.cssText = 'padding: 12px 0; border-bottom: 1px solid var(--color-borde);';
+                    envoltorio.className = 'feed-resena';
                     envoltorio.appendChild(crearResenaCard(item, miUsername));
                     feedPosts.appendChild(envoltorio);
                 }
             });
+        }
+        if (primeraPaginaFeed && items.length === 0) {
+            feedPosts.innerHTML = '';
+            feedPosts.appendChild(crearEstadoVacio('Todavía no hay publicaciones. ¡Sé la primera persona en publicar!'));
         }
         primeraPaginaFeed = false;
         return hayMas;
@@ -472,7 +476,178 @@
     }
 
     // Montar el composer + la columna derecha (el feed lo carga el scroll infinito)
+    // ==========================================
+    // TARJETA DE BIENVENIDA, META DEL AÑO Y MENÚ
+    // ==========================================
+    const sesionInicio = fetch('/api/session').then(r => r.json()).catch(() => ({ loggedIn: false }));
+
+    function crearTileStat(icono, numero, etiqueta, href) {
+        const a = document.createElement('a');
+        a.className = 'stat-tile';
+        a.href = href;
+        a.insertAdjacentHTML('beforeend', iconoSvg(icono, 18));
+        const n = document.createElement('div');
+        n.className = 'stat-num';
+        n.textContent = numero;
+        const l = document.createElement('div');
+        l.className = 'stat-lbl';
+        l.textContent = etiqueta;
+        a.append(n, l);
+        return a;
+    }
+
+    function crearTileLectura(lec) {
+        const a = document.createElement('a');
+        a.className = 'lectura-tile';
+        a.href = `libro.html?titulo=${encodeURIComponent(lec.libro_titulo || '')}&autor=${encodeURIComponent(lec.autor || '')}&portada=${encodeURIComponent(lec.portada_url || '')}`;
+        if (lec.portada_url) {
+            const img = document.createElement('img');
+            img.src = lec.portada_url;
+            img.alt = '';
+            a.appendChild(img);
+        } else {
+            const vacia = document.createElement('div');
+            vacia.className = 'lectura-portada-vacia';
+            vacia.textContent = '📖';
+            a.appendChild(vacia);
+        }
+        const info = document.createElement('div');
+        info.className = 'lectura-info';
+        const titulo = document.createElement('div');
+        titulo.className = 'lectura-titulo';
+        titulo.textContent = lec.libro_titulo;
+        const pct = lec.paginas_totales ? Math.min(100, Math.round((lec.pagina_actual / lec.paginas_totales) * 100)) : 0;
+        const pctTxt = document.createElement('div');
+        pctTxt.className = 'lectura-pct';
+        pctTxt.textContent = `${pct}% leído`;
+        const barra = document.createElement('div');
+        barra.className = 'lectura-barra';
+        const relleno = document.createElement('i');
+        relleno.style.width = pct + '%';
+        barra.appendChild(relleno);
+        info.append(titulo, pctTxt, barra);
+        a.appendChild(info);
+        return a;
+    }
+
+    async function montarHero() {
+        const hero = document.getElementById('hero-inicio');
+        const sesion = await sesionInicio;
+
+        if (!sesion.loggedIn) {
+            hero.innerHTML = `
+                <div class="hero-bienvenida">
+                    <h2>Bienvenido a NavyBlue</h2>
+                    <p>Tu rincón para hablar de libros, llevar tus lecturas y descubrir qué leen los demás.</p>
+                    <button type="button" class="btn-perfil btn-perfil-claro" id="hero-login">Iniciar sesión</button>
+                    <a href="registro.html" class="btn-perfil btn-perfil-suave">Registrarse</a>
+                </div>`;
+            document.getElementById('hero-login').addEventListener('click', () => {
+                const abrir = document.getElementById('btn-abrir-login');
+                if (abrir) abrir.click();
+            });
+            return;
+        }
+
+        const usuario = sesion.user.username;
+        const u = encodeURIComponent(usuario);
+        try {
+            const [dUser, dRes, dLec] = await Promise.all([
+                fetch(`/api/users/${u}`).then(r => r.json()),
+                fetch(`/api/users/${u}/resumen`).then(r => r.json()),
+                fetch(`/api/users/${u}/lecturas`).then(r => r.json())
+            ]);
+            hero.innerHTML = '';
+
+            // Zona 1: quién eres
+            const zonaUsuario = document.createElement('a');
+            zonaUsuario.className = 'hero-usuario';
+            zonaUsuario.href = 'muro.html';
+            zonaUsuario.style.cssText = 'color: inherit; text-decoration: none;';
+            const avatar = document.createElement('div');
+            avatar.className = 'hero-avatar';
+            if (dUser.user && dUser.user.foto_url) {
+                const img = document.createElement('img');
+                img.src = dUser.user.foto_url;
+                img.alt = '';
+                avatar.appendChild(img);
+            } else {
+                avatar.textContent = usuario.slice(0, 2).toUpperCase();
+            }
+            const textos = document.createElement('div');
+            const nombre = document.createElement('div');
+            nombre.className = 'hero-nombre';
+            nombre.textContent = (dUser.user && dUser.user.name) || usuario;
+            const handle = document.createElement('div');
+            handle.className = 'hero-user';
+            handle.textContent = `@${usuario}`;
+            textos.append(nombre, handle);
+            zonaUsuario.append(avatar, textos);
+
+            // Zona 2: tus números
+            const stats = document.createElement('div');
+            stats.className = 'hero-stats';
+            stats.append(
+                crearTileStat('libro', dRes.leidos ?? 0, 'Libros leídos', 'estanterias.html'),
+                crearTileStat('estante', dRes.leyendo ?? 0, 'Leyendo', 'muro.html'),
+                crearTileStat('lapiz', dRes.resenas ?? 0, 'Reseñas', 'muro.html'),
+                crearTileStat('usuarios', dRes.amigos ?? 0, 'Amigos', 'muro.html')
+            );
+
+            // Zona 3: tus lecturas en curso
+            const lecturas = document.createElement('div');
+            lecturas.className = 'hero-lecturas';
+            const lista = (dLec.lecturas || []).slice(0, 4);
+            if (lista.length === 0) {
+                const vacio = document.createElement('div');
+                vacio.className = 'hero-sin-lecturas';
+                vacio.append('Todavía no tienes lecturas en curso. ');
+                const enlace = document.createElement('a');
+                enlace.href = 'buscar.html';
+                enlace.textContent = 'Busca un libro';
+                vacio.append(enlace, ' para empezar.');
+                lecturas.appendChild(vacio);
+            } else {
+                lista.forEach(l => lecturas.appendChild(crearTileLectura(l)));
+            }
+
+            hero.append(zonaUsuario, stats, lecturas);
+        } catch (error) {
+            hero.style.display = 'none'; // si algo falla, el inicio sigue funcionando sin la tarjeta
+        }
+    }
+
+    async function montarTarjetaMetaYMenu() {
+        const sesion = await sesionInicio;
+        if (!sesion.loggedIn) return;
+        document.getElementById('menu-mi-muro').style.display = '';
+        try {
+            const resp = await fetch(`/api/users/${encodeURIComponent(sesion.user.username)}/meta-lectura`);
+            const data = await resp.json();
+            if (!resp.ok) return;
+            const nLeidos = Number(data.leidos) || 0;
+            const nMeta = Number(data.meta) || 0;
+            const radio = 50;
+            const circ = 2 * Math.PI * radio;
+            const fraccion = nMeta ? Math.min(1, nLeidos / nMeta) : 0;
+            document.getElementById('meta-inicio').innerHTML = `
+                <svg width="118" height="118" viewBox="0 0 118 118" aria-hidden="true">
+                    <circle cx="59" cy="59" r="${radio}" fill="none" stroke-width="10" style="stroke: var(--color-borde);"></circle>
+                    <circle cx="59" cy="59" r="${radio}" fill="none" stroke-width="10" stroke-linecap="round" transform="rotate(-90 59 59)"
+                            stroke-dasharray="${(circ * fraccion).toFixed(1)} ${circ.toFixed(1)}" style="stroke: var(--color-acento);"></circle>
+                </svg>
+                <div class="meta-anillo-texto">
+                    <div class="meta-anillo-num">${nLeidos}${nMeta ? ` <small>/ ${nMeta}</small>` : ''}</div>
+                    <div class="meta-anillo-lbl">libro${nLeidos === 1 ? '' : 's'} leído${nLeidos === 1 ? '' : 's'}</div>
+                    <div class="meta-anillo-anio">${nMeta ? 'Meta ' : ''}${Number(data.anio) || ''}</div>
+                </div>`;
+            document.getElementById('tarjeta-meta').style.display = '';
+        } catch (error) { /* sin meta: la tarjeta queda oculta */ }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+        montarHero();
+        montarTarjetaMetaYMenu();
         // (el feed se carga solo: el scroll infinito pide la primera página apenas aparece)
 
         const columnaDerecha = document.querySelector('.columna-derecha');
@@ -483,11 +658,6 @@
             onResena: () => cargarColumnaDerecha(columnaDerecha)
         }));
 
-        activarTabsMobile([
-            { selector: '.columna-izquierda', texto: 'Menú' },
-            { selector: '.columna-centro', texto: 'Muro' },
-            { selector: '.columna-derecha', texto: 'Reseñas' }
-        ]);
     });
 
     </script>

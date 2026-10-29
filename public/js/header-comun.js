@@ -28,7 +28,7 @@ function crearMenuUsuario(usuario) {
     contenedor.style.cssText = 'position: relative; display: flex; align-items: center; height: 34px; gap: 7px;';
     contenedor.innerHTML = `
         <a href="muro.html" style="color: white; font-weight: 700; font-size: 13.5px; text-decoration: none; line-height: 1;">${usuario.username}</a>
-        <button type="button" class="btn-flecha-usuario" style="background: rgba(255,255,255,0.14); border: none; color: white; font-size: 11px; cursor: pointer; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">▾</button>
+        <button type="button" class="btn-flecha-usuario" style="background: rgba(255,255,255,0.14); border: none; color: white; font-size: 11px; cursor: pointer; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${iconoSvg('chevron', 12)}</button>
         <div class="dropdown-usuario" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); background: var(--color-tarjeta); border: 1px solid var(--color-borde); border-radius: 9px; box-shadow: 0 6px 16px rgba(43,37,32,0.18); overflow: hidden; min-width: 170px; z-index: 200;">
             <a href="estanterias.html" style="display: block; padding: 10px 14px; color: var(--color-texto); text-decoration: none; font-size: 0.85rem;">Mis Estanterías</a>
             <a href="perfil.html" style="display: block; padding: 10px 14px; color: var(--color-texto); text-decoration: none; font-size: 0.85rem; border-top: 1px solid var(--color-borde);">Configuración</a>
@@ -55,6 +55,25 @@ function crearMenuUsuario(usuario) {
     return contenedor;
 }
 
+// Botón luna/sol: alterna entre el modo claro y el modo noche.
+function crearBotonTema() {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-tema';
+    btn.style.cssText = 'background: rgba(255,255,255,0.14); border: none; color: white; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;';
+
+    function actualizar() {
+        const noche = temaActual() === 'dark';
+        btn.innerHTML = iconoSvg(noche ? 'sol' : 'luna', 16);
+        btn.title = noche ? 'Cambiar a modo claro' : 'Cambiar a modo noche';
+        btn.setAttribute('aria-label', btn.title);
+    }
+    btn.addEventListener('click', () => aplicarTema(temaActual() === 'dark' ? 'light' : 'dark'));
+    window.addEventListener('tema-cambiado', actualizar);
+    actualizar();
+    return btn;
+}
+
 function crearBotonModoCompacto() {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -64,7 +83,7 @@ function crearBotonModoCompacto() {
 
     function actualizarIcono() {
         const activo = document.body.classList.contains('modo-compacto');
-        btn.textContent = activo ? '☰' : '☷';
+        btn.innerHTML = iconoSvg(activo ? 'lista' : 'cuadricula', 16);
     }
 
     // Se recuerda entre páginas (es solo una preferencia visual, no datos sensibles)
@@ -87,7 +106,7 @@ function crearCampanaNotificaciones() {
     contenedor.style.cssText = 'position: relative; display: flex; align-items: center;';
     contenedor.innerHTML = `
         <button type="button" class="btn-campana" style="background: rgba(255,255,255,0.14); border: none; color: white; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; position: relative; flex-shrink: 0;">
-            🔔
+            ${iconoSvg('campana', 16)}
             <span class="badge-notificaciones" style="display: none; position: absolute; top: -3px; right: -3px; background: var(--color-acento); color: var(--color-texto); border-radius: 999px; font-size: 0.62rem; min-width: 16px; height: 16px; padding: 0 3px; font-weight: 700; align-items: center; justify-content: center; border: 2px solid var(--color-navy-oscuro); line-height: 1;"></span>
         </button>
         <div class="panel-notificaciones" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); background: var(--color-tarjeta); color: var(--color-texto); border: 1px solid var(--color-borde); border-radius: 9px; box-shadow: 0 6px 16px rgba(43,37,32,0.18); min-width: 280px; max-height: 350px; overflow-y: auto; z-index: 200;"></div>
@@ -132,7 +151,7 @@ function crearCampanaNotificaciones() {
     function crearItemNotificacion(n) {
         const item = document.createElement('a');
         item.href = n.destino || `muro.html?usuario=${encodeURIComponent(n.actor_username)}`;
-        item.style.cssText = `display: block; padding: 10px 15px; border-bottom: 1px solid var(--color-borde); text-decoration: none; color: var(--color-texto); font-size: 0.83rem; ${n.leida ? '' : 'background: #eef2f7;'}`;
+        item.style.cssText = `display: block; padding: 10px 15px; border-bottom: 1px solid var(--color-borde); text-decoration: none; color: var(--color-texto); font-size: 0.83rem; ${n.leida ? '' : 'background: var(--color-navy-claro);'}`;
         const mensaje = document.createElement('div');
         mensaje.textContent = n.mensaje;
         const fecha = document.createElement('div');
@@ -220,8 +239,8 @@ function crearBuscador() {
     contenedor.style.cssText = 'display: flex; align-items: center; height: 34px; background: rgba(255,255,255,0.14); border-radius: 999px; padding: 0 12px; gap: 7px;';
     contenedor.innerHTML = `
         <button type="button" class="buscador-boton" title="Buscar"
-                style="background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; flex-shrink: 0; font-size: 13px; opacity: 0.85;">
-            🔍
+                style="background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; flex-shrink: 0; color: white; opacity: 0.85;">
+            ${iconoSvg('lupa', 15)}
         </button>
         <input type="text" class="buscador-input" placeholder="Buscar libros, usuarios..."
                style="border: none; background: transparent; font-size: 0.82rem; color: white; height: 100%;">
@@ -274,11 +293,14 @@ async function montarHeaderComun(opciones = {}) {
         if (titulo && btnVolver) btnVolver.remove();
 
         headerAcciones.appendChild(crearBuscador());
+        headerAcciones.appendChild(crearBotonTema());
         headerAcciones.appendChild(crearBotonModoCompacto());
         headerAcciones.appendChild(crearCampanaNotificaciones());
         headerAcciones.appendChild(crearMenuUsuario(sesion.user));
     } else {
         localStorage.removeItem('usuarioLogueado');
+        // Visitantes: solo el botón de modo noche, antes de los botones de iniciar sesión
+        headerAcciones.insertBefore(crearBotonTema(), headerAcciones.firstChild);
     }
 
     return sesion;

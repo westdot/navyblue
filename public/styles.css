@@ -564,7 +564,7 @@ footer a {
     display: block;
     text-align: right;
     font-size: 0.85rem;
-    color: var(--color-navy);
+    color: var(--color-enlace);
     text-decoration: none;
     margin-bottom: 20px;
 }
@@ -1099,4 +1099,519 @@ body.modo-compacto .resena-card {
         padding: 6px 8px;
         font-size: 0.78rem;
     }
+}
+
+/* ================================================================== */
+/* MODO NOCHE ("Nocturno refinado") + LAYOUT BENTO                     */
+/* ================================================================== */
+
+/* Variables nuevas del tema claro */
+:root {
+    --color-acento-fondo: #f7ecd9;   /* fondo suave dorado (chips, respuestas) */
+    --color-enlace: #3f5173;         /* color de texto para enlaces y acciones secundarias */
+    --sombra-bento: 0 1px 2px rgba(43, 37, 32, 0.05), 0 8px 24px rgba(43, 37, 32, 0.07);
+}
+
+/* Modo noche: se activa con <html data-theme="dark"> (botón luna/sol del header).
+   Todo el sitio ya usa estas variables, así que basta con redefinirlas aquí. */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-papel: #141a26;
+    --color-tarjeta: #1d2535;
+    --color-borde: #2c3750;
+    --color-texto: #ece5d3;
+    --color-texto-suave: rgba(236, 229, 211, 0.6);
+
+    --color-navy: #4a5d86;
+    --color-navy-oscuro: #3b4d73;
+    --color-navy-claro: #26314a;
+    --color-navy-texto: #b9c6e4;
+
+    --color-acento: #d1a85a;
+    --color-acento-oscuro: #b88f45;
+    --color-acento-fondo: #3a3324;
+    --color-enlace: #a9bce8;
+
+    --color-like: #8fb59b;
+    --color-like-fondo: #1f3329;
+    --color-dislike: #d58a96;
+    --color-dislike-fondo: #3a2530;
+
+    --sombra-bento: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 26px rgba(0, 0, 0, 0.3);
+}
+:root[data-theme="dark"] body {
+    background-image:
+        repeating-linear-gradient(0deg, rgba(236,229,211,0.025) 0px, rgba(236,229,211,0.025) 1px, transparent 1px, transparent 3px),
+        repeating-linear-gradient(90deg, rgba(236,229,211,0.025) 0px, rgba(236,229,211,0.025) 1px, transparent 1px, transparent 3px);
+}
+:root[data-theme="dark"] header,
+:root[data-theme="dark"] footer { background-color: #0f1420; }
+:root[data-theme="dark"] .divisor-lomo { box-shadow: none; }
+
+/* ---------- Grilla bento (inicio y muro) ---------- */
+.bento {
+    display: grid;
+    gap: 16px;
+    max-width: 1240px;
+    margin: 22px auto 40px;
+    padding: 0 20px;
+    align-items: start;
+}
+.bento-card {
+    background: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: var(--sombra-bento);
+    min-width: 0;
+}
+.bento-card > h2,
+.bento-titulo {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
+    text-align: left;
+    margin: 0 0 12px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--color-borde);
+}
+.bento-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+.bento h3.bento-subtitulo {
+    font-size: 0.82rem;
+    margin: 14px 0 6px;
+    color: var(--color-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+/* Áreas de la grilla */
+.area-hero      { grid-area: hero; }
+.area-perfil    { grid-area: perfil; align-self: stretch; }
+.area-insignias { grid-area: insignias; align-self: stretch; }
+.area-izq       { grid-area: izq; }
+.area-feed      { grid-area: feed; }
+.area-der       { grid-area: der; }
+
+.bento-muro {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
+    grid-template-areas:
+        "perfil perfil insignias"
+        "izq    feed   der";
+}
+.bento-inicio {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 2fr) minmax(0, 1.1fr);
+    grid-template-areas:
+        "hero hero hero"
+        "izq  feed der";
+}
+/* La columna derecha es "anfitriona" del detalle de un post (ver abrirDetallePost):
+   normalmente es solo un contenedor de tarjetas, y cuando muestra un detalle
+   se viste de tarjeta. */
+.bento .columna-derecha,
+.bento .columna-izquierda {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    background: none;
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+}
+.bento .columna-derecha.modo-detalle {
+    background: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: var(--sombra-bento);
+}
+.bento .columna-derecha { scroll-margin-top: 100px; }
+
+/* ---------- Muro: tarjeta de perfil (la portada es su fondo) ---------- */
+.perfil-card {
+    position: relative;
+    min-height: 290px;
+    display: flex;
+    align-items: flex-end;
+    gap: 22px;
+    padding: 26px;
+    color: #fff;
+    border: 0;
+    background: linear-gradient(135deg, var(--color-navy-oscuro), var(--color-navy));
+    background-size: cover;
+    background-position: center;
+}
+.perfil-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(14, 20, 34, 0.84) 0%, rgba(14, 20, 34, 0.5) 48%, rgba(14, 20, 34, 0.12) 100%);
+    pointer-events: none;
+}
+.perfil-card > * { position: relative; }
+.perfil-avatar { flex-shrink: 0; position: relative; }
+.perfil-avatar-caja {
+    position: relative;
+    width: 116px;
+    height: 116px;
+    border-radius: 20px;
+    border: 3px solid #fff;
+    background: var(--color-navy-claro);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.perfil-avatar-caja img { width: 100%; height: 100%; object-fit: cover; }
+.perfil-avatar-caja span { font-size: 2.4rem; }
+.perfil-info { flex: 1; min-width: 0; }
+.perfil-nombre {
+    font-size: clamp(1.45rem, 2.6vw, 2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+    overflow-wrap: anywhere;
+}
+.perfil-user { opacity: 0.92; margin-top: 2px; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5); }
+.perfil-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+}
+.perfil-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.perfil-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 16px;
+}
+.perfil-acciones:empty { display: none; }
+.btn-perfil {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    border-radius: 999px;
+    padding: 9px 18px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1.2;
+}
+.btn-perfil-claro { background: #fff; color: #1f2a3d; }
+.btn-perfil-suave { background: rgba(236, 229, 211, 0.92); color: #2b2520; }
+.btn-perfil:hover { filter: brightness(0.96); }
+
+/* El botón "Editar perfil" es el mismo botón que abre el menú de foto/portada/color */
+.perfil-menu-wrap { position: relative; display: inline-block; }
+.perfil-menu-wrap .foto-menu-flecha {
+    position: static;
+    width: auto;
+    height: auto;
+    border: 0;
+    border-radius: 999px;
+    padding: 9px 18px;
+    background: #fff;
+    color: #1f2a3d;
+    font-size: 0.88rem;
+    font-weight: 700;
+    font-family: inherit;
+    gap: 6px;
+}
+.perfil-menu-wrap .foto-menu-flecha:hover { background: #f1ede2; }
+
+/* ---------- Tarjeta Insignias + anillo de meta ---------- */
+.insignias-bento {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+.insignias-accesos { display: flex; flex-direction: column; gap: 6px; }
+.acceso-tile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px 7px 8px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--color-texto);
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: background 0.15s;
+}
+.acceso-tile:hover { background: var(--color-navy-claro); }
+.acceso-icono {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--color-acento-fondo);
+    color: var(--color-acento-oscuro);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.meta-anillo { text-align: center; }
+.meta-anillo svg { display: block; margin: 0 auto; }
+.meta-anillo-texto { margin-top: -118px; height: 118px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.meta-anillo-num { font-size: 1.9rem; font-weight: 800; line-height: 1; }
+.meta-anillo-num small { font-size: 1.2rem; font-weight: 600; color: var(--color-texto-suave); }
+.meta-anillo-lbl { font-size: 0.8rem; color: var(--color-texto-suave); margin-top: 3px; }
+.meta-anillo-anio { font-size: 0.72rem; color: var(--color-texto-suave); }
+.insignias-mini { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--color-borde); }
+
+/* ---------- Pestañas del muro (control segmentado) ---------- */
+.tabs-segmentadas {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 14px;
+    background: var(--color-navy-claro);
+    border-radius: 999px;
+}
+.tabs-segmentadas button {
+    flex: 1;
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.tabs-segmentadas button.activa {
+    background: var(--color-navy-oscuro);
+    color: #fff;
+}
+
+/* ---------- Tarjeta de bienvenida del inicio ---------- */
+.hero-inicio {
+    padding: 22px;
+    color: #fff;
+    border: 0;
+    background: linear-gradient(135deg, var(--color-navy-oscuro) 0%, var(--color-navy) 100%);
+    display: grid;
+    grid-template-columns: 190px minmax(240px, 300px) minmax(0, 1fr);
+    gap: 22px;
+    align-items: center;
+}
+.hero-usuario { text-align: center; }
+.hero-avatar {
+    width: 92px;
+    height: 92px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    background: var(--color-acento);
+    color: #1f2a3d;
+    font-size: 1.8rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.hero-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.hero-nombre { font-weight: 800; font-size: 1.05rem; line-height: 1.2; overflow-wrap: anywhere; }
+.hero-user { opacity: 0.85; font-size: 0.9rem; }
+.hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-tile {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    padding: 12px 10px;
+    text-align: center;
+    color: #fff;
+    text-decoration: none;
+}
+.stat-tile svg { opacity: 0.9; }
+.stat-tile .stat-num { font-size: 1.45rem; font-weight: 800; line-height: 1.1; }
+.stat-tile .stat-lbl { font-size: 0.75rem; opacity: 0.88; }
+.hero-lecturas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.lectura-tile {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 9px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    text-decoration: none;
+    min-width: 0;
+}
+.lectura-tile img,
+.lectura-tile .lectura-portada-vacia {
+    width: 40px;
+    height: 58px;
+    border-radius: 5px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.lectura-tile .lectura-info { min-width: 0; flex: 1; }
+.lectura-tile .lectura-titulo {
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.lectura-tile .lectura-pct { font-size: 0.72rem; opacity: 0.85; margin: 2px 0 4px; }
+.lectura-tile .lectura-barra { height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.25); overflow: hidden; }
+.lectura-tile .lectura-barra i { display: block; height: 100%; background: var(--color-acento); border-radius: 3px; }
+.hero-sin-lecturas { grid-column: 1 / -1; font-size: 0.9rem; opacity: 0.9; padding: 8px; }
+.hero-sin-lecturas a { color: #fff; font-weight: 700; }
+.hero-bienvenida { grid-column: 1 / -1; text-align: center; padding: 6px 4px; }
+.hero-bienvenida h2 {
+    color: #fff;
+    border: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.5rem;
+    margin: 0 0 6px;
+    padding: 0;
+}
+.hero-bienvenida p { opacity: 0.9; margin-bottom: 14px; }
+.hero-bienvenida .btn-perfil { margin: 0 4px; }
+
+/* ---------- Menú de navegación en tarjeta (inicio) ---------- */
+.bento .lista-categorias { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bento .lista-categorias li { margin: 0; }
+.bento .lista-categorias a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 999px;
+    background: var(--color-navy-claro);
+    color: var(--color-texto);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    margin: 0;
+}
+.bento .lista-categorias a:hover { background: var(--color-navy-oscuro); color: #fff; padding-left: 12px; }
+
+/* ---------- Publicaciones del feed como tarjetas (inicio) ---------- */
+.bento-inicio .feed-posts > .post-card,
+.bento-inicio .feed-posts > .feed-resena,
+.bento-inicio .feed-posts > div {
+    background: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--sombra-bento);
+}
+
+/* ---------- Detalles de las tarjetas del muro ---------- */
+.solo-lectores {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+    white-space: nowrap;
+}
+.bento-cabecera {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--color-borde);
+}
+.bento-cabecera h2 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
+    text-align: left;
+}
+.perfil-mensaje { font-size: 0.8rem; margin: 8px 0 0; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+.perfil-mensaje:empty { display: none; }
+/* Seguir / amistad (se arman por JS con estilos propios): sobre la portada se ven como botones del perfil */
+.perfil-acciones #acciones-relacion button {
+    background: #fff !important;
+    color: #1f2a3d !important;
+    border: 0 !important;
+    padding: 9px 18px !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+}
+.perfil-acciones #acciones-relacion .btn-amistad {
+    background: rgba(236, 229, 211, 0.92) !important;
+    color: #2b2520 !important;
+}
+
+/* ---------- Inicio: piezas que faltaban ---------- */
+.orden-2 { order: 2; }
+.bento-inicio .area-feed { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.bento-inicio .area-feed .feed-posts { min-width: 0; }
+.bento .publicar-box { background: none; border: 0; padding: 0; margin: 0; }
+.bento-card:empty { display: none; }
+.bento .bento-card .lista-resenas > * { margin-bottom: 10px; }
+.bento-inicio .feed-posts > .feed-resena > * { margin-bottom: 0; }
+
+/* ---------- Celular y tablet: la grilla se apila ---------- */
+@media (max-width: 900px) {
+    .bento { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; padding: 0 12px; gap: 14px; margin-top: 14px; }
+    .bento > [class*="area-"] { grid-area: auto; }
+    .bento-col { display: contents; }
+    /* La columna derecha solo es una caja propia mientras muestra un detalle; el resto del tiempo reparte sus tarjetas en el orden de la grilla */
+    .bento .columna-derecha.modo-detalle { display: block; order: 3; }
+    .area-perfil { order: 1; }
+    .area-hero { order: 1; }
+    .area-insignias { order: 2; }
+    .orden-3 { order: 3; } .orden-4 { order: 4; } .orden-5 { order: 5; } .orden-6 { order: 6; } .orden-7 { order: 7; }
+    .perfil-card { flex-direction: column; align-items: flex-start; min-height: 0; padding: 20px; }
+    .perfil-avatar-caja { width: 92px; height: 92px; }
+    .hero-inicio { grid-template-columns: minmax(0, 1fr); }
+    .hero-usuario { display: flex; align-items: center; gap: 14px; text-align: left; }
+    .hero-avatar { margin: 0; width: 64px; height: 64px; font-size: 1.3rem; flex-shrink: 0; }
+    .meta-anillo-texto { margin-top: -118px; }
+
+    .solo-escritorio { display: none !important; }
+    /* Tarjeta de bienvenida más baja: stats en una fila y lecturas deslizables */
+    .hero-inicio { padding: 16px; gap: 14px; }
+    .hero-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .stat-tile { padding: 8px 4px; border-radius: 12px; }
+    .stat-tile svg { width: 15px; height: 15px; }
+    .stat-tile .stat-num { font-size: 1.1rem; }
+    .stat-tile .stat-lbl { font-size: 0.62rem; }
+    .hero-lecturas { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 4px; scroll-snap-type: x proximity; }
+    .lectura-tile { min-width: 190px; flex-shrink: 0; scroll-snap-align: start; }
+    /* Menú como fila de pastillas */
+    .bento .lista-categorias { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .bento .lista-categorias a { padding: 7px 13px; font-size: 0.84rem; }
+}
+@media (min-width: 901px) and (max-width: 1100px) {
+    .hero-inicio { grid-template-columns: 160px minmax(0, 1fr); }
+    .hero-lecturas { grid-column: 1 / -1; }
 }

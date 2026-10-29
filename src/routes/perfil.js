@@ -17,6 +17,41 @@ router.get('/users/:username', (req, res) => {
     });
 });
 
+// Resumen numérico de un perfil (para la tarjeta de bienvenida del inicio y
+// otras tarjetas tipo "bento"): libros leídos (estantería "Terminado"), lecturas
+// en curso, reseñas escritas y amigos. Es público, igual que el resto del perfil.
+router.get('/users/:username/resumen', (req, res) => {
+    const { username } = req.params;
+
+    db.get(`SELECT id FROM users WHERE username = ?`, [username], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Error en el servidor' });
+        if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        const contar = (sql, params) => new Promise((resolve, reject) => {
+            db.get(sql, params, (e, row) => (e ? reject(e) : resolve(row ? row.n : 0)));
+        });
+
+        Promise.all([
+            contar(
+                `SELECT COUNT(*) AS n
+                 FROM shelf_items
+                 JOIN shelves ON shelves.id = shelf_items.shelf_id
+                 WHERE shelves.user_id = ? AND LOWER(shelves.nombre) = LOWER('Terminado')`,
+                [user.id]
+            ),
+            contar(`SELECT COUNT(*) AS n FROM lecturas_en_curso WHERE user_id = ?`, [user.id]),
+            contar(`SELECT COUNT(*) AS n FROM reviews WHERE user_id = ?`, [user.id]),
+            contar(
+                `SELECT COUNT(*) AS n FROM friend_requests
+                 WHERE (from_user_id = ? OR to_user_id = ?) AND estado = 'aceptada'`,
+                [user.id, user.id]
+            )
+        ])
+            .then(([leidos, leyendo, resenas, amigos]) => res.json({ leidos, leyendo, resenas, amigos }))
+            .catch(() => res.status(500).json({ error: 'Error en el servidor' }));
+    });
+});
+
 // Subir/actualizar la foto de perfil (cuadrada, máx. 2MB). Se guarda como
 // data URL directo en la base de datos, así que aceptamos strings algo más
 // grandes que 2MB (el base64 infla el tamaño ~33%) pero seguimos poniendo un

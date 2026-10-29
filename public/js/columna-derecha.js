@@ -298,13 +298,27 @@ async function cargarTrending(contenedor) {
 // llamar en cualquier momento (por ejemplo, después de publicar una reseña,
 // o al volver del detalle de un post) para refrescarla con listeners nuevos.
 async function cargarColumnaDerecha(contenedor) {
-    contenedor.innerHTML = `
-        <h2>Reseñas Recientes</h2>
-        <div class="lista-resenas"></div>
-        <div class="divisor-lomo"></div>
-        <h2>Trending</h2>
-        <div class="lista-trending"></div>
-    `;
+    if (contenedor.hasAttribute('data-bento')) {
+        // Versión "bento" (inicio): dos tarjetas separadas
+        contenedor.innerHTML = `
+            <section class="bento-card orden-4">
+                <h2>Reseñas recientes</h2>
+                <div class="lista-resenas"></div>
+            </section>
+            <section class="bento-card orden-5">
+                <h2>Trending</h2>
+                <div class="lista-trending"></div>
+            </section>
+        `;
+    } else {
+        contenedor.innerHTML = `
+            <h2>Reseñas Recientes</h2>
+            <div class="lista-resenas"></div>
+            <div class="divisor-lomo"></div>
+            <h2>Trending</h2>
+            <div class="lista-trending"></div>
+        `;
+    }
     cargarResenasRecientes(contenedor.querySelector('.lista-resenas'));
     cargarTrending(contenedor.querySelector('.lista-trending'));
 

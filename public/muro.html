@@ -6,143 +6,119 @@
     <title>Mi Muro - NAVYBLUE</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%232f3e56'/%3E%3Cpath d='M6 6.5C6 5.7 6.7 5 7.5 5H12v14H7.5C6.7 19 6 18.3 6 17.5v-11z' fill='%23f6f1e7'/%3E%3Cpath d='M18 6.5c0-.8-.7-1.5-1.5-1.5H12v14h4.5c.8 0 1.5-.7 1.5-1.5v-11z' fill='%23b9823f'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
+    <script>(function(){try{if(localStorage.getItem('tema')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 </head>
 <body>
 
     <!-- BARRA SUPERIOR MÍNIMA: sin el título NAVYBLUE, para dejar espacio libre al fondo -->
     <header id="inicio-header" style="min-height: auto;">
-        <div class="header-content" style="justify-content: flex-end;">
-            <div class="header-acciones">
-                <a href="index.html" class="btn-pill">📘</a>
-            </div>
+        <div class="header-content">
+            <div class="header-title"><h1>NAVYBLUE</h1></div>
+            <div class="header-acciones"></div>
         </div>
     </header>
 
-    <!-- FONDO DEL MURO: acepta una foto de portada (fondo_url) que cubre toda
-         la franja. La foto de perfil vive DENTRO de esta franja (sobresaliendo
-         un poco por debajo, como una portada + avatar), en vez de estar
-         metida en la columna de "Mi Muro". -->
-    <div id="fondo-muro" class="fondo-muro" style="background: linear-gradient(135deg, var(--color-navy-oscuro), var(--color-navy));">
-        <div id="foto-perfil-contenedor" onclick="event.stopPropagation()" style="position: absolute; left: 50%; bottom: -48px; transform: translateX(-50%); margin: 0;">
-            <div id="foto-perfil-caja" style="
-                position: relative; width: 96px; height: 96px; border-radius: 10px;
-                border: 3px solid var(--color-acento); background: var(--color-navy-claro);
-                overflow: hidden; display: flex; align-items: center; justify-content: center;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-            ">
-                <img id="foto-perfil-img" alt="Foto de perfil" style="display: none; width: 100%; height: 100%; object-fit: cover;">
-                <span id="foto-perfil-icono" style="font-size: 2rem;">👤</span>
+    <main class="bento bento-muro">
+
+        <!-- PERFIL: la portada (foto o color) es el fondo de esta tarjeta -->
+        <section class="bento-card perfil-card area-perfil" id="fondo-muro">
+            <div class="perfil-avatar" id="foto-perfil-contenedor">
+                <div class="perfil-avatar-caja" id="foto-perfil-caja">
+                    <img id="foto-perfil-img" alt="Foto de perfil" style="display: none;">
+                    <span id="foto-perfil-icono">👤</span>
+                </div>
             </div>
-            <!-- Flechita que abre el menú con las 2 opciones de foto (perfil / portada).
-                 Sustituye a la antigua etiqueta "Cambiar" pegada a la foto. -->
-            <button type="button" id="foto-menu-flecha" class="foto-menu-flecha" title="Cambiar fotos" style="display: none;">▾</button>
-            <div id="foto-menu-dropdown" class="foto-menu-dropdown">
-                <label for="foto-perfil-input">📷 Foto de perfil</label>
-                <label for="foto-portada-input">🖼️ Foto de portada</label>
-                <button type="button" id="btn-color-fondo">🎨 Color de fondo</button>
-            </div>
-            <div id="panel-color-fondo" class="panel-color-fondo"></div>
-            <input type="file" id="foto-perfil-input" accept="image/*" style="display: none;">
-            <input type="file" id="foto-portada-input" accept="image/*" style="display: none;">
-        </div>
-    </div>
-
-    <!-- ESTRUCTURA EN 4 COLUMNAS: SOCIAL + LECTOR (antes una sola izquierda) + CENTRO + DERECHA -->
-    <main class="contenedor-principal cuatro-columnas">
-
-        <!-- SUB-COLUMNA IZQUIERDA 1: SOCIAL (INFO PERSONAL + AMIGOS + SEGUIDORES/SEGUIDOS) -->
-        <aside class="columna-izquierda" id="col-social">
-            <h2>Personal</h2>
-            <ul class="lista-categorias" id="lista-personal">
-                <li>Cargando...</li>
-            </ul>
-
-            <!-- Botones de Seguir / Agregar amigo: solo aparecen viendo el muro de OTRA persona -->
-            <div id="acciones-relacion" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;"></div>
-
-            <div class="divisor-lomo"></div>
-
-            <h2>Seguidos</h2>
-            <ul class="lista-categorias" id="lista-seguidos">
-                <li>Cargando...</li>
-            </ul>
-
-            <h2>Seguidores</h2>
-            <ul class="lista-categorias" id="lista-seguidores">
-                <li>Cargando...</li>
-            </ul>
-
-            <!-- Amigos: separado de Seguir, con su propio divisor -->
-            <div class="divisor-lomo"></div>
-            <h2>Amigos</h2>
-            <ul class="lista-categorias" id="lista-amigos">
-                <li>Cargando...</li>
-            </ul>
-        </aside>
-
-        <!-- SUB-COLUMNA IZQUIERDA 2: LECTOR (LEYENDO AHORA + INSIGNIAS) -->
-        <aside class="columna-izquierda" id="col-lector">
-            <h2>Leyendo ahora</h2>
-            <div id="lecturas-contenedor">
-                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
-            </div>
-
-            <div class="divisor-lomo"></div>
-
-            <div id="libros-anio-contenedor" style="text-align: center; padding: 4px 0;">
-                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
-            </div>
-
-            <div class="divisor-lomo"></div>
-
-            <h2>Insignias</h2>
-            <div id="insignias-contenedor" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
-            </div>
-
-            <div class="divisor-lomo"></div>
-
-            <h2>Preguntas</h2>
-            <div id="preguntar-contenedor">
-                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
-            </div>
-        </aside>
-
-        <!-- COLUMNA CENTRO: MURO. padding-top extra para dejar espacio a la
-             foto de perfil, que ahora sobresale desde la franja azul de arriba. -->
-        <section class="columna-centro" style="padding-top: 56px;">
-            <p id="foto-perfil-mensaje" style="text-align: center; font-size: 0.75rem; margin-bottom: 10px;"></p>
-            <h2>Muro</h2>
-
-            <!-- Caja para publicar: solo aparece en tu propio muro. Empieza
-                 oculta: solo se ve un icono de pluma que la despliega/guarda. -->
-            <div id="composer-mount" style="text-align: center; margin-bottom: 10px;"></div>
-
-            <!-- Pestañas: Post / Comentarios / Likes -->
-            <div class="publicar-footer" style="display: flex; gap: 0; margin-bottom: 15px; border: 1px solid var(--color-borde); border-radius: 6px; overflow: hidden;">
-                <button class="btn-tab-muro tab-activa" data-tab="posts" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: var(--color-navy-oscuro); color: white;">Post</button>
-                <button class="btn-tab-muro" data-tab="comentarios" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: var(--color-borde);">Comentarios</button>
-                <button class="btn-tab-muro" data-tab="likes" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: var(--color-borde);">Likes</button>
-                <button class="btn-tab-muro" data-tab="preguntas" style="flex: 1; padding: 10px; border: none; cursor: pointer; background: var(--color-borde);">Preguntas</button>
-            </div>
-
-            <h3 id="titulo-lista">Publicaciones</h3>
-            <div class="feed-posts" id="lista-muro">
-                <p>Cargando...</p>
+            <div class="perfil-info">
+                <div class="perfil-nombre" id="perfil-nombre">Cargando...</div>
+                <div class="perfil-user" id="perfil-usuario"></div>
+                <div class="perfil-meta">
+                    <span id="perfil-pais" style="display: none;"></span>
+                    <span id="perfil-unido" style="display: none;"></span>
+                </div>
+                <div class="perfil-acciones">
+                    <!-- Solo en tu propio muro: abre el menú de foto / portada / color -->
+                    <div class="perfil-menu-wrap">
+                        <button type="button" id="foto-menu-flecha" class="foto-menu-flecha" style="display: none;">Editar perfil ▾</button>
+                        <div id="foto-menu-dropdown" class="foto-menu-dropdown">
+                            <label for="foto-perfil-input">📷 Foto de perfil</label>
+                            <label for="foto-portada-input">🖼️ Foto de portada</label>
+                            <button type="button" id="btn-color-fondo">🎨 Color de fondo</button>
+                        </div>
+                        <div id="panel-color-fondo" class="panel-color-fondo"></div>
+                        <input type="file" id="foto-perfil-input" accept="image/*" style="display: none;">
+                        <input type="file" id="foto-portada-input" accept="image/*" style="display: none;">
+                    </div>
+                    <a href="perfil.html" id="btn-opciones-perfil" class="btn-perfil btn-perfil-suave" style="display: none;">Opciones de perfil</a>
+                    <!-- En el muro de otra persona: seguir / amistad -->
+                    <div id="acciones-relacion" style="display: contents;"></div>
+                </div>
+                <p id="foto-perfil-mensaje" class="perfil-mensaje"></p>
             </div>
         </section>
 
-        <!-- COLUMNA DERECHA: ESTANTERÍAS / COLECCIONES DE LIBROS -->
-        <aside class="columna-derecha">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Estanterías</h2>
-                <a id="link-gestionar-estanterias" href="estanterias.html" style="display: none; font-size: 0.75rem; color: var(--color-navy-oscuro); text-decoration: none; font-weight: bold;">Gestionar</a>
+        <!-- INSIGNIAS + meta de lectura del año -->
+        <section class="bento-card area-insignias">
+            <h2>Insignias</h2>
+            <div class="insignias-bento">
+                <div class="insignias-accesos">
+                    <a class="acceso-tile" id="acceso-insignias" href="insignias.html"><span class="acceso-icono" data-icono="medalla"></span>Insignias</a>
+                    <!-- Estas dos páginas son tuyas: ajusta el href si se llaman distinto -->
+                    <a class="acceso-tile" href="bestiario.html"><span class="acceso-icono" data-icono="fantasma"></span>Bestiario</a>
+                    <a class="acceso-tile" href="licencia.html"><span class="acceso-icono" data-icono="carnet"></span>Licencia</a>
+                </div>
+                <div id="libros-anio-contenedor" class="meta-anillo"><p style="color: var(--color-texto-suave); font-size: 0.85rem;">Cargando...</p></div>
             </div>
-            <div style="border-bottom: 2px solid var(--color-borde); margin-bottom: 15px;"></div>
-            <div id="estanterias-contenedor">
-                <p style="font-size: 14px; color: var(--color-texto-suave);">Cargando...</p>
+            <div class="insignias-mini">
+                <div id="insignias-contenedor" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;"><p style="color: var(--color-texto-suave); font-size: 0.85rem;">Cargando...</p></div>
             </div>
-        </aside>
+        </section>
+
+        <!-- Columna izquierda: lectura actual y preguntas -->
+        <div class="bento-col area-izq">
+            <section class="bento-card orden-3">
+                <h2>Leyendo ahora</h2>
+                <div id="lecturas-contenedor"><p style="color: var(--color-texto-suave); font-size: 0.85rem;">Cargando...</p></div>
+            </section>
+            <section class="bento-card orden-6">
+                <h2>Preguntas</h2>
+                <div id="preguntar-contenedor"><p style="color: var(--color-texto-suave); font-size: 0.85rem;">Cargando...</p></div>
+            </section>
+        </div>
+
+        <!-- Centro: pestañas, composer y publicaciones -->
+        <section class="bento-card area-feed orden-4">
+            <h2 id="titulo-muro" class="solo-lectores">Muro</h2>
+            <div class="tabs-segmentadas">
+                <button type="button" class="btn-tab-muro" data-tab="posts">Post</button>
+                <button type="button" class="btn-tab-muro" data-tab="comentarios">Comentarios</button>
+                <button type="button" class="btn-tab-muro" data-tab="likes">Likes</button>
+                <button type="button" class="btn-tab-muro" data-tab="preguntas">Preguntas</button>
+            </div>
+            <div id="composer-mount"></div>
+            <h3 id="titulo-lista" class="solo-lectores">Publicaciones</h3>
+            <div class="feed-posts" id="lista-muro"></div>
+        </section>
+
+        <!-- Columna derecha: estanterías y comunidad. También es el "anfitrión" del
+             detalle de un post (por eso lleva la clase columna-derecha). -->
+        <div class="bento-col area-der columna-derecha">
+            <section class="bento-card orden-5">
+                <div class="bento-cabecera">
+                    <h2 id="titulo-estanterias">Estanterías</h2>
+                    <a id="link-gestionar-estanterias" href="estanterias.html" style="font-size: 0.8rem; color: var(--color-enlace); text-decoration: underline;">Gestionar</a>
+                </div>
+                <div id="estanterias-contenedor"><p style="color: var(--color-texto-suave); font-size: 0.85rem;">Cargando...</p></div>
+            </section>
+            <section class="bento-card orden-7">
+                <h2>Comunidad</h2>
+                <h3 class="bento-subtitulo" style="margin-top: 0;">Seguidos</h3>
+                <ul class="lista-categorias" id="lista-seguidos"></ul>
+                <h3 class="bento-subtitulo">Seguidores</h3>
+                <ul class="lista-categorias" id="lista-seguidores"></ul>
+                <h3 class="bento-subtitulo">Amigos</h3>
+                <ul class="lista-categorias" id="lista-amigos"></ul>
+            </section>
+        </div>
 
     </main>
 
@@ -159,7 +135,6 @@
     <script src="js/composer-comun.js"></script>
     <script src="js/mobile-tabs.js"></script>
     <script>
-    const listaPersonal = document.getElementById('lista-personal');
     const listaMuro = document.getElementById('lista-muro');
     const listaSeguidos = document.getElementById('lista-seguidos');
     const listaSeguidores = document.getElementById('lista-seguidores');
@@ -383,7 +358,7 @@
 
                 if (data.estado === 'amigos') {
                     btnAmigo.textContent = 'Amigos ✓ (quitar)';
-                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #198754; background: white; color: #198754;';
+                    btnAmigo.style.cssText = 'padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem; border: 1px solid #198754; background: var(--color-tarjeta); color: #198754;';
                     btnAmigo.addEventListener('click', () => accionAmistad('', 'DELETE'));
                 } else if (data.estado === 'solicitud_enviada') {
                     btnAmigo.textContent = 'Solicitud enviada (cancelar)';
@@ -411,29 +386,26 @@
     }
 
     // Carga los datos de la columna "Personal" de CUALQUIER usuario (perfil público)
+    // Pone un ícono de línea seguido de un texto (el texto se inserta como texto,
+    // nunca como HTML, porque viene del usuario).
+    function conIcono(elemento, icono, texto) {
+        elemento.innerHTML = iconoSvg(icono, 15);
+        elemento.append(texto);
+        elemento.style.display = '';
+    }
+
     async function cargarPersonal(username, esMiMuro) {
+        document.getElementById('perfil-usuario').textContent = `@${username}`;
         try {
             const response = await fetch(`/api/users/${encodeURIComponent(username)}`);
             const data = await response.json();
-            listaPersonal.innerHTML = '';
+            if (!response.ok) throw new Error('perfil no encontrado');
 
-            const items = [
-                ['Nombre', data.user.name],
-                ['País', data.user.pais || 'No especificado'],
-                ['Se unió', formatearFecha(data.user.created_at)]
-            ];
-            items.forEach(([label, valor]) => {
-                const li = document.createElement('li');
-                li.style.padding = '6px 0';
-                const strong = document.createElement('strong');
-                strong.textContent = label + ': ';
-                li.appendChild(strong);
-                li.append(valor);
-                listaPersonal.appendChild(li);
-            });
-
+            document.getElementById('perfil-nombre').textContent = data.user.name;
+            if (data.user.pais) conIcono(document.getElementById('perfil-pais'), 'pin', data.user.pais);
+            conIcono(document.getElementById('perfil-unido'), 'calendario', `Se unió en ${formatearFecha(data.user.created_at)}`);
         } catch (error) {
-            listaPersonal.innerHTML = '<li>No se pudo cargar la información.</li>';
+            document.getElementById('perfil-nombre').textContent = username;
         }
     }
 
@@ -499,8 +471,7 @@
         detenerScrollMuro(); // la pestaña anterior ya no debe seguir pidiendo páginas
         botonesTab.forEach(btn => {
             const activo = btn.dataset.tab === tab;
-            btn.style.background = activo ? 'var(--color-navy-oscuro)' : 'var(--color-borde)';
-            btn.style.color = activo ? 'white' : 'var(--color-texto)';
+            btn.classList.toggle('activa', activo);
         });
 
         if (tab === 'posts') {
@@ -556,9 +527,9 @@
         if (pregunta.respuesta) {
             // Ya tiene respuesta: se muestra, no se puede volver a responder.
             const bloqueRespuesta = document.createElement('div');
-            bloqueRespuesta.style.cssText = 'margin-top: 8px; padding: 8px 10px; background: #f7ecd9; border-radius: 8px; border-left: 3px solid #b9823f;';
+            bloqueRespuesta.style.cssText = 'margin-top: 8px; padding: 8px 10px; background: var(--color-acento-fondo); border-radius: 8px; border-left: 3px solid var(--color-acento);';
             const etiqueta = document.createElement('p');
-            etiqueta.style.cssText = 'margin: 0 0 3px; font-size: 0.72rem; font-weight: bold; color: #9c6f35;';
+            etiqueta.style.cssText = 'margin: 0 0 3px; font-size: 0.72rem; font-weight: bold; color: var(--color-acento-oscuro);';
             etiqueta.textContent = `↳ ${pregunta.asked_username} respondió:`;
             const textoResp = document.createElement('p');
             textoResp.style.cssText = 'margin: 0; font-size: 0.85rem;';
@@ -886,7 +857,7 @@
             btnQuitar.type = 'button';
             btnQuitar.textContent = '✕';
             btnQuitar.title = 'Quitar de la estantería';
-            btnQuitar.style.cssText = 'position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; line-height: 16px; padding: 0; border-radius: 50%; border: 1px solid var(--color-borde); background: white; color: var(--color-texto-suave); cursor: pointer; font-size: 0.7rem; opacity: 0; transition: opacity 0.15s ease;';
+            btnQuitar.style.cssText = 'position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; line-height: 16px; padding: 0; border-radius: 50%; border: 1px solid var(--color-borde); background: var(--color-tarjeta); color: var(--color-texto-suave); cursor: pointer; font-size: 0.7rem; opacity: 0; transition: opacity 0.15s ease;';
             envoltorio.addEventListener('mouseenter', () => { btnQuitar.style.opacity = '1'; });
             envoltorio.addEventListener('mouseleave', () => { btnQuitar.style.opacity = '0'; });
             btnQuitar.addEventListener('click', alEliminar);
@@ -961,7 +932,7 @@
             const btnMostrarForm = document.createElement('button');
             btnMostrarForm.type = 'button';
             btnMostrarForm.textContent = '+ Agregar libro';
-            btnMostrarForm.style.cssText = 'margin-top: 6px; background: none; border: none; color: var(--color-navy-oscuro); cursor: pointer; font-size: 0.78rem; font-weight: bold;';
+            btnMostrarForm.style.cssText = 'margin-top: 6px; background: none; border: none; color: var(--color-enlace); cursor: pointer; font-size: 0.78rem; font-weight: bold;';
 
             const form = crearFormularioLibro(estante.id, () => cargarEstanterias(usuarioObjetivo, esMiMuro));
             btnMostrarForm.addEventListener('click', () => {
@@ -995,7 +966,7 @@
                 const btnNuevaEstanteria = document.createElement('button');
                 btnNuevaEstanteria.type = 'button';
                 btnNuevaEstanteria.textContent = '+ Nueva estantería';
-                btnNuevaEstanteria.style.cssText = 'width: 100%; padding: 8px; border-radius: 999px; border: 1px dashed var(--color-navy-oscuro); background: none; color: var(--color-navy-oscuro); cursor: pointer; font-size: 0.85rem; margin-top: 10px;';
+                btnNuevaEstanteria.style.cssText = 'width: 100%; padding: 8px; border-radius: 999px; border: 1px dashed var(--color-navy-oscuro); background: none; color: var(--color-enlace); cursor: pointer; font-size: 0.85rem; margin-top: 10px;';
                 btnNuevaEstanteria.addEventListener('click', async () => {
                     const nombre = prompt('Nombre de la nueva estantería:');
                     if (!nombre || !nombre.trim()) return;
@@ -1250,26 +1221,30 @@
             const leidos = data.leidos || 0;
             const meta = data.meta;
 
-            contenedor.innerHTML = '';
-
-            const numeroP = document.createElement('p');
-            numeroP.style.cssText = 'font-size: 1.8rem; font-weight: bold; color: var(--color-navy); margin: 0; line-height: 1;';
-            numeroP.textContent = meta ? `${leidos} / ${meta}` : `${leidos}`;
-            contenedor.appendChild(numeroP);
-
-            const etiquetaP = document.createElement('p');
-            etiquetaP.style.cssText = 'font-size: 0.75rem; color: var(--color-texto-suave); margin: 2px 0 0 0;';
-            etiquetaP.textContent = meta
-                ? `libros leídos en ${data.anio} (tu meta: ${meta})`
-                : `libro${leidos === 1 ? '' : 's'} leído${leidos === 1 ? '' : 's'} en ${data.anio}`;
-            contenedor.appendChild(etiquetaP);
+            // Anillo de progreso: el trazo dorado cubre la fracción leídos / meta
+            const nLeidos = Number(leidos) || 0;
+            const nMeta = Number(meta) || 0;
+            const radio = 50;
+            const circunferencia = 2 * Math.PI * radio;
+            const fraccion = nMeta ? Math.min(1, nLeidos / nMeta) : 0;
+            contenedor.innerHTML = `
+                <svg width="118" height="118" viewBox="0 0 118 118" aria-hidden="true">
+                    <circle cx="59" cy="59" r="${radio}" fill="none" stroke-width="10" style="stroke: var(--color-borde);"></circle>
+                    <circle cx="59" cy="59" r="${radio}" fill="none" stroke-width="10" stroke-linecap="round" transform="rotate(-90 59 59)"
+                            stroke-dasharray="${(circunferencia * fraccion).toFixed(1)} ${circunferencia.toFixed(1)}" style="stroke: var(--color-acento);"></circle>
+                </svg>
+                <div class="meta-anillo-texto">
+                    <div class="meta-anillo-num">${nLeidos}${nMeta ? ` <small>/ ${nMeta}</small>` : ''}</div>
+                    <div class="meta-anillo-lbl">libro${nLeidos === 1 ? '' : 's'} leído${nLeidos === 1 ? '' : 's'}</div>
+                    <div class="meta-anillo-anio">${nMeta ? 'Meta ' : ''}${Number(data.anio) || ''}</div>
+                </div>`;
 
             // Solo el dueño del muro puede poner/cambiar su propia meta
             if (esMiMuro) {
                 const btnMeta = document.createElement('button');
                 btnMeta.type = 'button';
                 btnMeta.textContent = meta ? 'Cambiar meta' : '+ Poner una meta';
-                btnMeta.style.cssText = 'margin-top: 6px; font-size: 0.7rem; background: none; border: none; color: var(--color-navy); text-decoration: underline; cursor: pointer;';
+                btnMeta.style.cssText = 'margin-top: 6px; font-size: 0.7rem; background: none; border: none; color: var(--color-enlace); text-decoration: underline; cursor: pointer;';
                 btnMeta.addEventListener('click', async () => {
                     const respuesta = prompt(`¿Cuántos libros quieres leer en ${data.anio}?`, meta || '');
                     if (respuesta === null) return;
@@ -1477,8 +1452,12 @@
                 fondoMuro.style.backgroundImage = `url("${fondoActual}")`;
                 fondoMuro.style.backgroundSize = 'cover';
                 fondoMuro.style.backgroundPosition = 'center';
-                fondoMuro.style.cursor = 'pointer';
-                fondoMuro.onclick = () => abrirVisorImagen(fondoActual);
+                fondoMuro.style.cursor = 'zoom-in';
+                // Abre la portada ampliada solo al tocar la portada misma, no los botones ni el avatar
+                fondoMuro.onclick = (e) => {
+                    if (e.target.closest('a, button, label, input, .foto-menu-dropdown, .panel-color-fondo, #foto-perfil-contenedor')) return;
+                    abrirVisorImagen(fondoActual);
+                };
             } else {
                 const elegido = COLORES_FONDO.find(c => c.key === colorActual);
                 fondoMuro.style.backgroundImage = 'none';
@@ -1486,10 +1465,12 @@
                 fondoMuro.style.cursor = 'default';
                 fondoMuro.onclick = null;
             }
+            // El tono pastel de la página es solo para el modo claro; en modo noche se deja el fondo oscuro.
             const elegidoPagina = COLORES_FONDO.find(c => c.key === colorActual);
-            document.body.style.backgroundColor = elegidoPagina ? elegidoPagina.pagina : '';
+            document.body.style.backgroundColor = (elegidoPagina && temaActual() !== 'dark') ? elegidoPagina.pagina : '';
         }
         pintarFondoMuro();
+        window.addEventListener('tema-cambiado', pintarFondoMuro);
 
         // Click en la foto de perfil: la abre agrandada (sin cambiar de página).
         img.style.cursor = fotoActual ? 'pointer' : 'default';
@@ -1612,7 +1593,7 @@
             const usuarioObjetivo = params.get('usuario') || sesion.user.username;
             const esMiMuro = usuarioObjetivo === sesion.user.username;
 
-            document.querySelector('.columna-centro h2').textContent = esMiMuro ? 'Mi Muro' : `Muro de ${usuarioObjetivo}`;
+            document.getElementById('titulo-muro').textContent = esMiMuro ? 'Mi Muro' : `Muro de ${usuarioObjetivo}`;
 
             if (esMiMuro) {
                 document.getElementById('link-gestionar-estanterias').style.display = 'inline';
@@ -1632,8 +1613,9 @@
                 btnPluma.type = 'button';
                 btnPluma.id = 'btn-pluma-composer';
                 btnPluma.title = 'Postear o reseñar';
-                btnPluma.textContent = '🖋️';
-                btnPluma.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 50%; border: none; background: var(--color-navy); color: white; font-size: 1.3rem; cursor: pointer; margin-bottom: 12px;';
+                btnPluma.innerHTML = iconoSvg('lapiz', 16);
+                btnPluma.append('¿Qué estás leyendo o qué opinas hoy?');
+                btnPluma.style.cssText = 'display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 16px; border-radius: 999px; border: 1px solid var(--color-borde); background: var(--color-navy-claro); color: var(--color-texto-suave); font-family: inherit; font-size: 0.9rem; cursor: pointer; margin-bottom: 12px;';
                 btnPluma.addEventListener('click', () => {
                     const abierto = composerActual.style.display !== 'none';
                     composerActual.style.display = abierto ? 'none' : '';
@@ -1644,6 +1626,12 @@
                 mountComposer.appendChild(btnPluma);
                 mountComposer.appendChild(composerActual);
             }
+
+            // Tarjetas nuevas: íconos, enlaces y botones que dependen de quién mira
+            hidratarIconos();
+            document.getElementById('acceso-insignias').href = `insignias.html?usuario=${encodeURIComponent(usuarioObjetivo)}`;
+            document.getElementById('titulo-estanterias').textContent = esMiMuro ? 'Mis Estanterías' : 'Estanterías';
+            if (esMiMuro) document.getElementById('btn-opciones-perfil').style.display = 'inline-flex';
 
             cargarPersonal(usuarioObjetivo, esMiMuro);
             cargarFotoPerfil(usuarioObjetivo, esMiMuro);
@@ -1656,13 +1644,6 @@
             cargarAmigosInfo(usuarioObjetivo, esMiMuro);
             activarTab('posts', usuarioObjetivo, esMiMuro);
             montarHeaderComun();
-
-            activarTabsMobile([
-                { selector: '#col-social', texto: 'Social' },
-                { selector: '#col-lector', texto: 'Lector' },
-                { selector: '.columna-centro', texto: 'Muro' },
-                { selector: '.columna-derecha', texto: 'Libros' }
-            ]);
 
             botonesTab.forEach(btn => {
                 btn.addEventListener('click', () => activarTab(btn.dataset.tab, usuarioObjetivo, esMiMuro));
